@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5000',
-      '/uploads': 'http://localhost:5000'
+      '/api': 'https://student-profile-management-system-backend.onrender.com',
+      '/uploads': 'https://student-profile-management-system-backend.onrender.com'
     }
   }
 });
