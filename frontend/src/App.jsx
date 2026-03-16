@@ -8,6 +8,8 @@ import Documents from './pages/Documents';
 import FacultyDashboard from './pages/FacultyDashboard';
 import SectionReport from './pages/SectionReport';
 import ForgotPassword from './pages/ForgotPassword';
+import AchievementDashboard from './pages/AchievementDashboard';
+import LeetCodeReport from './pages/LeetCodeReport';
 import Navbar from './components/Navbar';
 
 const PrivateRoute = ({ children }) =>
@@ -28,13 +30,15 @@ export default function App() {
         <Route path="/*" element={
           <PrivateRoute>
             <Navbar />
-            <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}>
+            <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
               <Routes>
                 <Route path="/" element={<RoleHome />} />
                 <Route path="/profile" element={<StudentProfile />} />
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/section-report" element={<SectionReport />} />
+                <Route path="/achievement-dashboard" element={<AchievementDashboard />} />
+                <Route path="/leetcode-report" element={<LeetCodeReport />} />
               </Routes>
             </div>
           </PrivateRoute>

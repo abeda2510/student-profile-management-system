@@ -59,6 +59,7 @@ router.get('/students', protect, facultyOnly, async (req, res) => {
 async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
   if (docType === 'ABC_ID') return { ...base, data: st.abcId || '—' };
+  if (docType === 'APAAR_ID') return { ...base, data: st.apaarId || '—' };
   
   if (docType === 'LEETCODE') return { ...base, data: st.leetCode ? `leetcode.com/${st.leetCode}` : '—' };
   if (docType === 'CODECHEF') return { ...base, data: st.codeChef ? `codechef.com/users/${st.codeChef}` : '—' };
@@ -86,11 +87,16 @@ function buildFilter(query) {
   if (query.admissionYear) filter.admissionYear = Number(query.admissionYear);
   if (branches.length && sections.length) {
     filter.$or = [];
-    branches.forEach(b => sections.forEach(s => filter.$or.push({ branch: b, section: s })));
+    branches.forEach(b => sections.forEach(s =>
+      filter.$or.push({
+        branch: { $regex: new RegExp(`^${b}$`, 'i') },
+        section: { $regex: new RegExp(`^${s}$`, 'i') }
+      })
+    ));
   } else if (branches.length) {
-    filter.branch = { $in: branches };
+    filter.$or = branches.map(b => ({ branch: { $regex: new RegExp(`^${b}$`, 'i') } }));
   } else if (sections.length) {
-    filter.section = { $in: sections };
+    filter.$or = sections.map(s => ({ section: { $regex: new RegExp(`^${s}$`, 'i') } }));
   }
   return filter;
 }
@@ -103,6 +109,73 @@ router.get('/section-report', protect, facultyOnly, async (req, res) => {
   const results = [];
   for (const st of students) for (const dt of docTypes) results.push(await getStudentDocData(st, dt));
   res.json(results);
+});
+
+// Generate PDF for section report
+router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
+  const DOC_LABELS = {
+    ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
+    CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
+    INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
+  };
+  const docTypes = [].concat(req.query.docType || []).filter(Boolean);
+  const { admissionYear } = req.query;
+  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+
+  const doc = new PDFDocument({ margin: 40, size: 'A4', layout: 'landscape' });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="section_report.pdf"');
+  doc.pipe(res);
+
+  // Title
+  doc.fontSize(13).font('Helvetica-Bold')
+    .text("Vignan's Foundation for Science, Technology & Research (Deemed to be University)", { align: 'center' });
+  doc.fontSize(10).font('Helvetica')
+    .text(`Section-wise Student Report${admissionYear ? ' | Year: ' + admissionYear : ''}  |  Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+  doc.moveDown(0.5);
+
+  const colWidths = [30, 90, 130, 55, 50, ...docTypes.map(() => Math.floor(360 / docTypes.length)), 60];
+  const headers = ['S.No', 'Reg No', 'Name', 'Dept', 'Section', ...docTypes.map(d => DOC_LABELS[d] || d), 'Status'];
+
+  const drawRow = (rowData, y, isHeader) => {
+    let x = 40;
+    rowData.forEach((cell, i) => {
+      const w = colWidths[i] || 60;
+      if (isHeader) {
+        doc.rect(x, y, w, 18).fillAndStroke('#1e40af', '#1e40af');
+        doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold')
+          .text(String(cell), x + 2, y + 4, { width: w - 4, ellipsis: true });
+      } else {
+        doc.rect(x, y, w, 16).stroke('#d1d5db');
+        doc.fillColor('#000000').fontSize(7.5).font('Helvetica')
+          .text(String(cell || '—'), x + 2, y + 3, { width: w - 4, ellipsis: true });
+      }
+      x += w;
+    });
+  };
+
+  let y = doc.y;
+  drawRow(headers, y, true);
+  y += 18;
+
+  for (let i = 0; i < students.length; i++) {
+    const st = students[i];
+    const rowData = [i + 1, st.regNumber, st.name, st.branch, st.section];
+    let filled = 0;
+    for (const dt of docTypes) {
+      const r = await getStudentDocData(st, dt);
+      const val = r.data && r.data !== '—' ? r.data : '';
+      if (val) filled++;
+      rowData.push(val || 'Not filled');
+    }
+    rowData.push(`${filled}/${docTypes.length}`);
+
+    if (y + 16 > doc.page.height - 40) { doc.addPage({ layout: 'landscape' }); y = 40; drawRow(headers, y, true); y += 18; }
+    drawRow(rowData, y, false);
+    y += 16;
+  }
+
+  doc.end();
 });
 
 // Generate Excel for section report

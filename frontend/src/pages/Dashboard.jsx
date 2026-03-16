@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 
-const card = { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' };
-
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [achCount, setAchCount] = useState(0);
@@ -11,8 +9,7 @@ export default function Dashboard() {
   const [pendingCount, setPendingCount] = useState(0);
   const name = localStorage.getItem('name');
   const role = localStorage.getItem('role');
-
-  const TOTAL_DOC_TYPES = 6; // MARK_MEMO, AADHAAR, PAN, VOTER_ID, APAAR_ABC, OTHER
+  const TOTAL_DOC_TYPES = 6;
 
   useEffect(() => {
     api.get('/students/me').then(r => setProfile(r.data));
@@ -20,62 +17,54 @@ export default function Dashboard() {
     api.get('/documents/me').then(r => {
       const docs = r.data;
       setDocCount(docs.length);
-      // count unique doc types uploaded
-      const uploadedTypes = new Set(docs.map(d => d.docType)).size;
-      setPendingCount(Math.max(0, TOTAL_DOC_TYPES - uploadedTypes));
+      setPendingCount(Math.max(0, TOTAL_DOC_TYPES - new Set(docs.map(d => d.docType)).size));
     });
   }, []);
 
   return (
     <div>
-      <h2 style={{ marginBottom: 24, color: '#1e40af' }}>Welcome, {name}</h2>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>Welcome back, <span style={{ color: '#1e40af' }}>{name}</span> 👋</div>
+        <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>Here's a summary of your academic activity</div>
+      </div>
+
       {role === 'admin' && (
-        <div style={{ ...card, background: '#fef3c7', marginBottom: 20, borderLeft: '4px solid #f59e0b' }}>
-          You are logged in as <strong>Admin</strong>. Use <Link to="/admin" style={{ color: '#1e40af' }}>Admin Search</Link> to look up any student.
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderLeft: '4px solid #f59e0b', borderRadius: 10, padding: '14px 18px', marginBottom: 24, fontSize: 14, color: '#92400e', fontWeight: 500 }}>
+          Logged in as <strong>Admin</strong> — <Link to="/admin" style={{ color: '#1e40af', fontWeight: 700 }}>Go to Admin Search →</Link>
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-        <StatCard label="Achievements Uploaded" value={achCount} color="#1e40af" link="/achievements" />
-        <StatCard label="Documents Uploaded" value={docCount} color="#059669" link="/documents" />
-        <StatCard label="Pending Documents" value={pendingCount} color="#f59e0b" link="/documents" />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+        <StatCard label="Achievements" value={achCount} color="#1e40af" bg="#eff6ff" icon="🏆" link="/achievements" />
+        <StatCard label="Documents Uploaded" value={docCount} color="#059669" bg="#ecfdf5" icon="📄" link="/documents" />
+        <StatCard label="Pending Documents" value={pendingCount} color="#d97706" bg="#fffbeb" icon="⏳" link="/documents" />
       </div>
+
       {profile && (
-        <div style={{ ...card, marginTop: 24 }}>
-          <h3 style={{ marginBottom: 16, color: '#374151' }}>Quick Profile Info</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', fontSize: 14 }}>
-            <Info label="Reg. Number" value={profile.regNumber} />
-            <Info label="Email" value={profile.email} />
-            <Info label="Phone" value={profile.phone} />
-            <Info label="Admission Category" value={profile.admissionCategory} />
-            <Info label="Admission Year" value={profile.admissionYear} />
-            <Info label="Section" value={profile.section} />
-            {profile.cgpa && <Info label="CGPA" value={profile.cgpa} />}
+        <div className="card">
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 8, padding: '4px 10px', fontSize: 13 }}>👤</span>
+            Quick Profile Info
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 32px' }}>
+            <InfoRow label="Reg. Number" value={profile.regNumber} />
+            <InfoRow label="Email" value={profile.email} />
+            <InfoRow label="Phone" value={profile.phone} />
+            <InfoRow label="Admission Category" value={profile.admissionCategory} />
+            <InfoRow label="Admission Year" value={profile.admissionYear} />
+            <InfoRow label="Section" value={profile.section} />
+            {profile.cgpa && <InfoRow label="CGPA" value={profile.cgpa} />}
           </div>
 
           {(profile.linkedIn || profile.codeChef || profile.leetCode) && (
             <>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af', margin: '18px 0 10px', borderBottom: '2px solid #dbeafe', paddingBottom: 5 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#1e40af', margin: '20px 0 12px', paddingBottom: 8, borderBottom: '2px solid #dbeafe' }}>
                 Coding &amp; Social Profiles
               </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {profile.linkedIn && (
-                  <a href={profile.linkedIn} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0a66c2', color: '#fff', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                    🔗 LinkedIn
-                  </a>
-                )}
-                {profile.codeChef && (
-                  <a href={`https://www.codechef.com/users/${profile.codeChef}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#5b4638', color: '#fff', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                    👨‍🍳 CodeChef
-                  </a>
-                )}
-                {profile.leetCode && (
-                  <a href={`https://leetcode.com/${profile.leetCode}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#ffa116', color: '#fff', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                    💻 LeetCode
-                  </a>
-                )}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {profile.linkedIn && <SocialBtn href={profile.linkedIn} bg="#0a66c2" label="🔗 LinkedIn" />}
+                {profile.codeChef && <SocialBtn href={`https://www.codechef.com/users/${profile.codeChef}`} bg="#5b4638" label="👨‍🍳 CodeChef" />}
+                {profile.leetCode && <SocialBtn href={`https://leetcode.com/${profile.leetCode}`} bg="#f59e0b" label="💻 LeetCode" />}
               </div>
             </>
           )}
@@ -85,22 +74,36 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ label, value, color, link }) {
+function StatCard({ label, value, color, bg, icon, link }) {
   return (
-    <Link to={link}>
-      <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', borderTop: `4px solid ${color}`, cursor: 'pointer' }}>
-        <div style={{ fontSize: 32, fontWeight: 700, color }}>{value}</div>
-        <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{label}</div>
+    <Link to={link} style={{ textDecoration: 'none' }}>
+      <div className="stat-card" style={{ borderTop: `3px solid ${color}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 36, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+            <div style={{ fontSize: 13, color: '#475569', marginTop: 6, fontWeight: 500 }}>{label}</div>
+          </div>
+          <div style={{ background: bg, borderRadius: 10, padding: '8px 10px', fontSize: 20 }}>{icon}</div>
+        </div>
       </div>
     </Link>
   );
 }
 
-function Info({ label, value }) {
+function InfoRow({ label, value }) {
   return (
-    <div style={{ padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ color: '#64748b', fontSize: 12 }}>{label}: </span>
-      <span style={{ fontWeight: 500 }}>{value || '—'}</span>
+    <div className="info-row">
+      <span className="info-label">{label}</span>
+      <span className="info-value">{value || '—'}</span>
     </div>
+  );
+}
+
+function SocialBtn({ href, bg, label }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: bg, color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+      {label}
+    </a>
   );
 }

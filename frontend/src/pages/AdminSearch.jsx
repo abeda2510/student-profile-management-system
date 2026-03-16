@@ -7,7 +7,6 @@ const s = {
   btn: { background: '#1e40af', color: '#fff', border: 'none', padding: '10px 22px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, marginLeft: 10 },
   tag: { display: 'inline-block', background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600, marginRight: 6, marginBottom: 4 },
   section: { fontWeight: 700, fontSize: 14, color: '#1e40af', margin: '16px 0 8px', borderBottom: '1px solid #dbeafe', paddingBottom: 4 },
-  info: { fontSize: 13, padding: '4px 0', borderBottom: '1px solid #f8fafc' }
 };
 
 export default function AdminSearch() {
@@ -19,37 +18,26 @@ export default function AdminSearch() {
   const [tab, setTab] = useState('profile');
 
   const search = async (e) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault(); setError('');
     try {
       const [p, d, a] = await Promise.all([
         api.get(`/students/search/${regNumber}`),
         api.get(`/documents/${regNumber}`),
         api.get(`/achievements/${regNumber}`)
       ]);
-      setProfile(p.data);
-      setDocs(d.data);
-      setAchievements(a.data);
-      setTab('profile');
-    } catch {
-      setError('Student not found');
-      setProfile(null);
-    }
+      setProfile(p.data); setDocs(d.data); setAchievements(a.data); setTab('profile');
+    } catch { setError('Student not found'); setProfile(null); }
   };
 
   const tabBtn = (t, label) => (
-    <button onClick={() => setTab(t)} style={{
-      padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
-      background: tab === t ? '#1e40af' : '#e2e8f0', color: tab === t ? '#fff' : '#374151', marginRight: 8
-    }}>{label}</button>
+    <button onClick={() => setTab(t)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: tab === t ? '#1e40af' : '#e2e8f0', color: tab === t ? '#fff' : '#374151', marginRight: 8 }}>{label}</button>
   );
 
   return (
     <div>
       <h2 style={{ color: '#1e40af', marginBottom: 20 }}>Admin: Student Search</h2>
       <form onSubmit={search} style={{ marginBottom: 24 }}>
-        <input style={s.input} placeholder="Enter Registration Number" value={regNumber}
-          onChange={e => setRegNumber(e.target.value)} required />
+        <input style={s.input} placeholder="Enter Registration Number" value={regNumber} onChange={e => setRegNumber(e.target.value)} required />
         <button style={s.btn} type="submit">Search</button>
       </form>
       {error && <div style={{ color: '#ef4444', marginBottom: 16 }}>{error}</div>}
@@ -98,9 +86,7 @@ export default function AdminSearch() {
                       <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
                     </div>
                     <a href={`/uploads/documents/${profile.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
-                      style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>
-                      View
-                    </a>
+                      style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>View</a>
                   </div>
                 </div>
               ))}
@@ -122,11 +108,8 @@ export default function AdminSearch() {
                     {a.date && <span>Date: {a.date}</span>}
                   </div>
                   {a.certificateFile && (
-                    <a href={`/uploads/achievements/${profile.regNumber}/${a.certificateFile}`}
-                      target="_blank" rel="noreferrer"
-                      style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>
-                      View Certificate
-                    </a>
+                    <a href={`/uploads/achievements/${profile.regNumber}/${a.certificateFile}`} target="_blank" rel="noreferrer"
+                      style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>View Certificate</a>
                   )}
                 </div>
               ))}
@@ -141,8 +124,8 @@ export default function AdminSearch() {
 function Row({ label, value }) {
   return (
     <div style={{ fontSize: 13, padding: '5px 0', borderBottom: '1px solid #f8fafc', display: 'flex', gap: 8 }}>
-      <span style={{ color: '#64748b', minWidth: 130 }}>{label}:</span>
-      <span style={{ fontWeight: 500 }}>{value || '—'}</span>
+      <span style={{ color: '#374151', minWidth: 130, fontWeight: 600 }}>{label}:</span>
+      <span style={{ fontWeight: 600, color: '#111827' }}>{value || '—'}</span>
     </div>
   );
 }
