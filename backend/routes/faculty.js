@@ -162,13 +162,26 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
   y += ROW_H;
 
   let rowIdx = 0;
+  let studentIdx = 0;
   for (let i = 0; i < students.length; i++) {
     const st = students[i];
-    for (const dt of docTypes) {
+    for (let d = 0; d < docTypes.length; d++) {
+      const dt = docTypes[d];
       const r = await getStudentDocData(st, dt);
       const val = r.data && r.data !== '—' ? r.data : 'Not filled';
       const status = val !== 'Not filled' ? 'Available' : 'Missing';
-      const rowData = [rowIdx + 1, st.regNumber, st.name, st.branch, st.section, DOC_LABELS[dt] || dt, val, status];
+      // Only show student info on first doc row for that student
+      const isFirst = d === 0;
+      const rowData = [
+        isFirst ? studentIdx + 1 : '',
+        isFirst ? st.regNumber : '',
+        isFirst ? st.name : '',
+        isFirst ? st.branch : '',
+        isFirst ? st.section : '',
+        DOC_LABELS[dt] || dt,
+        val,
+        status
+      ];
 
       if (y + ROW_H > doc.page.height - 40) {
         doc.addPage({ layout: 'landscape' });
@@ -176,10 +189,11 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
         drawRow(headers, y, true, false);
         y += ROW_H;
       }
-      drawRow(rowData, y, false, rowIdx % 2 === 1);
+      drawRow(rowData, y, false, i % 2 === 1);
       y += ROW_H;
       rowIdx++;
     }
+    studentIdx++;
   }
 
   doc.end();
