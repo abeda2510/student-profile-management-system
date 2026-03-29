@@ -91,7 +91,10 @@ export default function SectionReport() {
       docTypes.forEach(d => params.append('docType', d));
       if (yr) params.append('admissionYear', yr);
       const token = localStorage.getItem('token');
-      const url = type === 'excel' ? `/api/faculty/section-report/excel?${params}` : `/api/faculty/section-report/pdf?${params}`;
+      const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '');
+      const url = type === 'excel'
+        ? `${baseUrl}/api/faculty/section-report/excel?${params}`
+        : `${baseUrl}/api/faculty/section-report/pdf?${params}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
