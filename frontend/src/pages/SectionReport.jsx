@@ -90,18 +90,11 @@ export default function SectionReport() {
       combos.forEach(c => { params.append('branch', c.branch); params.append('section', c.section); });
       docTypes.forEach(d => params.append('docType', d));
       if (yr) params.append('admissionYear', yr);
-      const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://student-profile-management-system-backend.onrender.com/api';
-      const baseUrl = apiUrl.replace('/api', '');
-      const url = type === 'excel'
-        ? `${baseUrl}/api/faculty/section-report/excel?${params}`
-        : `${baseUrl}/api/faculty/section-report/pdf?${params}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status}: ${text}`);
-      }
-      const blob = await res.blob();
+      const endpoint = type === 'excel'
+        ? `/faculty/section-report/excel?${params}`
+        : `/faculty/section-report/pdf?${params}`;
+      const res = await api.get(endpoint, { responseType: 'blob' });
+      const blob = new Blob([res.data]);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `section_report.${type === 'excel' ? 'xlsx' : 'pdf'}`;
