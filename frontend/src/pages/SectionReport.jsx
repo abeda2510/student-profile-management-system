@@ -91,7 +91,8 @@ export default function SectionReport() {
       docTypes.forEach(d => params.append('docType', d));
       if (yr) params.append('admissionYear', yr);
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '');
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://student-profile-management-system-backend.onrender.com/api';
+      const baseUrl = apiUrl.replace('/api', '');
       const url = type === 'excel'
         ? `${baseUrl}/api/faculty/section-report/excel?${params}`
         : `${baseUrl}/api/faculty/section-report/pdf?${params}`;
