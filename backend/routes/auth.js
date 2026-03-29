@@ -74,7 +74,7 @@ router.post('/faculty/login', async (req, res) => {
   if (faculty && (await faculty.matchPassword(password))) {
     return res.json({ token: signToken(faculty, 'faculty'), role: 'faculty', facultyId: faculty.facultyId, name: faculty.name });
   }
-  const student = await Student.findOne({ regNumber: facultyId });
+  const student = await Student.findOne({ regNumber: facultyId, role: { $in: ['faculty', 'admin'] } });
   if (student && (await student.matchPassword(password))) {
     return res.json({ token: signToken(student, 'faculty'), role: 'faculty', regNumber: student.regNumber, facultyId: student.regNumber, name: student.name });
   }
