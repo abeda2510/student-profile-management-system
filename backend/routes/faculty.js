@@ -134,45 +134,52 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
     .text(`Section-wise Student Report${admissionYear ? ' | Year: ' + admissionYear : ''}  |  Generated: ${new Date().toLocaleString()}`, { align: 'center' });
   doc.moveDown(0.5);
 
-  const colWidths = [30, 90, 130, 55, 50, ...docTypes.map(() => Math.floor(360 / docTypes.length)), 60];
-  const headers = ['S.No', 'Reg No', 'Name', 'Dept', 'Section', ...docTypes.map(d => DOC_LABELS[d] || d), 'Status'];
+  // Fixed columns: S.No, Reg No, Name, Dept, Sec, Doc Type, Data, Status
+  const pageWidth = doc.page.width - 80; // 80 = margins
+  const colWidths = [30, 85, 120, 45, 35, 90, 230, 55];
+  const headers = ['S.No', 'Reg No', 'Name', 'Dept', 'Sec', 'Doc Type', 'Data', 'Status'];
+  const ROW_H = 18;
 
-  const drawRow = (rowData, y, isHeader) => {
+  const drawRow = (rowData, y, isHeader, shade) => {
     let x = 40;
     rowData.forEach((cell, i) => {
-      const w = colWidths[i] || 60;
+      const w = colWidths[i];
       if (isHeader) {
-        doc.rect(x, y, w, 18).fillAndStroke('#1e40af', '#1e40af');
+        doc.rect(x, y, w, ROW_H).fillAndStroke('#1e40af', '#1e40af');
         doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold')
-          .text(String(cell), x + 2, y + 4, { width: w - 4, ellipsis: true });
+          .text(String(cell), x + 3, y + 5, { width: w - 6, ellipsis: true, lineBreak: false });
       } else {
-        doc.rect(x, y, w, 16).stroke('#d1d5db');
+        doc.rect(x, y, w, ROW_H).fillAndStroke(shade ? '#f8fafc' : '#ffffff', '#e2e8f0');
         doc.fillColor('#000000').fontSize(7.5).font('Helvetica')
-          .text(String(cell || '—'), x + 2, y + 3, { width: w - 4, ellipsis: true });
+          .text(String(cell || '—'), x + 3, y + 5, { width: w - 6, ellipsis: true, lineBreak: false });
       }
       x += w;
     });
   };
 
   let y = doc.y;
-  drawRow(headers, y, true);
-  y += 18;
+  drawRow(headers, y, true, false);
+  y += ROW_H;
 
+  let rowIdx = 0;
   for (let i = 0; i < students.length; i++) {
     const st = students[i];
-    const rowData = [i + 1, st.regNumber, st.name, st.branch, st.section];
-    let filled = 0;
     for (const dt of docTypes) {
       const r = await getStudentDocData(st, dt);
-      const val = r.data && r.data !== '—' ? r.data : '';
-      if (val) filled++;
-      rowData.push(val || 'Not filled');
-    }
-    rowData.push(`${filled}/${docTypes.length}`);
+      const val = r.data && r.data !== '—' ? r.data : 'Not filled';
+      const status = val !== 'Not filled' ? 'Available' : 'Missing';
+      const rowData = [rowIdx + 1, st.regNumber, st.name, st.branch, st.section, DOC_LABELS[dt] || dt, val, status];
 
-    if (y + 16 > doc.page.height - 40) { doc.addPage({ layout: 'landscape' }); y = 40; drawRow(headers, y, true); y += 18; }
-    drawRow(rowData, y, false);
-    y += 16;
+      if (y + ROW_H > doc.page.height - 40) {
+        doc.addPage({ layout: 'landscape' });
+        y = 40;
+        drawRow(headers, y, true, false);
+        y += ROW_H;
+      }
+      drawRow(rowData, y, false, rowIdx % 2 === 1);
+      y += ROW_H;
+      rowIdx++;
+    }
   }
 
   doc.end();
