@@ -39,6 +39,7 @@ const achievementSchema = new mongoose.Schema({
   date: String,
   certificateFile: String,
   certificatePath: String,
+  cloudinaryId: String,
   status: { type: String, enum: ['PENDING','APPROVED','REJECTED'], default: 'PENDING' },
   reviewNote: String,
   points: { type: Number, default: 0 },

@@ -1,20 +1,8 @@
 const router = require('express').Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const Achievement = require('../models/Achievement');
 const Student = require('../models/Student');
 const { protect, adminOnly } = require('../middleware/auth');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/achievements', req.user.regNumber);
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const { uploadAchievement, cloudinary } = require('../cloudinary');
 
 const facultyOrAdmin = (req, res, next) => {
   if (req.user.role !== 'faculty' && req.user.role !== 'admin')
@@ -23,12 +11,16 @@ const facultyOrAdmin = (req, res, next) => {
 };
 
 // ── Student: add achievement ─────────────────────────────
-router.post('/', protect, upload.single('certificate'), async (req, res) => {
+router.post('/', protect, uploadAchievement.single('certificate'), async (req, res) => {
   const student = await Student.findById(req.user.id);
   const data = { ...req.body, student: req.user.id, regNumber: student.regNumber, status: 'PENDING' };
-  if (req.file) { data.certificateFile = req.file.filename; data.certificatePath = req.file.path; }
+  if (req.file) {
+    data.certificateFile = req.file.originalname;
+    data.certificatePath = req.file.path;       // Cloudinary URL
+    data.cloudinaryId = req.file.filename;      // Cloudinary public_id
+  }
   const achievement = new Achievement(data);
-  await achievement.save(); // triggers pre-save points calc
+  await achievement.save();
   res.status(201).json(achievement);
 });
 
@@ -56,7 +48,9 @@ router.get('/my-points', protect, async (req, res) => {
 router.delete('/:id', protect, async (req, res) => {
   const a = await Achievement.findOne({ _id: req.params.id, student: req.user.id });
   if (!a) return res.status(404).json({ message: 'Not found' });
-  if (a.certificatePath) fs.unlink(a.certificatePath, () => {});
+  if (a.cloudinaryId) {
+    try { await cloudinary.uploader.destroy(a.cloudinaryId, { resource_type: 'auto' }); } catch {}
+  }
   await a.deleteOne();
   res.json({ message: 'Deleted' });
 });
