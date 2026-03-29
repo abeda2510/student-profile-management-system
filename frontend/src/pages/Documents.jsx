@@ -86,7 +86,7 @@ export default function Documents() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <a href={`/uploads/documents/${localStorage.getItem('regNumber')}/${d.filename}`}
+              <a href={`${import.meta.env.VITE_API_URL?.replace('/api','') || 'https://student-profile-management-system-backend.onrender.com'}/uploads/documents/${localStorage.getItem('regNumber')}/${d.filename}`}
                 target="_blank" rel="noreferrer"
                 style={{ background: '#eff6ff', color: '#1e40af', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
                 View
