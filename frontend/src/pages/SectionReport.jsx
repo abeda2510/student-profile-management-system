@@ -96,13 +96,16 @@ export default function SectionReport() {
         ? `${baseUrl}/api/faculty/section-report/excel?${params}`
         : `${baseUrl}/api/faculty/section-report/pdf?${params}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text}`);
+      }
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `section_report.${type === 'excel' ? 'xlsx' : 'pdf'}`;
       a.click();
-    } catch { setError(`Failed to generate ${type === 'excel' ? 'Excel' : 'PDF'}`); }
+    } catch (err) { setError(`Failed to generate ${type === 'excel' ? 'Excel' : 'PDF'}: ${err.message}`); }
     finally { setLoad(false); }
   };
 
