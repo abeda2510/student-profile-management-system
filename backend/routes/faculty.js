@@ -122,78 +122,61 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
   const { admissionYear } = req.query;
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
 
-  const doc = new PDFDocument({ margin: 40, size: 'A4', layout: 'landscape' });
+  const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename="section_report.pdf"');
   doc.pipe(res);
 
-  // Title
-  doc.fontSize(13).font('Helvetica-Bold')
-    .text("Vignan's Foundation for Science, Technology & Research (Deemed to be University)", { align: 'center' });
-  doc.fontSize(10).font('Helvetica')
-    .text(`Section-wise Student Report${admissionYear ? ' | Year: ' + admissionYear : ''}  |  Generated: ${new Date().toLocaleString()}`, { align: 'center' });
-  doc.moveDown(0.5);
+  const PAGE_W = doc.page.width - 60; // usable width (landscape A4 = 841 - 60 = 781)
+  const FIXED_W = 25 + 75 + 110 + 40 + 30; // S.No + RegNo + Name + Dept + Sec = 280
+  const docColW = Math.max(55, Math.floor((PAGE_W - FIXED_W) / docTypes.length));
+  const colWidths = [25, 75, 110, 40, 30, ...docTypes.map(() => docColW)];
+  const headers = ['S.No', 'Reg No', 'Name', 'Dept', 'Sec', ...docTypes.map(d => DOC_LABELS[d] || d)];
+  const ROW_H = 20;
 
-  // Fixed columns: S.No, Reg No, Name, Dept, Sec, Doc Type, Data, Status
-  const pageWidth = doc.page.width - 80; // 80 = margins
-  const colWidths = [30, 85, 120, 45, 35, 90, 230, 55];
-  const headers = ['S.No', 'Reg No', 'Name', 'Dept', 'Sec', 'Doc Type', 'Data', 'Status'];
-  const ROW_H = 18;
+  // Title
+  doc.fontSize(12).font('Helvetica-Bold')
+    .text("Vignan's Foundation for Science, Technology & Research (Deemed to be University)", 30, 20, { align: 'center', width: PAGE_W });
+  doc.fontSize(9).font('Helvetica')
+    .text(`Section-wise Student Report${admissionYear ? ' | Year: ' + admissionYear : ''}  |  Generated: ${new Date().toLocaleString()}`, 30, 36, { align: 'center', width: PAGE_W });
 
   const drawRow = (rowData, y, isHeader, shade) => {
-    let x = 40;
+    let x = 30;
     rowData.forEach((cell, i) => {
       const w = colWidths[i];
       if (isHeader) {
         doc.rect(x, y, w, ROW_H).fillAndStroke('#1e40af', '#1e40af');
-        doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold')
-          .text(String(cell), x + 3, y + 5, { width: w - 6, ellipsis: true, lineBreak: false });
+        doc.fillColor('#ffffff').fontSize(7).font('Helvetica-Bold')
+          .text(String(cell), x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false });
       } else {
-        doc.rect(x, y, w, ROW_H).fillAndStroke(shade ? '#f8fafc' : '#ffffff', '#e2e8f0');
-        doc.fillColor('#000000').fontSize(7.5).font('Helvetica')
-          .text(String(cell || '—'), x + 3, y + 5, { width: w - 6, ellipsis: true, lineBreak: false });
+        doc.rect(x, y, w, ROW_H).fillAndStroke(shade ? '#f1f5f9' : '#ffffff', '#cbd5e1');
+        const ok = String(cell) !== 'Missing' && String(cell) !== 'Not filled';
+        doc.fillColor(i >= 5 && !ok ? '#94a3b8' : '#0f172a').fontSize(7).font('Helvetica')
+          .text(String(cell ?? ''), x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false });
       }
       x += w;
     });
   };
 
-  let y = doc.y;
+  let y = 52;
   drawRow(headers, y, true, false);
   y += ROW_H;
 
-  let rowIdx = 0;
-  let studentIdx = 0;
   for (let i = 0; i < students.length; i++) {
     const st = students[i];
-    for (let d = 0; d < docTypes.length; d++) {
-      const dt = docTypes[d];
+    const rowData = [i + 1, st.regNumber, st.name, st.branch, st.section];
+    for (const dt of docTypes) {
       const r = await getStudentDocData(st, dt);
-      const val = r.data && r.data !== '—' ? r.data : 'Not filled';
-      const status = val !== 'Not filled' ? 'Available' : 'Missing';
-      // Only show student info on first doc row for that student
-      const isFirst = d === 0;
-      const rowData = [
-        isFirst ? studentIdx + 1 : '',
-        isFirst ? st.regNumber : '',
-        isFirst ? st.name : '',
-        isFirst ? st.branch : '',
-        isFirst ? st.section : '',
-        DOC_LABELS[dt] || dt,
-        val,
-        status
-      ];
-
-      if (y + ROW_H > doc.page.height - 40) {
-        doc.addPage({ layout: 'landscape' });
-        y = 40;
-        drawRow(headers, y, true, false);
-        y += ROW_H;
-      }
-      drawRow(rowData, y, false, i % 2 === 1);
-      y += ROW_H;
-      rowIdx++;
+      rowData.push(r.data && r.data !== '—' ? r.data : 'Missing');
     }
-    studentIdx++;
+    if (y + ROW_H > doc.page.height - 30) {
+      doc.addPage({ layout: 'landscape' });
+      y = 30;
+      drawRow(headers, y, true, false);
+      y += ROW_H;
+    }
+    drawRow(rowData, y, false, i % 2 === 1);
+    y += ROW_H;
   }
 
   doc.end();
