@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 
@@ -15,23 +15,16 @@ const signToken = (user, type) =>
     { expiresIn: '7d' }
   );
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-});
-
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 async function sendOTPEmail(to, otp, name) {
-  await transporter.sendMail({
-    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
-    to,
+  await axios.post('https://api.brevo.com/v3/smtp/email', {
+    sender: { name: 'Student Management System', email: process.env.EMAIL_USER },
+    to: [{ email: to }],
     subject: 'Password Reset OTP',
-    html: `
+    htmlContent: `
       <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
         <h2 style="color:#1e40af;margin-bottom:8px">Password Reset Request</h2>
         <p>Hi <strong>${name}</strong>,</p>
@@ -43,6 +36,8 @@ async function sendOTPEmail(to, otp, name) {
         <p style="color:#94a3b8;font-size:12px;margin-top:24px">Vignan's Foundation for Science, Technology & Research</p>
       </div>
     `,
+  }, {
+    headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' }
   });
 }
 
