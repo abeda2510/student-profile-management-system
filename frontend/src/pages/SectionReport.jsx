@@ -13,9 +13,14 @@ const DOC_TYPES = [
 ];
 const YEARS = ['2021', '2022', '2023', '2024', '2025'];
 const DEPT_SECTIONS = {
-  CSE: ['A','B','C','D','E','F','G'], ECE: ['A','B','C','D','E'],
-  EEE: ['A','B','C'], MECH: ['A','B','C','D'], CIVIL: ['A','B'],
-  IT: ['A','B','C','D'], AIML: ['A','B','C','D'], CSBS: ['A','B'],
+  CSE:   Array.from({length: 19}, (_, i) => String(i + 1)),
+  ECE:   Array.from({length: 8},  (_, i) => String(i + 1)),
+  EEE:   Array.from({length: 4},  (_, i) => String(i + 1)),
+  MECH:  Array.from({length: 5},  (_, i) => String(i + 1)),
+  CIVIL: Array.from({length: 3},  (_, i) => String(i + 1)),
+  IT:    Array.from({length: 6},  (_, i) => String(i + 1)),
+  AIML:  Array.from({length: 6},  (_, i) => String(i + 1)),
+  CSBS:  Array.from({length: 3},  (_, i) => String(i + 1)),
 };
 const ALL_DEPTS = Object.keys(DEPT_SECTIONS);
 

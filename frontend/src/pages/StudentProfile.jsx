@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'MANAGEMENT', 'NRI', 'OTHER'];
@@ -19,6 +19,9 @@ export default function StudentProfile() {
     if (updates.admissionYear) updates.admissionYear = parseInt(updates.admissionYear);
     if (updates.currentYear) updates.currentYear = parseInt(updates.currentYear);
     if (updates.currentSemester) updates.currentSemester = parseInt(updates.currentSemester);
+    // extract username from URL if full URL was entered
+    if (updates.leetCode) updates.leetCode = updates.leetCode.replace(/^https?:\/\/(www\.)?leetcode\.com\/(u\/)?/i, '').replace(/\/$/, '').trim();
+    if (updates.codeChef) updates.codeChef = updates.codeChef.replace(/^https?:\/\/(www\.)?codechef\.com\/users\//i, '').replace(/\/$/, '').trim();
     await api.put('/students/me', updates);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -57,18 +60,18 @@ export default function StudentProfile() {
         <Section title="Academic Details" icon="🎓">
           <Grid>
             <SelectField label="Admission Category" value={form.admissionCategory} onChange={v => set('admissionCategory', v)} options={CATEGORIES} />
-            <Field label="Admission Year" value={form.admissionYear} onChange={v => set('admissionYear', v)} type="number" />
+            <Field label="Admission Year" value={form.admissionYear} onChange={v => set('admissionYear', v)} />
             <Field label="Branch" value={form.branch} onChange={v => set('branch', v)} />
             <Field label="Section" value={form.section} onChange={v => set('section', v)} />
-            <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
-            <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
-            <Field label="CGPA" value={form.cgpa} onChange={v => set('cgpa', v)} type="number" placeholder="e.g. 8.5" />
+            <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} />
+            <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} />
+            <Field label="CGPA" value={form.cgpa} onChange={v => set('cgpa', v)} placeholder="e.g. 8.5" />
           </Grid>
         </Section>
 
         <Section title="ID Details" icon="🪪">
           <Grid>
-            <Field label="APAAR ID" value={form.apaarId} onChange={v => set('apaarId', v)} />
+            <Field label="Aadhar Number" value={form.aadharNumber} onChange={v => set('aadharNumber', v)} placeholder="e.g. 1234 5678 9012" />
             <Field label="ABC ID" value={form.abcId} onChange={v => set('abcId', v)} />
           </Grid>
         </Section>
@@ -76,6 +79,7 @@ export default function StudentProfile() {
         <Section title="Coding & Social Profiles" icon="💻">
           <Grid>
             <Field label="LinkedIn Profile URL" value={form.linkedIn} onChange={v => set('linkedIn', v)} placeholder="https://linkedin.com/in/username" />
+            <Field label="GitHub Profile URL" value={form.github} onChange={v => set('github', v)} placeholder="https://github.com/username" />
             <Field label="CodeChef Username" value={form.codeChef} onChange={v => set('codeChef', v)} placeholder="e.g. john_doe" />
             <Field label="LeetCode Username" value={form.leetCode} onChange={v => set('leetCode', v)} placeholder="e.g. john_doe" />
           </Grid>

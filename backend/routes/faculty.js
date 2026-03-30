@@ -1,4 +1,4 @@
-const router = require('express').Router();
+﻿const router = require('express').Router();
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const Achievement = require('../models/Achievement');
@@ -85,19 +85,8 @@ function buildFilter(query) {
   const sections = [].concat(query.section || []).filter(Boolean);
   const filter = { role: 'student' };
   if (query.admissionYear) filter.admissionYear = Number(query.admissionYear);
-  if (branches.length && sections.length) {
-    filter.$or = [];
-    branches.forEach(b => sections.forEach(s =>
-      filter.$or.push({
-        branch: { $regex: new RegExp(`^${b}$`, 'i') },
-        section: { $regex: new RegExp(`^${s}$`, 'i') }
-      })
-    ));
-  } else if (branches.length) {
-    filter.$or = branches.map(b => ({ branch: { $regex: new RegExp(`^${b}$`, 'i') } }));
-  } else if (sections.length) {
-    filter.$or = sections.map(s => ({ section: { $regex: new RegExp(`^${s}$`, 'i') } }));
-  }
+  if (branches.length) filter.branch = { $in: branches };
+  if (sections.length) filter.section = { $in: sections };
   return filter;
 }
 

@@ -1,4 +1,4 @@
-const router = require('express').Router();
+﻿const router = require('express').Router();
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
 const Student = require('../models/Student');
@@ -12,6 +12,8 @@ const facultyOnly = (req, res, next) => {
 
 async function fetchLeetCodeStats(username) {
   if (!username) return null;
+  // strip full URL if stored as URL
+  const clean = username.replace(/^https?:\/\/(www\.)?leetcode\.com\/(u\/)?/i, '').replace(/\/$/, '').trim();
   try {
     const { data } = await axios.post(
       'https://leetcode.com/graphql',
@@ -21,7 +23,7 @@ async function fetchLeetCodeStats(username) {
             submitStatsGlobal{ acSubmissionNum{ difficulty count } }
           }
         }`,
-        variables: { username },
+        variables: { username: clean },
       },
       { headers: { 'Content-Type': 'application/json', Referer: 'https://leetcode.com' }, timeout: 8000 }
     );
@@ -55,6 +57,31 @@ router.get('/report', protect, facultyOnly, async (req, res) => {
       stats: st.leetCode ? await fetchLeetCodeStats(st.leetCode) : null,
     }))
   );
+  res.json(results);
+});
+
+// GET /api/leetcode/report/multi - supports multiple branches/sections
+router.get('/report/multi', protect, facultyOnly, async (req, res) => {
+  const branches = [].concat(req.query.branch || []).filter(Boolean);
+  const sections = [].concat(req.query.section || []).filter(Boolean);
+  const minC = req.query.minCgpa ? parseFloat(req.query.minCgpa) : null;
+  const minL = req.query.minLeetcode ? parseInt(req.query.minLeetcode) : null;
+
+  const filter = { role: 'student' };
+  if (branches.length) filter.branch = { $in: branches };
+  if (sections.length) filter.section = { $in: sections };
+
+  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 });
+
+  let results = await Promise.all(students.map(async st => ({
+    regNumber: st.regNumber, name: st.name,
+    branch: st.branch || '—', section: st.section || '—',
+    cgpa: st.cgpa || null, username: st.leetCode || null,
+    stats: st.leetCode ? await fetchLeetCodeStats(st.leetCode) : null,
+  })));
+
+  if (minC !== null) results = results.filter(r => r.cgpa !== null && r.cgpa >= minC);
+  if (minL !== null) results = results.filter(r => r.stats && r.stats.total >= minL);
   res.json(results);
 });
 
@@ -229,6 +256,53 @@ router.get('/report/pdf', protect, facultyOnly, async (req, res) => {
   });
 
   doc.end();
+});
+
+// GET /api/leetcode/report/excel - supports multiple branches/sections
+router.get('/report/excel', protect, facultyOnly, async (req, res) => {
+  const XLSX = require('xlsx');
+  const branches = [].concat(req.query.branch || []).filter(Boolean);
+  const sections = [].concat(req.query.section || []).filter(Boolean);
+  const minC = req.query.minCgpa ? parseFloat(req.query.minCgpa) : null;
+  const minL = req.query.minLeetcode ? parseInt(req.query.minLeetcode) : null;
+
+  const filter = { role: 'student' };
+  if (branches.length) filter.branch = { $in: branches };
+  if (sections.length) filter.section = { $in: sections };
+
+  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 });
+
+  let rows = await Promise.all(students.map(async st => ({
+    regNumber: st.regNumber, name: st.name,
+    branch: st.branch || '—', section: st.section || '—',
+    cgpa: st.cgpa || null, username: st.leetCode || null,
+    stats: st.leetCode ? await fetchLeetCodeStats(st.leetCode) : null,
+  })));
+
+  if (minC !== null) rows = rows.filter(r => r.cgpa !== null && r.cgpa >= minC);
+  if (minL !== null) rows = rows.filter(r => r.stats && r.stats.total >= minL);
+
+  const sheetData = [
+    ['S.No','Reg No','Name','Department','Section','LeetCode Username','Total Solved','Easy','Medium','Hard','CGPA'],
+    ...rows.map((r,i) => [
+      i+1, r.regNumber, r.name, r.branch, r.section,
+      r.username || 'Not set',
+      r.stats ? r.stats.total  : 'N/A',
+      r.stats ? r.stats.easy   : '—',
+      r.stats ? r.stats.medium : '—',
+      r.stats ? r.stats.hard   : '—',
+      r.cgpa !== null ? r.cgpa : '—',
+    ])
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!cols'] = [6,14,22,12,8,20,12,8,10,8,8].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'LeetCode Report');
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="leetcode_report.xlsx"');
+  res.send(buf);
 });
 
 module.exports = router;

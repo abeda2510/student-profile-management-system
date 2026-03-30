@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 const s = {
@@ -106,6 +106,11 @@ export default function FacultyDashboard() {
               <Row label="Current Semester" value={student.currentSemester} />
               <Row label="ABC ID" value={student.abcId} />
               <Row label="CGPA" value={student.cgpa} />
+              <div style={s.section}>Coding & Social Profiles</div>
+              <LinkRow label="LinkedIn" value={student.linkedIn} href={student.linkedIn} />
+              <LinkRow label="GitHub" value={student.github} href={student.github} />
+              <LinkRow label="LeetCode" value={student.leetCode} href={student.leetCode ? `https://leetcode.com/${student.leetCode}` : null} />
+              <LinkRow label="CodeChef" value={student.codeChef} href={student.codeChef ? `https://codechef.com/users/${student.codeChef}` : null} />
             </div>
           )}
 
@@ -120,7 +125,7 @@ export default function FacultyDashboard() {
                       <span style={{ fontWeight: 600 }}>{d.label || d.filename}</span>
                       <div style={{ fontSize: 13, color: '#374151', fontWeight: 600, marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
                     </div>
-                    <a href={`/uploads/documents/${student.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
+                    <a href={d.filePath || `http://localhost:5000/uploads/documents/${student.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
                       style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>View</a>
                   </div>
                 </div>
@@ -141,8 +146,8 @@ export default function FacultyDashboard() {
                     {a.issuingOrg && <span>Org: {a.issuingOrg} &nbsp;|&nbsp; </span>}
                     {a.position && <span>Position: {a.position}</span>}
                   </div>
-                  {a.certificateFile && (
-                    <a href={`/uploads/achievements/${student.regNumber}/${a.certificateFile}`}
+                  {(a.certificatePath || a.certificateFile) && (
+                    <a href={a.certificatePath || `http://localhost:5000/uploads/achievements/${student.regNumber}/${a.certificateFile}`}
                       target="_blank" rel="noreferrer"
                       style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>
                       View Certificate
@@ -154,6 +159,17 @@ export default function FacultyDashboard() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function LinkRow({ label, value, href }) {
+  return (
+    <div style={{ fontSize: 13, padding: '5px 0', borderBottom: '1px solid #f8fafc', display: 'flex', gap: 8 }}>
+      <span style={{ color: '#374151', minWidth: 130, fontWeight: 600 }}>{label}:</span>
+      {value && href
+        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontWeight: 600, color: '#1e40af', wordBreak: 'break-all' }}>{value}</a>
+        : <span style={{ fontWeight: 600, color: '#111827' }}>{value || '—'}</span>}
     </div>
   );
 }

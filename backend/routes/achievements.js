@@ -10,14 +10,23 @@ const facultyOrAdmin = (req, res, next) => {
   next();
 };
 
+const POINTS_MAP = {
+  'HACKATHON WINNER': 10, 'HACKATHON RUNNER': 7, 'HACKATHON PARTICIPATION': 5,
+  'INTERNSHIP': 8, 'RESEARCH_PUBLICATION': 12,
+  'TECHNICAL_COMPETITION WINNER': 10, 'TECHNICAL_COMPETITION PARTICIPATION': 4,
+  'WORKSHOP': 3, 'SEMINAR': 2, 'CULTURAL': 3,
+  'SPORTS WINNER': 8, 'SPORTS PARTICIPATION': 3, 'OTHER': 2,
+};
+
 // ── Student: add achievement ─────────────────────────────
 router.post('/', protect, uploadAchievement.single('certificate'), async (req, res) => {
   const student = await Student.findById(req.user.id);
-  const data = { ...req.body, student: req.user.id, regNumber: student.regNumber, status: 'PENDING' };
+  const points = POINTS_MAP[req.body.activityType] || 0;
+  const data = { ...req.body, student: req.user.id, regNumber: student.regNumber, status: 'APPROVED', points };
   if (req.file) {
     data.certificateFile = req.file.originalname;
-    data.certificatePath = req.file.path;       // Cloudinary URL
-    data.cloudinaryId = req.file.filename;      // Cloudinary public_id
+    data.certificatePath = req.file.path;
+    data.cloudinaryId = req.file.filename;
   }
   const achievement = new Achievement(data);
   await achievement.save();
@@ -37,8 +46,9 @@ router.get('/me', protect, async (req, res) => {
 
 // ── Student: get own total points ───────────────────────
 router.get('/my-points', protect, async (req, res) => {
+  const mongoose = require('mongoose');
   const result = await Achievement.aggregate([
-    { $match: { student: req.user.id, status: 'APPROVED' } },
+    { $match: { student: new mongoose.Types.ObjectId(req.user.id), status: 'APPROVED' } },
     { $group: { _id: null, total: { $sum: '$points' }, count: { $sum: 1 } } },
   ]);
   res.json({ points: result[0]?.total || 0, approved: result[0]?.count || 0 });
@@ -80,6 +90,66 @@ router.put('/:id/review', protect, facultyOrAdmin, async (req, res) => {
   );
   if (!a) return res.status(404).json({ message: 'Not found' });
   res.json(a);
+});
+
+// ── Leaderboard: multi branch/section filter ────────────
+router.get('/leaderboard/multi', protect, facultyOrAdmin, async (req, res) => {
+  const { branch, section, minPoints, limit = 500 } = req.query;
+  const branches = branch ? (Array.isArray(branch) ? branch : [branch]) : [];
+  const sections = section ? (Array.isArray(section) ? section : [section]) : [];
+  const matchStudents = { role: 'student' };
+  if (branches.length > 0) matchStudents.branch = { $in: branches };
+  if (sections.length > 0) matchStudents.section = { $in: sections };
+  const students = await Student.find(matchStudents).select('regNumber name branch section');
+  const regNumbers = students.map(s => s.regNumber);
+  const scores = await Achievement.aggregate([
+    { $match: { regNumber: { $in: regNumbers }, status: 'APPROVED' } },
+    { $group: { _id: '$regNumber', totalPoints: { $sum: '$points' }, count: { $sum: 1 } } },
+    { $sort: { totalPoints: -1 } },
+    { $limit: Number(limit) },
+  ]);
+  let result = scores.map((s, i) => {
+    const st = students.find(x => x.regNumber === s._id);
+    return { rank: i+1, regNumber: s._id, name: st?.name || s._id, branch: st?.branch || '—', section: st?.section || '—', totalPoints: s.totalPoints, achievements: s.count };
+  });
+  if (minPoints) result = result.filter(r => r.totalPoints >= parseInt(minPoints));
+  res.json(result);
+});
+
+// ── Leaderboard Excel export ─────────────────────────────
+router.get('/leaderboard/excel', protect, facultyOrAdmin, async (req, res) => {
+  const XLSX = require('xlsx');
+  const { branch, section, minPoints, limit = 500 } = req.query;
+  const branches = branch ? (Array.isArray(branch) ? branch : [branch]) : [];
+  const sections = section ? (Array.isArray(section) ? section : [section]) : [];
+  const matchStudents = { role: 'student' };
+  if (branches.length > 0) matchStudents.branch = { $in: branches };
+  if (sections.length > 0) matchStudents.section = { $in: sections };
+  const students = await Student.find(matchStudents).select('regNumber name branch section');
+  const regNumbers = students.map(s => s.regNumber);
+  const scores = await Achievement.aggregate([
+    { $match: { regNumber: { $in: regNumbers }, status: 'APPROVED' } },
+    { $group: { _id: '$regNumber', totalPoints: { $sum: '$points' }, count: { $sum: 1 } } },
+    { $sort: { totalPoints: -1 } },
+    { $limit: Number(limit) },
+  ]);
+  let result = scores.map((s, i) => {
+    const st = students.find(x => x.regNumber === s._id);
+    return { rank: i+1, regNumber: s._id, name: st?.name || s._id, branch: st?.branch || '—', section: st?.section || '—', totalPoints: s.totalPoints, achievements: s.count };
+  });
+  if (minPoints) result = result.filter(r => r.totalPoints >= parseInt(minPoints));
+  const sheetData = [
+    ['Rank','Reg No','Name','Department','Section','Total Points','Achievements'],
+    ...result.map(r => [r.rank, r.regNumber, r.name, r.branch, r.section, r.totalPoints, r.achievements])
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!cols'] = [6,14,24,12,10,14,14].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Leaderboard');
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="leaderboard.xlsx"');
+  res.send(buf);
 });
 
 // ── Leaderboard: top students by approved points ─────────
