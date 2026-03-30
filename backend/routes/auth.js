@@ -99,7 +99,7 @@ router.post('/forgot-password', async (req, res) => {
     user = await Faculty.findOne({ facultyId: id });
     if (user) { email = user.email; name = user.name; userId = user._id; collection = 'faculty'; }
     if (!user) {
-      user = await Student.findOne({ regNumber: id, role: 'faculty' });
+      user = await Student.findOne({ regNumber: id, role: { $in: ['faculty', 'admin'] } });
       if (user) { email = user.email; name = user.name; userId = user._id; collection = 'student'; }
     }
   }
