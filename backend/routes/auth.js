@@ -5,7 +5,6 @@ const nodemailer = require('nodemailer');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 
-// In-memory OTP store: { email: { otp, expires, userId, userType } }
 const otpStore = {};
 
 const signToken = (user, type) =>
@@ -19,7 +18,7 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTPEmail(to, otp, name) {
+async function sendOTPEmail(to, otp, userName) {
   const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
@@ -28,46 +27,14 @@ async function sendOTPEmail(to, otp, name) {
       pass: process.env.BREVO_SMTP_PASS,
     },
   });
-
   await transporter.sendMail({
-    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
-    to,
+    from: '"Student Management System" <' + process.env.EMAIL_USER + '>',
+    to: to,
     subject: 'Password Reset OTP',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
-        <h2 style="color:#1e40af;margin-bottom:8px">Password Reset Request</h2>
-        <p>Hi <strong>${name}</strong>,</p>
-        <p>Your OTP for password reset is:</p>
-        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">
-          ${otp}
-        </div>
-        <p style="color:#64748b;font-size:13px">This OTP is valid for <strong>10 minutes</strong>. Do not share it with anyone.</p>
-        <p style="color:#94a3b8;font-size:12px;margin-top:24px">Vignan's Foundation for Science, Technology & Research</p>
-      </div>
-    `,
+    html: '<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px"><h2 style="color:#1e40af">Password Reset Request</h2><p>Hi <strong>' + userName + '</strong>,</p><p>Your OTP is:</p><div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">' + otp + '</div><p style="color:#64748b;font-size:13px">Valid for <strong>10 minutes</strong>.</p></div>',
   });
 }
 
-  await transporter.sendMail({
-    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: 'Password Reset OTP',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
-        <h2 style="color:#1e40af;margin-bottom:8px">Password Reset Request</h2>
-        <p>Hi <strong>${name}</strong>,</p>
-        <p>Your OTP for password reset is:</p>
-        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">
-          ${otp}
-        </div>
-        <p style="color:#64748b;font-size:13px">This OTP is valid for <strong>10 minutes</strong>. Do not share it with anyone.</p>
-        <p style="color:#94a3b8;font-size:12px;margin-top:24px">Vignan's Foundation for Science, Technology & Research</p>
-      </div>
-    `,
-  });
-}
-
-// ─── STUDENT LOGIN ───────────────────────────────────────
 router.post('/student/register', async (req, res) => {
   try {
     const student = await Student.create(req.body);
@@ -82,15 +49,9 @@ router.post('/student/login', async (req, res) => {
   const student = await Student.findOne({ regNumber });
   if (!student || !(await student.matchPassword(password)))
     return res.status(401).json({ message: 'Invalid credentials' });
-  res.json({
-    token: signToken(student, student.role),
-    role: student.role,
-    regNumber: student.regNumber,
-    name: student.name,
-  });
+  res.json({ token: signToken(student, student.role), role: student.role, regNumber: student.regNumber, name: student.name });
 });
 
-// ─── FACULTY LOGIN ───────────────────────────────────────
 router.post('/faculty/login', async (req, res) => {
   const { facultyId, password } = req.body;
   const faculty = await Faculty.findOne({ facultyId });
@@ -104,26 +65,19 @@ router.post('/faculty/login', async (req, res) => {
   return res.status(401).json({ message: 'Invalid credentials' });
 });
 
-// ─── FORGOT PASSWORD — send OTP ──────────────────────────
-// POST /api/auth/forgot-password
-// body: { id, userType: 'student' | 'faculty' }
 router.post('/forgot-password', async (req, res) => {
   const { id, userType } = req.body;
-  let user = null;
-  let email = null;
-  let name = null;
-  let userId = null;
-  let collection = null;
+  let user = null, email = null, userName = null, userId = null, collection = null;
 
   if (userType === 'student') {
     user = await Student.findOne({ regNumber: id });
-    if (user) { email = user.email; name = user.name; userId = user._id; collection = 'student'; }
+    if (user) { email = user.email; userName = user.name; userId = user._id; collection = 'student'; }
   } else {
     user = await Faculty.findOne({ facultyId: id });
-    if (user) { email = user.email; name = user.name; userId = user._id; collection = 'faculty'; }
+    if (user) { email = user.email; userName = user.name; userId = user._id; collection = 'faculty'; }
     if (!user) {
       user = await Student.findOne({ regNumber: id, role: { $in: ['faculty', 'admin'] } });
-      if (user) { email = user.email; name = user.name; userId = user._id; collection = 'student'; }
+      if (user) { email = user.email; userName = user.name; userId = user._id; collection = 'student'; }
     }
   }
 
@@ -134,31 +88,25 @@ router.post('/forgot-password', async (req, res) => {
   otpStore[email] = { otp, expires: Date.now() + 10 * 60 * 1000, userId, collection };
 
   try {
-    await sendOTPEmail(email, otp, name);
+    await sendOTPEmail(email, otp, userName);
     const masked = email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
     res.json({ message: 'OTP sent', maskedEmail: masked });
   } catch (err) {
-    console.error('Email error full:', err);
-    res.status(500).json({ message: `Email failed: ${err.message}` });
+    console.error('Email error:', err);
+    res.status(500).json({ message: 'Email failed: ' + err.message });
   }
 });
 
-// ─── VERIFY OTP ──────────────────────────────────────────
-// POST /api/auth/verify-otp
-// body: { id, userType, otp }
 router.post('/verify-otp', async (req, res) => {
   const { id, userType, otp } = req.body;
   let user = null;
-
   if (userType === 'student') {
     user = await Student.findOne({ regNumber: id });
   } else {
     user = await Faculty.findOne({ facultyId: id });
     if (!user) user = await Student.findOne({ regNumber: id, role: 'faculty' });
   }
-
   if (!user || !user.email) return res.status(404).json({ message: 'User not found' });
-
   const record = otpStore[user.email];
   if (!record) return res.status(400).json({ message: 'No OTP requested. Please request again.' });
   if (Date.now() > record.expires) {
@@ -166,35 +114,27 @@ router.post('/verify-otp', async (req, res) => {
     return res.status(400).json({ message: 'OTP expired. Please request a new one.' });
   }
   if (record.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
-
-  // OTP valid — issue a short-lived reset token
   const resetToken = jwt.sign({ email: user.email, userId: record.userId, collection: record.collection }, process.env.JWT_SECRET, { expiresIn: '15m' });
   delete otpStore[user.email];
   res.json({ message: 'OTP verified', resetToken });
 });
 
-// ─── RESET PASSWORD ──────────────────────────────────────
-// POST /api/auth/reset-password
-// body: { resetToken, newPassword }
 router.post('/reset-password', async (req, res) => {
   const { resetToken, newPassword } = req.body;
   if (!newPassword || newPassword.length < 6)
     return res.status(400).json({ message: 'Password must be at least 6 characters' });
-
   let payload;
   try {
     payload = jwt.verify(resetToken, process.env.JWT_SECRET);
   } catch {
     return res.status(400).json({ message: 'Reset token expired or invalid. Start over.' });
   }
-
   const hashed = await bcrypt.hash(newPassword, 10);
   if (payload.collection === 'faculty') {
     await Faculty.findByIdAndUpdate(payload.userId, { password: hashed });
   } else {
     await Student.findByIdAndUpdate(payload.userId, { password: hashed });
   }
-
   res.json({ message: 'Password reset successfully' });
 });
 
