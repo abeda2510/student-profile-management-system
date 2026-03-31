@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const axios = require('axios');
+const nodemailer = require('nodemailer');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 
@@ -20,11 +20,19 @@ function generateOTP() {
 }
 
 async function sendOTPEmail(to, otp, name) {
-  await axios.post('https://api.brevo.com/v3/smtp/email', {
-    sender: { name: 'Student Management System', email: process.env.EMAIL_USER },
-    to: [{ email: to }],
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
+    to,
     subject: 'Password Reset OTP',
-    htmlContent: `
+    html: `
       <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
         <h2 style="color:#1e40af;margin-bottom:8px">Password Reset Request</h2>
         <p>Hi <strong>${name}</strong>,</p>
@@ -36,8 +44,6 @@ async function sendOTPEmail(to, otp, name) {
         <p style="color:#94a3b8;font-size:12px;margin-top:24px">Vignan's Foundation for Science, Technology & Research</p>
       </div>
     `,
-  }, {
-    headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' }
   });
 }
 
@@ -109,12 +115,11 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     await sendOTPEmail(email, otp, name);
-    // Return masked email e.g. sr***@gmail.com
     const masked = email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
     res.json({ message: 'OTP sent', maskedEmail: masked });
   } catch (err) {
-    console.error('Email error:', err.message);
-    res.status(500).json({ message: 'Failed to send OTP email. Check server email config.' });
+    console.error('Email error full:', err);
+    res.status(500).json({ message: `Email failed: ${err.message}` });
   }
 });
 
