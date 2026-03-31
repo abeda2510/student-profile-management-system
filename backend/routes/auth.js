@@ -21,7 +21,8 @@ function generateOTP() {
 async function sendOTPEmail(to, otp, userName) {
   const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
+    port: 465,
+    secure: true,
     auth: {
       user: 'a69291001@smtp-brevo.com',
       pass: process.env.BREVO_SMTP_PASS,
