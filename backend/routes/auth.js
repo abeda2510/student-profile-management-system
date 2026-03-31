@@ -21,12 +21,32 @@ function generateOTP() {
 
 async function sendOTPEmail(to, otp, name) {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: 'a69291001@smtp-brevo.com',
+      pass: process.env.BREVO_SMTP_PASS,
     },
   });
+
+  await transporter.sendMail({
+    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: 'Password Reset OTP',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px">
+        <h2 style="color:#1e40af;margin-bottom:8px">Password Reset Request</h2>
+        <p>Hi <strong>${name}</strong>,</p>
+        <p>Your OTP for password reset is:</p>
+        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">
+          ${otp}
+        </div>
+        <p style="color:#64748b;font-size:13px">This OTP is valid for <strong>10 minutes</strong>. Do not share it with anyone.</p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:24px">Vignan's Foundation for Science, Technology & Research</p>
+      </div>
+    `,
+  });
+}
 
   await transporter.sendMail({
     from: `"Student Management System" <${process.env.EMAIL_USER}>`,
