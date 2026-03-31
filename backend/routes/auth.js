@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
+const https = require('https');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 
@@ -18,21 +18,38 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTPEmail(to, otp, userName) {
-  const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: 'a69291001@smtp-brevo.com',
-      pass: process.env.BREVO_SMTP_PASS,
-    },
-  });
-  await transporter.sendMail({
-    from: '"Student Management System" <' + process.env.EMAIL_USER + '>',
-    to: to,
-    subject: 'Password Reset OTP',
-    html: '<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px"><h2 style="color:#1e40af">Password Reset Request</h2><p>Hi <strong>' + userName + '</strong>,</p><p>Your OTP is:</p><div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">' + otp + '</div><p style="color:#64748b;font-size:13px">Valid for <strong>10 minutes</strong>.</p></div>',
+function sendOTPEmail(to, otp, userName) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      sender: { name: 'Student Management System', email: process.env.EMAIL_USER },
+      to: [{ email: to }],
+      subject: 'Password Reset OTP',
+      htmlContent: '<div style="font-family:sans-serif;padding:32px"><h2 style="color:#1e40af">Password Reset OTP</h2><p>Hi <strong>' + userName + '</strong>,</p><div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:20px 0">' + otp + '</div><p style="color:#64748b">Valid for 10 minutes.</p></div>',
+    });
+
+    const options = {
+      hostname: 'api.brevo.com',
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+        else reject(new Error('Brevo API error: ' + res.statusCode + ' ' + data));
+      });
+    });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
   });
 }
 
@@ -93,7 +110,7 @@ router.post('/forgot-password', async (req, res) => {
     const masked = email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
     res.json({ message: 'OTP sent', maskedEmail: masked });
   } catch (err) {
-    console.error('Email error:', err);
+    console.error('Email error:', err.message);
     res.status(500).json({ message: 'Email failed: ' + err.message });
   }
 });
