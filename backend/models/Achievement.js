@@ -1,11 +1,20 @@
 const mongoose = require('mongoose');
 
+// Points table
 const POINTS = {
-  'HACKATHON WINNER': 10, 'HACKATHON RUNNER': 7, 'HACKATHON PARTICIPATION': 5,
-  'INTERNSHIP': 8, 'RESEARCH_PUBLICATION': 12,
-  'TECHNICAL_COMPETITION WINNER': 10, 'TECHNICAL_COMPETITION PARTICIPATION': 4,
-  'WORKSHOP': 3, 'SEMINAR': 2, 'CULTURAL': 3,
-  'SPORTS WINNER': 8, 'SPORTS PARTICIPATION': 3, 'OTHER': 2,
+  HACKATHON_WINNER: 10,
+  HACKATHON_RUNNER: 7,
+  HACKATHON_PARTICIPATION: 5,
+  INTERNSHIP: 8,
+  RESEARCH_PUBLICATION: 12,
+  TECHNICAL_COMPETITION_WINNER: 10,
+  TECHNICAL_COMPETITION_PARTICIPATION: 4,
+  WORKSHOP: 3,
+  SEMINAR: 2,
+  CULTURAL: 3,
+  SPORTS_WINNER: 8,
+  SPORTS_PARTICIPATION: 3,
+  OTHER: 2,
 };
 
 const achievementSchema = new mongoose.Schema({
@@ -13,23 +22,34 @@ const achievementSchema = new mongoose.Schema({
   regNumber: String,
   academicYear: String,
   semester: Number,
-  activityType: { type: String, required: true },
-  title: { type: String },
+  activityType: {
+    type: String,
+    enum: ['HACKATHON','INTERNSHIP','RESEARCH_PUBLICATION','TECHNICAL_COMPETITION','CULTURAL','SPORTS','WORKSHOP','SEMINAR','OTHER'],
+    required: true,
+  },
+  subType: {
+    type: String,
+    enum: ['WINNER','RUNNER','PARTICIPATION','NA'],
+    default: 'NA',
+  },
+  title: { type: String, required: true },
   description: String,
   position: String,
   issuingOrg: String,
   date: String,
   certificateFile: String,
   certificatePath: String,
-  cloudinaryId: String,
   status: { type: String, enum: ['PENDING','APPROVED','REJECTED'], default: 'PENDING' },
   reviewNote: String,
   points: { type: Number, default: 0 },
 }, { timestamps: true, collection: 'achievements' });
 
+// Auto-calculate points based on activityType + subType
 achievementSchema.pre('save', function (next) {
-  this.points = POINTS[this.activityType] || 2;
-  if (!this.title) this.title = this.activityType;
+  const key = this.subType && this.subType !== 'NA'
+    ? `${this.activityType}_${this.subType}`
+    : this.activityType;
+  this.points = POINTS[key] || POINTS[this.activityType] || 2;
   next();
 });
 

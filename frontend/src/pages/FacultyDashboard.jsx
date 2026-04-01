@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 const s = {
@@ -50,21 +50,23 @@ export default function FacultyDashboard() {
   return (
     <div>
       <h2 style={{ color: '#059669', marginBottom: 4 }}>Faculty Dashboard</h2>
-      <p style={{ color: '#374151', marginBottom: 20, fontSize: 14 }}>Welcome, {name}</p>
+      <p style={{ color: '#64748b', marginBottom: 20, fontSize: 14 }}>Welcome, {name}</p>
 
+      {/* Faculty Profile Card */}
       {profile && (
         <div style={{ ...s.card, borderTop: '4px solid #059669', marginBottom: 24 }}>
           <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👨‍🏫</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 17 }}>{profile.name}</div>
-              <div style={{ color: '#374151', fontSize: 14 }}>{profile.designation} — {profile.department}</div>
-              <div style={{ color: '#374151', fontSize: 13 }}>{profile.email}</div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>{profile.designation} — {profile.department}</div>
+              <div style={{ color: '#94a3b8', fontSize: 12 }}>{profile.email}</div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Search Student */}
       <form onSubmit={search} style={{ marginBottom: 20 }}>
         <input style={s.input} placeholder="Enter Student Registration Number"
           value={regNumber} onChange={e => setRegNumber(e.target.value)} required />
@@ -72,6 +74,7 @@ export default function FacultyDashboard() {
       </form>
       {error && <div style={{ color: '#ef4444', marginBottom: 12 }}>{error}</div>}
 
+      {/* Student Result */}
       {student && (
         <>
           <div style={{ marginBottom: 14 }}>
@@ -83,7 +86,7 @@ export default function FacultyDashboard() {
           {studentTab === 'profile' && (
             <div style={s.card}>
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}>{student.name}</div>
-      <div style={{ color: '#374151', marginBottom: 14, fontSize: 14 }}>{student.regNumber} | {student.branch} | {student.admissionCategory}</div>
+              <div style={{ color: '#64748b', marginBottom: 14, fontSize: 13 }}>{student.regNumber} | {student.branch} | {student.admissionCategory}</div>
               <div style={s.section}>Personal</div>
               <Row label="DOB" value={student.dob} />
               <Row label="Gender" value={student.gender} />
@@ -104,28 +107,24 @@ export default function FacultyDashboard() {
               <Row label="Section" value={student.section} />
               <Row label="Current Year" value={student.currentYear} />
               <Row label="Current Semester" value={student.currentSemester} />
+              
               <Row label="ABC ID" value={student.abcId} />
               <Row label="CGPA" value={student.cgpa} />
-              <div style={s.section}>Coding & Social Profiles</div>
-              <LinkRow label="LinkedIn" value={student.linkedIn} href={student.linkedIn} />
-              <LinkRow label="GitHub" value={student.github} href={student.github} />
-              <LinkRow label="LeetCode" value={student.leetCode} href={student.leetCode ? `https://leetcode.com/${student.leetCode}` : null} />
-              <LinkRow label="CodeChef" value={student.codeChef} href={student.codeChef ? `https://codechef.com/users/${student.codeChef}` : null} />
             </div>
           )}
 
           {studentTab === 'docs' && (
             <div>
-              {docs.length === 0 && <div style={{ color: '#374151', fontWeight: 600 }}>No documents uploaded.</div>}
+              {docs.length === 0 && <div style={{ color: '#94a3b8' }}>No documents uploaded.</div>}
               {docs.map(d => (
                 <div key={d._id} style={s.card}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <span style={s.tag}>{d.docType?.replace('_', ' ')}</span>
                       <span style={{ fontWeight: 600 }}>{d.label || d.filename}</span>
-                      <div style={{ fontSize: 13, color: '#374151', fontWeight: 600, marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
                     </div>
-                    <a href={d.filePath || `http://localhost:5000/uploads/documents/${student.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
+                    <a href={`/uploads/documents/${student.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
                       style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>View</a>
                   </div>
                 </div>
@@ -135,19 +134,19 @@ export default function FacultyDashboard() {
 
           {studentTab === 'achievements' && (
             <div>
-              {achievements.length === 0 && <div style={{ color: '#374151', fontWeight: 600 }}>No achievements found.</div>}
+              {achievements.length === 0 && <div style={{ color: '#94a3b8' }}>No achievements found.</div>}
               {achievements.map(a => (
                 <div key={a._id} style={s.card}>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>{a.title}</div>
                   <span style={s.achTag}>{a.activityType?.replace(/_/g, ' ')}</span>
                   {a.academicYear && <span style={{ ...s.achTag, background: '#dcfce7', color: '#166534' }}>{a.academicYear}</span>}
                   {a.semester && <span style={{ ...s.achTag, background: '#fef3c7', color: '#92400e' }}>Sem {a.semester}</span>}
-                  <div style={{ fontSize: 14, color: '#1e293b', fontWeight: 600, marginTop: 6 }}>
+                  <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
                     {a.issuingOrg && <span>Org: {a.issuingOrg} &nbsp;|&nbsp; </span>}
                     {a.position && <span>Position: {a.position}</span>}
                   </div>
-                  {(a.certificatePath || a.certificateFile) && (
-                    <a href={a.certificatePath || `http://localhost:5000/uploads/achievements/${student.regNumber}/${a.certificateFile}`}
+                  {a.certificateFile && (
+                    <a href={`/uploads/achievements/${student.regNumber}/${a.certificateFile}`}
                       target="_blank" rel="noreferrer"
                       style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>
                       View Certificate
@@ -163,24 +162,11 @@ export default function FacultyDashboard() {
   );
 }
 
-function LinkRow({ label, value, href }) {
-  return (
-    <div style={{ fontSize: 13, padding: '5px 0', borderBottom: '1px solid #f8fafc', display: 'flex', gap: 8 }}>
-      <span style={{ color: '#374151', minWidth: 130, fontWeight: 600 }}>{label}:</span>
-      {value && href
-        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontWeight: 600, color: '#1e40af', wordBreak: 'break-all' }}>{value}</a>
-        : <span style={{ fontWeight: 600, color: '#111827' }}>{value || '—'}</span>}
-    </div>
-  );
-}
-
 function Row({ label, value }) {
   return (
     <div style={{ fontSize: 13, padding: '5px 0', borderBottom: '1px solid #f8fafc', display: 'flex', gap: 8 }}>
-      <span style={{ color: '#374151', minWidth: 130, fontWeight: 600 }}>{label}:</span>
-      <span style={{ fontWeight: 600, color: '#111827' }}>{value || '—'}</span>
+      <span style={{ color: '#64748b', minWidth: 130 }}>{label}:</span>
+      <span style={{ fontWeight: 500 }}>{value || '—'}</span>
     </div>
   );
 }
-
-

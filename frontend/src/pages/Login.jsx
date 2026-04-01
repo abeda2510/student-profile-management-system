@@ -54,12 +54,16 @@ export default function Login() {
       padding: '40px 20px',
       fontFamily: "'Segoe UI', sans-serif",
     }}>
+
+      {/* Top title like reference */}
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', letterSpacing: 0.2 }}>
           Student Achievement &amp; Profile Management System
         </div>
+        
       </div>
 
+      {/* Logo box — like reference */}
       <div style={{
         background: '#fff',
         borderRadius: 12,
@@ -68,9 +72,10 @@ export default function Login() {
         marginBottom: 32,
         display: 'inline-block',
       }}>
-        <img src={LOGO} alt="Vignan University Logo" style={{ height: 180, display: 'block' }} />
+        <img src={LOGO} alt="Vignan University Logo" style={{ height: 180, display: 'flowi' }} />
       </div>
 
+      {/* Tagline */}
       {!role && (
         <>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', marginBottom: 10, textAlign: 'center' }}>
@@ -80,34 +85,72 @@ export default function Login() {
             Sign in to access your profile, achievements, and documents. Choose your role to continue.
           </div>
 
+          {/* Role Cards */}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {/* Student Card */}
             <div onClick={() => { setRole('student'); setError(''); }}
-              style={{ background: '#fff', border: '2px solid #bfdbfe', borderRadius: 16, padding: '32px 28px', width: 200, textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 18px rgba(30,64,175,0.10)', transition: 'all 0.2s' }}
+              style={{
+                background: '#fff',
+                border: '2px solid #bfdbfe',
+                borderRadius: 16,
+                padding: '32px 28px',
+                width: 200,
+                textAlign: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(30,64,175,0.10)',
+                transition: 'all 0.2s',
+              }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 32px rgba(30,64,175,0.22)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 18px rgba(30,64,175,0.10)'}
             >
               <div style={{ fontSize: 52, marginBottom: 12 }}>👨‍🎓</div>
               <div style={{ fontWeight: 800, fontSize: 17, color: '#1e40af', marginBottom: 6 }}>Student</div>
-              <div style={{ fontSize: 12, color: '#374151', marginBottom: 18 }}>Access your profile &amp; achievements</div>
-              <div style={{ background: '#1e40af', color: '#fff', borderRadius: 8, padding: '8px 0', fontWeight: 700, fontSize: 13 }}>Student Login →</div>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>Access your profile &amp; achievements</div>
+              <div style={{
+                background: '#1e40af', color: '#fff', borderRadius: 8,
+                padding: '8px 0', fontWeight: 700, fontSize: 13,
+              }}>Student Login →</div>
             </div>
 
+            {/* Faculty Card */}
             <div onClick={() => { setRole('faculty'); setError(''); }}
-              style={{ background: '#fff', border: '2px solid #bfdbfe', borderRadius: 16, padding: '32px 28px', width: 200, textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 18px rgba(30,64,175,0.10)', transition: 'all 0.2s' }}
+              style={{
+                background: '#fff',
+                border: '2px solid #bfdbfe',
+                borderRadius: 16,
+                padding: '32px 28px',
+                width: 200,
+                textAlign: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(30,64,175,0.10)',
+                transition: 'all 0.2s',
+              }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 32px rgba(30,64,175,0.22)'}
               onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 18px rgba(30,64,175,0.10)'}
             >
               <div style={{ fontSize: 52, marginBottom: 12 }}>👨‍🏫</div>
               <div style={{ fontWeight: 800, fontSize: 17, color: '#1e40af', marginBottom: 6 }}>Faculty</div>
-              <div style={{ fontSize: 12, color: '#374151', marginBottom: 18 }}>Manage &amp; review students</div>
-              <div style={{ background: '#1e40af', color: '#fff', borderRadius: 8, padding: '8px 0', fontWeight: 700, fontSize: 13 }}>Faculty Login →</div>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>Manage &amp; review students</div>
+              <div style={{
+                background: '#1e40af', color: '#fff', borderRadius: 8,
+                padding: '8px 0', fontWeight: 700, fontSize: 13,
+              }}>Faculty Login →</div>
             </div>
           </div>
         </>
       )}
 
+      {/* Login Form */}
       {role && (
-        <div style={{ background: '#fff', borderRadius: 16, padding: '36px 36px 32px', width: '100%', maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+        <div style={{
+          background: '#fff',
+          borderRadius: 16,
+          padding: '36px 36px 32px',
+          width: '100%',
+          maxWidth: 400,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+        }}>
+          {/* Form header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
             <button onClick={() => { setRole(null); setError(''); }}
               style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#64748b', padding: 0 }}>
@@ -131,14 +174,24 @@ export default function Login() {
 
           {role === 'student' && (
             <form onSubmit={loginStudent}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Registration Number</label>
-              <input style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box' }}
-                value={studentForm.regNumber} onChange={e => setStudentForm({ ...studentForm, regNumber: e.target.value })}
-                placeholder="Enter registration number" required />
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Password</label>
-              <input style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box' }}
-                type="password" value={studentForm.password} onChange={e => setStudentForm({ ...studentForm, password: e.target.value })}
-                placeholder="Enter password" required />
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>
+                Registration Number
+              </label>
+              <input
+                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box' }}
+                value={studentForm.regNumber}
+                onChange={e => setStudentForm({ ...studentForm, regNumber: e.target.value })}
+                placeholder="Enter registration number" required
+              />
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>
+                Password
+              </label>
+              <input
+                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box' }}
+                type="password" value={studentForm.password}
+                onChange={e => setStudentForm({ ...studentForm, password: e.target.value })}
+                placeholder="Enter password" required
+              />
               <button type="submit" style={{ width: '100%', padding: 12, background: '#1e40af', color: '#fff', border: 'none', borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
                 Login as Student
               </button>
@@ -150,14 +203,24 @@ export default function Login() {
 
           {role === 'faculty' && (
             <form onSubmit={loginFaculty}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Faculty ID</label>
-              <input style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box' }}
-                value={facultyForm.facultyId} onChange={e => setFacultyForm({ ...facultyForm, facultyId: e.target.value })}
-                placeholder="Enter Faculty ID" required />
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Password</label>
-              <input style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box' }}
-                type="password" value={facultyForm.password} onChange={e => setFacultyForm({ ...facultyForm, password: e.target.value })}
-                placeholder="Enter password" required />
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>
+                Faculty ID
+              </label>
+              <input
+                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box' }}
+                value={facultyForm.facultyId}
+                onChange={e => setFacultyForm({ ...facultyForm, facultyId: e.target.value })}
+                placeholder="Enter Faculty ID" required
+              />
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>
+                Password
+              </label>
+              <input
+                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box' }}
+                type="password" value={facultyForm.password}
+                onChange={e => setFacultyForm({ ...facultyForm, password: e.target.value })}
+                placeholder="Enter password" required
+              />
               <button type="submit" style={{ width: '100%', padding: 12, background: '#1e40af', color: '#fff', border: 'none', borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
                 Login as Faculty
               </button>
@@ -167,15 +230,18 @@ export default function Login() {
             </form>
           )}
 
+          {/* Switch role link */}
           <div style={{ textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' }}>
             Wrong role?{' '}
-            <span onClick={() => { setRole(null); setError(''); }} style={{ color: '#1e40af', fontWeight: 600, cursor: 'pointer' }}>
+            <span onClick={() => { setRole(null); setError(''); }}
+              style={{ color: role === 'student' ? '#1e40af' : '#1e40af', fontWeight: 600, cursor: 'pointer' }}>
               Choose again
             </span>
           </div>
         </div>
       )}
 
+      {/* Footer */}
       <div style={{ marginTop: 36, fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
         Vignan's Foundation for Science, Technology &amp; Research · Deemed to be University
       </div>

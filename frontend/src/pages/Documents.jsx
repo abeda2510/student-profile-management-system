@@ -2,7 +2,15 @@ import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
-const inp = { width: '100%', padding: '10px 12px', border: '1.5px solid #cbd5e1', borderRadius: 8, fontSize: 14, marginBottom: 12, color: '#0f172a', background: '#fff' };
+
+const s = {
+  card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: 14 },
+  input: { width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, marginBottom: 10 },
+  select: { width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, marginBottom: 10 },
+  btn: { background: '#059669', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 },
+  del: { background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  tag: { display: 'inline-block', background: '#d1fae5', color: '#065f46', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }
+};
 
 export default function Documents() {
   const [docs, setDocs] = useState([]);
@@ -32,69 +40,46 @@ export default function Documents() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>My Documents</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Upload and manage your important documents</div>
-        </div>
-        <button onClick={() => setShowForm(!showForm)}
-          style={{ background: '#059669', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
-          {showForm ? '✕ Cancel' : '+ Upload Document'}
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ color: '#059669' }}>My Documents</h2>
+        <button style={s.btn} onClick={() => setShowForm(!showForm)}>{showForm ? 'Cancel' : '+ Upload Document'}</button>
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>Upload New Document</div>
+        <div style={s.card}>
+          <h3 style={{ marginBottom: 14, color: '#374151' }}>Upload Document</h3>
           <form onSubmit={submit}>
-            <select style={inp} value={form.docType} onChange={e => setForm(f => ({ ...f, docType: e.target.value }))} required>
-              <option value="">Select Document Type *</option>
-              {DOC_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+            <select style={s.select} value={form.docType} onChange={e => setForm(f => ({ ...f, docType: e.target.value }))} required>
+              <option value="">Document Type *</option>
+              {DOC_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
-            <input style={inp} placeholder="Label (e.g. Semester 1 Mark Memo)"
+            <input style={s.input} placeholder="Label (e.g. Semester 1 Mark Memo)"
               value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
-            <input style={inp} type="file" accept=".pdf,.jpg,.jpeg,.png"
+            <input style={s.input} type="file" accept=".pdf,.jpg,.jpeg,.png"
               onChange={e => setForm(f => ({ ...f, file: e.target.files[0] }))} required />
-            <button className="btn-success" type="submit">Upload Document</button>
+            <button style={s.btn} type="submit">Upload</button>
           </form>
         </div>
       )}
 
-      {docs.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
-          <div style={{ fontWeight: 600, fontSize: 15, color: '#374151' }}>No documents uploaded yet</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Click "+ Upload Document" to add your first document</div>
-        </div>
-      )}
-
+      {docs.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center', marginTop: 40 }}>No documents uploaded yet.</div>}
       {docs.map(d => (
-        <div key={d._id} className="card" style={{ marginBottom: 12 }}>
+        <div key={d._id} style={s.card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ background: '#ecfdf5', borderRadius: 10, padding: '10px 12px', fontSize: 22 }}>📄</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{d.label || d.filename}</div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 5, alignItems: 'center' }}>
-                  <span style={{ background: '#ecfdf5', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-                    {d.docType?.replace(/_/g, ' ')}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                    Uploaded {new Date(d.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
+            <div>
+              <span style={s.tag}>{d.docType?.replace('_', ' ')}</span>
+              <span style={{ marginLeft: 10, fontWeight: 600 }}>{d.label || d.filename}</span>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+                Uploaded: {new Date(d.uploadedAt).toLocaleDateString()}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <a href={d.fileUrl || d.filepath}
+              <a href={`/uploads/documents/${localStorage.getItem('regNumber')}/${d.filename}`}
                 target="_blank" rel="noreferrer"
-                style={{ background: '#eff6ff', color: '#1e40af', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
                 View
               </a>
-              <button onClick={() => del(d._id)}
-                style={{ background: '#fef2f2', color: '#dc2626', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                Delete
-              </button>
+              <button style={s.del} onClick={() => del(d._id)}>Delete</button>
             </div>
           </div>
         </div>
