@@ -355,22 +355,15 @@ export default function StudentProfile() {
             {[
               { label: 'LinkedIn', key: 'linkedIn', placeholder: 'https://linkedin.com/in/username', img: 'https://cdn-icons-png.flaticon.com/512/174/174857.png', color: '#0a66c2' },
               { label: 'LeetCode Username', key: 'leetCode', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ffa116' },
-              { label: 'LeetCode Total Solved', key: 'leetCodeSolved', placeholder: 'e.g. 150', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ffa116', type: 'number' },
-              { label: 'LeetCode Easy', key: 'leetCodeEasy', placeholder: 'e.g. 80', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#22c55e', type: 'number' },
-              { label: 'LeetCode Medium', key: 'leetCodeMedium', placeholder: 'e.g. 50', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#f59e0b', type: 'number' },
-              { label: 'LeetCode Hard', key: 'leetCodeHard', placeholder: 'e.g. 20', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ef4444', type: 'number' },
               { label: 'CodeChef Username', key: 'codeChef', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638' },
-              { label: 'CodeChef Rating', key: 'codeChefRating', placeholder: 'e.g. 1500', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638', type: 'number' },
-              { label: 'CodeChef Stars', key: 'codeChefStars', placeholder: 'e.g. 3', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638', type: 'number' },
-              { label: 'CodeChef Global Rank', key: 'codeChefRank', placeholder: 'e.g. 5000', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638', type: 'number' },
-            ].map(({ label, key, placeholder, img, color, type = 'text' }) => (
+            ].map(({ label, key, placeholder, img, color }) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #e2e8f0' }}>
                   <img src={img} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</label>
-                  <input type={type} value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder}
+                  <input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder}
                     style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }}
                     onFocus={e => e.target.style.borderColor = color}
                     onBlur={e => e.target.style.borderColor = '#d1d5db'} />
