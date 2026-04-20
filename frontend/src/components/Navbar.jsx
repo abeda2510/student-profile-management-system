@@ -14,9 +14,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const loginType = localStorage.getItem('loginType');
   const name = localStorage.getItem('name');
-
   const logout = () => { localStorage.clear(); navigate('/login'); };
-
   const navBg = loginType === 'faculty' ? '#065f46' : '#1e40af';
 
   return (
@@ -27,16 +25,13 @@ export default function Navbar() {
         {loginType === 'faculty' && <span style={s.badge('#059669')}>FACULTY</span>}
       </span>
       <div style={s.links}>
-        {/* Student links */}
         {loginType === 'student' && (
           <>
             <Link to="/" style={s.link}>Dashboard</Link>
             <Link to="/profile" style={s.link}>Profile</Link>
             <Link to="/achievements" style={s.link}>Achievements</Link>
-            <Link to="/documents" style={s.link}>Documents</Link>
           </>
         )}
-        {/* Faculty links — faculty tab always shows faculty dashboard */}
         {loginType === 'faculty' && (
           <>
             <Link to="/" style={s.link}>Faculty Dashboard</Link>
