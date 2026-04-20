@@ -91,21 +91,20 @@ async function fetchLeetCodeStats(username) {
   } catch { return null; }
 }
 
-// CodeChef stats fetch via public profile scrape
+// CodeChef stats fetch via unofficial API
 async function fetchCodeChefStats(username) {
   if (!username) return null;
   try {
     const axios = require('axios');
-    const { data } = await axios.get(`https://www.codechef.com/users/${username}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 6000
+    const { data } = await axios.get(`https://codechef-api.vercel.app/handle/${username}`, {
+      timeout: 6000,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    const ratingMatch = data.match(/"currentRating":(\d+)/);
-    const starsMatch = data.match(/(\d)\s*★/) || data.match(/class="rating-star[^"]*"[^>]*>(\d)/);
-    const rankMatch = data.match(/"globalRank":(\d+)/);
+    if (!data || data.status === 'Failed') return null;
     return {
-      rating: ratingMatch ? parseInt(ratingMatch[1]) : null,
-      stars: starsMatch ? parseInt(starsMatch[1]) : null,
-      rank: rankMatch ? parseInt(rankMatch[1]) : null,
+      rating: data.currentRating || null,
+      stars: data.stars ? parseInt(data.stars) : null,
+      rank: data.globalRank || null,
     };
   } catch { return null; }
 }
