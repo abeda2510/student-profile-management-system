@@ -13,6 +13,19 @@ const facultyOnly = (req, res, next) => {
   next();
 };
 
+// Get counsellor's assigned students
+router.get('/my-students', protect, facultyOnly, async (req, res) => {
+  try {
+    const faculty = await Faculty.findById(req.user.id).select('name');
+    const counsellorName = faculty?.name;
+    if (!counsellorName) return res.json([]);
+    const students = await Student.find({ counsellor: counsellorName }).select('-password').sort({ name: 1 });
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get own faculty profile (works for both Faculty collection and admin users from Student collection)
 router.get('/me', protect, facultyOnly, async (req, res) => {
   let profile = await Faculty.findById(req.user.id).select('-password');
