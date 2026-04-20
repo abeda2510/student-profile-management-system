@@ -21,16 +21,15 @@ async function ensureAdmin() {
   try {
     const Faculty = require('./models/Faculty');
     const bcrypt = require('bcryptjs');
-    const existing = await Faculty.findOne({ facultyId: 'admin12' });
-    if (!existing) {
-      const hashed = await bcrypt.hash('admin12', 10);
-      await Faculty.create({
-        facultyId: 'admin12', password: hashed, name: 'Admin',
-        role: 'admin', email: 'admin@vignan.ac.in',
-        department: 'Admin Office', designation: 'Administrator'
-      });
-      console.log('Admin account created: admin12 / admin12');
-    }
+    // Always delete and recreate to ensure correct password
+    await Faculty.deleteOne({ facultyId: 'admin12' });
+    const hashed = await bcrypt.hash('admin12', 10);
+    await Faculty.create({
+      facultyId: 'admin12', password: hashed, name: 'Admin',
+      role: 'admin', email: 'admin@vignan.ac.in',
+      department: 'Admin Office', designation: 'Administrator'
+    });
+    console.log('Admin account ready: admin12 / admin12');
   } catch (err) { console.error('Admin setup error:', err.message); }
 }
 
