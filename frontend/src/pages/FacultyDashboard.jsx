@@ -193,6 +193,13 @@ export default function FacultyDashboard() {
                     </div>
                   ))}
                 </div>
+                {(searchResult.linkedIn || searchResult.codeChef || searchResult.leetCode) && (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid #e2e8f0' }}>
+                    {searchResult.linkedIn && <a href={searchResult.linkedIn} target="_blank" rel="noreferrer" style={{ background: '#0a66c2', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>🔗 LinkedIn</a>}
+                    {searchResult.codeChef && <a href={`https://www.codechef.com/users/${searchResult.codeChef}`} target="_blank" rel="noreferrer" style={{ background: '#5b4638', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>👨‍🍳 CodeChef</a>}
+                    {searchResult.leetCode && <a href={`https://leetcode.com/${searchResult.leetCode}`} target="_blank" rel="noreferrer" style={{ background: '#ffa116', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>💻 LeetCode</a>}
+                  </div>
+                )}
               </div>
             )}
             {searchTab === 'docs' && (
@@ -275,6 +282,13 @@ export default function FacultyDashboard() {
                         </div>
                       ))}
                     </div>
+                    {(selectedStudent.linkedIn || selectedStudent.codeChef || selectedStudent.leetCode) && (
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+                        {selectedStudent.linkedIn && <a href={selectedStudent.linkedIn} target="_blank" rel="noreferrer" style={{ background: '#0a66c2', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>🔗 LinkedIn</a>}
+                        {selectedStudent.codeChef && <a href={`https://www.codechef.com/users/${selectedStudent.codeChef}`} target="_blank" rel="noreferrer" style={{ background: '#5b4638', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>👨‍🍳 CodeChef</a>}
+                        {selectedStudent.leetCode && <a href={`https://leetcode.com/${selectedStudent.leetCode}`} target="_blank" rel="noreferrer" style={{ background: '#ffa116', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>💻 LeetCode</a>}
+                      </div>
+                    )}
                   </div>
                 )}
                 {studentTab === 'docs' && (
