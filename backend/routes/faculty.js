@@ -91,7 +91,24 @@ async function fetchLeetCodeStats(username) {
   } catch { return null; }
 }
 
-// Helper: resolve data for one student + one docType
+// CodeChef stats fetch via public profile scrape
+async function fetchCodeChefStats(username) {
+  if (!username) return null;
+  try {
+    const axios = require('axios');
+    const { data } = await axios.get(`https://www.codechef.com/users/${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 6000
+    });
+    const ratingMatch = data.match(/"currentRating":(\d+)/);
+    const starsMatch = data.match(/(\d)\s*★/) || data.match(/class="rating-star[^"]*"[^>]*>(\d)/);
+    const rankMatch = data.match(/"globalRank":(\d+)/);
+    return {
+      rating: ratingMatch ? parseInt(ratingMatch[1]) : null,
+      stars: starsMatch ? parseInt(starsMatch[1]) : null,
+      rank: rankMatch ? parseInt(rankMatch[1]) : null,
+    };
+  } catch { return null; }
+}
 async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
   if (docType === 'ABC_ID') return { ...base, data: st.abcId || '—' };
@@ -115,9 +132,21 @@ async function getStudentDocData(st, docType) {
   }
 
   if (docType === 'CODECHEF') return { ...base, data: st.codeChef ? `codechef.com/users/${st.codeChef}` : '—' };
-  if (docType === 'CODECHEF_RATING') return { ...base, data: st.codeChefRating != null ? String(st.codeChefRating) : '—' };
-  if (docType === 'CODECHEF_STARS') return { ...base, data: st.codeChefStars != null ? String(st.codeChefStars) : '—' };
-  if (docType === 'CODECHEF_RANK') return { ...base, data: st.codeChefRank != null ? String(st.codeChefRank) : '—' };
+
+  // Auto-fetch CodeChef stats if username exists
+  if (['CODECHEF_RATING','CODECHEF_STARS','CODECHEF_RANK'].includes(docType)) {
+    const stored = { CODECHEF_RATING: st.codeChefRating, CODECHEF_STARS: st.codeChefStars, CODECHEF_RANK: st.codeChefRank };
+    if (stored[docType] != null) return { ...base, data: String(stored[docType]) };
+    if (st.codeChef) {
+      const stats = await fetchCodeChefStats(st.codeChef);
+      if (stats) {
+        const map = { CODECHEF_RATING: stats.rating, CODECHEF_STARS: stats.stars, CODECHEF_RANK: stats.rank };
+        const val = map[docType];
+        return { ...base, data: val != null ? String(val) : '—' };
+      }
+    }
+    return { ...base, data: '—' };
+  }
   if (docType === 'LINKEDIN') return { ...base, data: st.linkedIn || '—' };
   if (docType === 'EMAIL') return { ...base, data: st.email || '—' };
   if (docType === 'PHONE') return { ...base, data: st.phone || '—' };
