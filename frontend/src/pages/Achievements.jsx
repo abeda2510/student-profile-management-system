@@ -130,75 +130,50 @@ export default function Achievements() {
 
       {/* Add Form */}
       {showForm && selectedCat && (
-        <div id="ach-form" className="card" style={{ marginBottom: 24, border: `2px solid ${selectedCat.border}` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: selectedCat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, border: `2px solid ${selectedCat.border}` }}>{selectedCat.icon}</div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: selectedCat.color }}>Add {selectedCat.label} Achievement</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{selectedCat.desc}</div>
-              </div>
-            </div>
-            <button onClick={closeForm} style={{ background: '#f1f5f9', border: 'none', width: 36, height: 36, borderRadius: 10, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-          </div>
-
+        <div style={{ background: '#fff', borderRadius: 14, padding: '28px', boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', marginBottom: 24 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 20 }}>Add Achievement</h3>
           <form onSubmit={submit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px', marginBottom: 14 }}>
-              <div className="field-group">
-                <label className="field-label">Title *</label>
-                <input placeholder="Achievement title" value={form.title} onChange={e => set('title', e.target.value)} required />
-              </div>
-              <div className="field-group">
-                <label className="field-label">Issuing Organization</label>
-                <input placeholder="e.g. Google, NPTEL, College" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)} />
-              </div>
-              <div className="field-group">
-                <label className="field-label">Activity Type *</label>
-                <select value={form.activityType} onChange={e => set('activityType', e.target.value)} required>
-                  <option value="">Select type</option>
-                  {catTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
-                </select>
-              </div>
-              <div className="field-group">
-                <label className="field-label">Position / Award</label>
-                <select value={form.position} onChange={e => set('position', e.target.value)}>
-                  <option value="">Select position</option>
-                  {['1st Place','2nd Place','3rd Place','Winner','Runner Up','Participation','Completed','Other'].map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px', marginBottom: 12 }}>
+              <input placeholder="Title *" value={form.title} onChange={e => set('title', e.target.value)} required
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              <input placeholder="Issuing Organization" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)}
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              <select value={form.activityType} onChange={e => set('activityType', e.target.value)} required
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', color: form.activityType ? '#0f172a' : '#94a3b8', background: '#fff' }}>
+                <option value="">Activity Type *</option>
+                {catTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+              </select>
+              <select value={form.position} onChange={e => set('position', e.target.value)}
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', color: form.position ? '#0f172a' : '#94a3b8', background: '#fff' }}>
+                <option value="">Position / Award</option>
+                {['1st Place','2nd Place','3rd Place','Winner','Runner Up','Participation','Completed','Other'].map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <input placeholder="Academic Year (e.g. 2023-24)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)}
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
+                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               {subTypes.length > 0 && (
-                <div className="field-group">
-                  <label className="field-label">Participation Level</label>
-                  <select value={form.subType} onChange={e => set('subType', e.target.value)}>
-                    <option value="">Select level</option>
-                    {subTypes.map(st => <option key={st} value={st}>{st}</option>)}
-                  </select>
-                </div>
+                <select value={form.subType} onChange={e => set('subType', e.target.value)}
+                  style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
+                  <option value="">Participation Level</option>
+                  {subTypes.map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
               )}
-              <div className="field-group">
-                <label className="field-label">Academic Year</label>
-                <input placeholder="e.g. 2024-25" value={form.academicYear} onChange={e => set('academicYear', e.target.value)} />
-              </div>
-              <div className="field-group">
-                <label className="field-label">Date</label>
-                <input type="date" value={form.date} onChange={e => set('date', e.target.value)} />
-              </div>
-              <div className="field-group">
-                <label className="field-label">Certificate / Document</label>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} style={{ padding: '8px 12px' }} />
-              </div>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])}
+                style={{ padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, fontFamily: 'inherit' }} />
             </div>
-            <div className="field-group" style={{ marginBottom: 16 }}>
-              <label className="field-label">Description</label>
-              <textarea rows={3} placeholder="Brief description of the achievement..." value={form.description} onChange={e => set('description', e.target.value)} style={{ resize: 'vertical' }} />
+            <textarea rows={3} placeholder="Description" value={form.description} onChange={e => set('description', e.target.value)}
+              style={{ width: '100%', padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'vertical', marginBottom: 12, boxSizing: 'border-box' }} />
+            <div style={{ fontSize: 13, color: '#3b82f6', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+              ℹ️ Achievement will be reviewed by faculty before points are awarded.
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="submit" disabled={submitting}
-                style={{ background: `linear-gradient(135deg,${selectedCat.color},${selectedCat.color}dd)`, color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: submitting ? 0.7 : 1 }}>
-                {submitting ? 'Submitting...' : '✓ Submit'}
+                style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? 'Submitting...' : 'Submit for Review'}
               </button>
               <button type="button" onClick={closeForm}
-                style={{ background: '#f1f5f9', color: '#64748b', border: 'none', padding: '11px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                style={{ background: '#f1f5f9', color: '#64748b', border: 'none', padding: '11px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
                 Cancel
               </button>
             </div>
