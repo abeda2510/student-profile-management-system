@@ -183,7 +183,7 @@ export default function Achievements() {
               <select value={form.position} onChange={e => set('position', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff', color: form.position ? '#0f172a' : '#94a3b8' }}>
                 <option value="">Position / Award</option>
-                {['1st Place','2nd Place','3rd Place','Winner','Runner Up','Participation','Completed','Other'].map(p => <option key={p} value={p}>{p}</option>)}
+                {['1st Place','2nd Place','3rd Place','Participation'].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
               <input placeholder="Academic Year (e.g. 2024-25)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
@@ -203,12 +203,9 @@ export default function Achievements() {
             </div>
             <textarea rows={3} placeholder="Description" value={form.description} onChange={e => set('description', e.target.value)}
               style={{ width: '100%', padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'vertical', marginBottom: 12, boxSizing: 'border-box' }} />
-            <div style={{ fontSize: 13, color: '#3b82f6', marginBottom: 14 }}>
-              ℹ️ Achievement will be reviewed by faculty before points are awarded.
-            </div>
             <button type="submit" disabled={submitting}
               style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: submitting ? 0.7 : 1 }}>
-              {submitting ? 'Submitting...' : 'Submit for Review'}
+              {submitting ? 'Submitting...' : 'Submit'}
             </button>
           </form>
         </div>
