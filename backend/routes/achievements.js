@@ -355,7 +355,7 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     const studentMap = {};
     students.forEach(s => { studentMap[s.regNumber] = s; });
     const withCert = achievements.filter(a => (a.certificateUrl && a.certificateUrl.startsWith('http')) || (a.certificatePath && !a.certificatePath.startsWith('http') && fs.existsSync(a.certificatePath)));
-    if (withCert.length === 0) return res.status(404).json({ message: 'No certificates found' });
+    if (withCert.length === 0) return res.status(404).json({ message: 'No certificates with downloadable files found. Certificates may have been uploaded before cloud storage was enabled.' });
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="certificates.zip"');
     const archive = archiver('zip', { zlib: { level: 6 } });

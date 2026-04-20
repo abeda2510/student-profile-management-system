@@ -83,7 +83,10 @@ export default function FacultyAchievements() {
       const token = localStorage.getItem('token');
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${buildParams()}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Server error' }));
+        throw new Error(err.message || 'Server error');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `certificates_${selectedCat?.key || 'all'}.zip`; a.click();
