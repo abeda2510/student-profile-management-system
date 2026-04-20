@@ -216,7 +216,21 @@ export default function FacultyDashboard() {
             </div>
             {searchTab === 'profile' && (
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{searchResult.name}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>{searchResult.name}</div>
+                  <button onClick={async () => {
+                    const token = localStorage.getItem('token');
+                    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+                    const res = await fetch(`${baseUrl}/students/profile-pdf/${searchResult.regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
+                    if (!res.ok) { alert('PDF failed'); return; }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = `${searchResult.regNumber}_profile.pdf`; a.click();
+                    URL.revokeObjectURL(url);
+                  }} style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                    📄 Download PDF
+                  </button>
+                </div>
                 <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>{searchResult.regNumber} | {searchResult.branch} | Sec {searchResult.section}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
                   {[
@@ -338,7 +352,21 @@ export default function FacultyDashboard() {
                 </div>
                 {studentTab === 'profile' && (
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{selectedStudent.name}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ fontWeight: 700, fontSize: 16 }}>{selectedStudent.name}</div>
+                      <button onClick={async () => {
+                        const token = localStorage.getItem('token');
+                        const baseUrl = import.meta.env.VITE_API_URL || '/api';
+                        const res = await fetch(`${baseUrl}/students/profile-pdf/${selectedStudent.regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (!res.ok) { alert('PDF failed'); return; }
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a'); a.href = url; a.download = `${selectedStudent.regNumber}_profile.pdf`; a.click();
+                        URL.revokeObjectURL(url);
+                      }} style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                        📄 Download PDF
+                      </button>
+                    </div>
                     <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>{selectedStudent.regNumber} | {selectedStudent.branch}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
                       {[

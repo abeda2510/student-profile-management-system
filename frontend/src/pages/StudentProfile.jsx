@@ -179,6 +179,19 @@ export default function StudentProfile() {
           <button className="btn-primary" type="button" onClick={save} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             💾 Save Profile
           </button>
+          <button type="button" onClick={async () => {
+            const token = localStorage.getItem('token');
+            const regNumber = form.regNumber;
+            const baseUrl = import.meta.env.VITE_API_URL || '/api';
+            const res = await fetch(`${baseUrl}/students/profile-pdf/${regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) { alert('PDF generation failed'); return; }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${regNumber}_profile.pdf`; a.click();
+            URL.revokeObjectURL(url);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1e40af', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+            📄 Download PDF
+          </button>
         </div>
       </div>
 
