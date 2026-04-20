@@ -35,7 +35,6 @@ function Topbar() {
     { to: '/', label: 'Dashboard' },
     { to: '/profile', label: 'Profile' },
     { to: '/achievements', label: 'Achievements' },
-    { to: '/documents', label: 'Documents' },
   ];
   const facultyLinks = [
     { to: '/', label: 'Dashboard' },

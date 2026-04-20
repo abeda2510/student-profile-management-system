@@ -106,23 +106,6 @@ export default function Achievements() {
         )}
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        {[
-          { label: 'Achievements', value: list.length, bg: 'linear-gradient(135deg,#1e40af,#2563eb)', icon: '🏆' },
-          { label: 'Approved', value: myPoints.approved, bg: 'linear-gradient(135deg,#059669,#10b981)', icon: '✅' },
-          { label: 'Pending Review', value: list.filter(a => a.status === 'PENDING').length, bg: 'linear-gradient(135deg,#d97706,#f59e0b)', icon: '⏳' },
-        ].map(s => (
-          <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: 32 }}>{s.icon}</div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Category Cards */}
       {!showForm && (
         <div className="card" style={{ marginBottom: 24 }}>
