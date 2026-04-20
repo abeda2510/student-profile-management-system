@@ -91,7 +91,7 @@ export default function AchievementDashboard() {
         if (chosen.length > 0 && chosen.length < allSecs.length) chosen.forEach(s => params.append('section', s));
       });
       if (minPoints !== '') params.set('minPoints', minPoints);
-      const res = await window.fetch('http://localhost:5000/api/achievements/leaderboard/excel?' + params, {
+      const res = await window.fetch((import.meta.env.VITE_API_URL || '/api') + '/achievements/leaderboard/excel?' + params, {
         headers: { Authorization: 'Bearer ' + token }
       });
       if (!res.ok) throw new Error();
