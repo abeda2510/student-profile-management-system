@@ -16,20 +16,20 @@ const SectionCard = ({ icon, title, bg = '#eff6ff', children }) => (
 
 const Field = ({ label, value, onChange, type = 'text', placeholder = '', span = 1 }) => (
   <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-    <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', letterSpacing: '0.3px' }}>{label}</label>
-    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder || label}
-      style={{ padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 14, background: '#f8fafc', outline: 'none', transition: 'border-color 0.15s', fontFamily: 'inherit' }}
+    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{label}</label>
+    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a', transition: 'border-color 0.15s' }}
       onFocus={e => e.target.style.borderColor = '#3b82f6'}
-      onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+      onBlur={e => e.target.style.borderColor = '#d1d5db'} />
   </div>
 );
 
 const SelectF = ({ label, value, onChange, options }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-    <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', letterSpacing: '0.3px' }}>{label}</label>
+    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{label}</label>
     <select value={value || ''} onChange={e => onChange(e.target.value)}
-      style={{ padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 14, background: '#f8fafc', outline: 'none', fontFamily: 'inherit' }}>
-      <option value="">Select {label}</option>
+      style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+      <option value="">Select...</option>
       {options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
   </div>
@@ -149,8 +149,8 @@ export default function StudentProfile() {
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>My Profile</h2>
-          <p style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>Manage your personal, academic and document information</p>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>My Profile</h2>
+          <p style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>Keep your information up to date</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {saved && (
