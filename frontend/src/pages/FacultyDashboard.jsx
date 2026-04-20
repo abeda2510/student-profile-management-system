@@ -3,12 +3,47 @@ import api from '../api';
 
 const DOC_GROUPS = [
   { key: 'coding', label: 'Coding Profiles', color: '#1e40af', bg: '#eff6ff',
-    items: ['LeetCode Username','CodeChef Username','LinkedIn Profile'] },
-  { key: 'ids', label: 'IDs', color: '#7c3aed', bg: '#f5f3ff', items: ['ABC ID','APAAR ID'] },
-  { key: 'contact', label: 'Contact', color: '#0891b2', bg: '#ecfeff', items: ['Email','Phone','Parent Name','Parent Phone','Address'] },
-  { key: 'academic', label: 'Academic', color: '#d97706', bg: '#fffbeb', items: ['CGPA','Admission Category','Current Year','Current Semester'] },
-  { key: 'personal', label: 'Personal', color: '#dc2626', bg: '#fef2f2', items: ['Date of Birth','Gender','Blood Group'] },
-  { key: 'achievements', label: 'Achievements', color: '#059669', bg: '#f0fdf4', items: ['Internship Certificates','Hackathon Certificates','Mark Memos'] },
+    items: [
+      { value: 'LEETCODE', label: 'LeetCode Username' },
+      { value: 'LEETCODE_SOLVED', label: 'LeetCode Total Solved' },
+      { value: 'LEETCODE_EASY', label: 'LeetCode Easy' },
+      { value: 'LEETCODE_MEDIUM', label: 'LeetCode Medium' },
+      { value: 'LEETCODE_HARD', label: 'LeetCode Hard' },
+      { value: 'CODECHEF', label: 'CodeChef Username' },
+      { value: 'CODECHEF_RATING', label: 'CodeChef Rating' },
+      { value: 'CODECHEF_STARS', label: 'CodeChef Stars' },
+      { value: 'LINKEDIN', label: 'LinkedIn Profile' },
+    ]
+  },
+  { key: 'ids', label: 'IDs', color: '#7c3aed', bg: '#f5f3ff',
+    items: [{ value: 'ABC_ID', label: 'ABC ID' }, { value: 'APAAR_ID', label: 'APAAR ID' }]
+  },
+  { key: 'contact', label: 'Contact', color: '#0891b2', bg: '#ecfeff',
+    items: [
+      { value: 'EMAIL', label: 'Email' }, { value: 'PHONE', label: 'Phone' },
+      { value: 'PARENT_NAME', label: 'Parent Name' }, { value: 'PARENT_PHONE', label: 'Parent Phone' },
+      { value: 'ADDRESS', label: 'Address' },
+    ]
+  },
+  { key: 'academic', label: 'Academic', color: '#d97706', bg: '#fffbeb',
+    items: [
+      { value: 'CGPA', label: 'CGPA' }, { value: 'ADMISSION_CATEGORY', label: 'Admission Category' },
+      { value: 'CURRENT_YEAR', label: 'Current Year' }, { value: 'CURRENT_SEMESTER', label: 'Current Semester' },
+    ]
+  },
+  { key: 'personal', label: 'Personal', color: '#dc2626', bg: '#fef2f2',
+    items: [
+      { value: 'DOB', label: 'Date of Birth' }, { value: 'GENDER', label: 'Gender' },
+      { value: 'BLOOD_GROUP', label: 'Blood Group' },
+    ]
+  },
+  { key: 'achievements', label: 'Achievements', color: '#059669', bg: '#f0fdf4',
+    items: [
+      { value: 'INTERNSHIP', label: 'Internship Certificates' },
+      { value: 'HACKATHON', label: 'Hackathon Certificates' },
+      { value: 'MARK_MEMO', label: 'Mark Memos' },
+    ]
+  },
 ];
 
 const chipStyle = (sel, color, bg) => ({
@@ -51,11 +86,11 @@ export default function FacultyDashboard() {
 
   const toggleItem = (item) => setSelItems(s => s.includes(item) ? s.filter(x => x !== item) : [...s, item]);
   const toggleGroupAll = (group) => {
-    const allSel = group.items.every(i => selItems.includes(i));
-    setSelItems(s => allSel ? s.filter(x => !group.items.includes(x)) : [...new Set([...s, ...group.items])]);
+    const allSel = group.items.every(i => selItems.includes(i.value));
+    setSelItems(s => allSel ? s.filter(x => !group.items.map(i=>i.value).includes(x)) : [...new Set([...s, ...group.items.map(i=>i.value)])]);
   };
   const toggleAllItems = () => {
-    const all = DOC_GROUPS.flatMap(g => g.items);
+    const all = DOC_GROUPS.flatMap(g => g.items.map(i => i.value));
     setSelItems(prev => all.every(i => prev.includes(i)) ? [] : all);
   };
 
@@ -366,7 +401,7 @@ export default function FacultyDashboard() {
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {group.items.map(item => (
-                      <span key={item} onClick={() => toggleItem(item)} style={chipStyle(selItems.includes(item), group.color, group.bg)}>{item}</span>
+                      <span key={item.value} onClick={() => toggleItem(item.value)} style={chipStyle(selItems.includes(item.value), group.color, group.bg)}>{item.label}</span>
                     ))}
                   </div>
                 </div>
