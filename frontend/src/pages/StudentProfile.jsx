@@ -31,6 +31,10 @@ export default function StudentProfile() {
     if (updates.admissionYear) updates.admissionYear = parseInt(updates.admissionYear);
     if (updates.currentYear) updates.currentYear = parseInt(updates.currentYear);
     if (updates.currentSemester) updates.currentSemester = parseInt(updates.currentSemester);
+    if (updates.tenthYear) updates.tenthYear = parseInt(updates.tenthYear);
+    if (updates.tenthPercent) updates.tenthPercent = parseFloat(updates.tenthPercent);
+    if (updates.interYear) updates.interYear = parseInt(updates.interYear);
+    if (updates.interPercent) updates.interPercent = parseFloat(updates.interPercent);
     await api.put('/students/me', updates);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -74,6 +78,27 @@ export default function StudentProfile() {
             <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
             <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
             <Field label="CGPA" value={form.cgpa} onChange={v => set('cgpa', v)} type="number" placeholder="e.g. 8.5" />
+          </div>
+        </div>
+
+        <div style={s.card}>
+          <div style={s.section}>10th Details</div>
+          <div style={s.grid}>
+            <Field label="School Name" value={form.tenthSchool} onChange={v => set('tenthSchool', v)} />
+            <Field label="Board" value={form.tenthBoard} onChange={v => set('tenthBoard', v)} placeholder="e.g. CBSE, SSC" />
+            <Field label="Year of Passing" value={form.tenthYear} onChange={v => set('tenthYear', v)} type="number" placeholder="e.g. 2021" />
+            <Field label="Percentage / GPA" value={form.tenthPercent} onChange={v => set('tenthPercent', v)} type="number" placeholder="e.g. 92.5" />
+          </div>
+        </div>
+
+        <div style={s.card}>
+          <div style={s.section}>Intermediate (12th) Details</div>
+          <div style={s.grid}>
+            <Field label="College Name" value={form.interCollege} onChange={v => set('interCollege', v)} />
+            <Field label="Board" value={form.interBoard} onChange={v => set('interBoard', v)} placeholder="e.g. CBSE, TSBIE" />
+            <Field label="Year of Passing" value={form.interYear} onChange={v => set('interYear', v)} type="number" placeholder="e.g. 2023" />
+            <Field label="Percentage / GPA" value={form.interPercent} onChange={v => set('interPercent', v)} type="number" placeholder="e.g. 95.0" />
+            <Field label="Group / Stream" value={form.interGroup} onChange={v => set('interGroup', v)} placeholder="e.g. MPC, BiPC" />
           </div>
         </div>
 

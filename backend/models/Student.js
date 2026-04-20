@@ -32,6 +32,16 @@ const studentSchema = new mongoose.Schema({
   codeChef: String,
   leetCode: String,
   cgpa: Number,
+  // Academic history
+  tenthSchool: String,
+  tenthBoard: String,
+  tenthYear: Number,
+  tenthPercent: Number,
+  interCollege: String,
+  interBoard: String,
+  interYear: Number,
+  interPercent: Number,
+  interGroup: String,
 }, { timestamps: true, collection: 'students' }); // → students collection
 
 studentSchema.pre('save', async function (next) {
