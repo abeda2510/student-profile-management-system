@@ -152,8 +152,11 @@ export default function FacultyDashboard() {
         </div>
       )}
 
+      {/* Search Student + My Counsellees side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, alignItems: 'start' }}>
+
       {/* Search Student */}
-      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0' }}>
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>Search Student</div>
         <form onSubmit={searchStudent} style={{ display: 'flex', gap: 10 }}>
           <input value={searchReg} onChange={e => setSearchReg(e.target.value)} placeholder="Enter Registration Number"
@@ -428,6 +431,9 @@ export default function FacultyDashboard() {
           </>
         )}
       </div>
+
+      </div>{/* end grid */}
+
     </div>
   );
 }

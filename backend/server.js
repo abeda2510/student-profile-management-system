@@ -20,12 +20,10 @@ app.use('/api/leetcode', require('./routes/leetcode'));
 async function ensureAdmin() {
   try {
     const Faculty = require('./models/Faculty');
-    const bcrypt = require('bcryptjs');
-    // Always delete and recreate to ensure correct password
+    // Delete and recreate — pre('save') hook will hash the password
     await Faculty.deleteOne({ facultyId: 'admin12' });
-    const hashed = await bcrypt.hash('admin12', 10);
     await Faculty.create({
-      facultyId: 'admin12', password: hashed, name: 'Admin',
+      facultyId: 'admin12', password: 'admin12', name: 'Admin',
       role: 'admin', email: 'admin@vignan.ac.in',
       department: 'Admin Office', designation: 'Administrator'
     });

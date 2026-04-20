@@ -65,11 +65,10 @@ router.post('/setup-admin', async (req, res) => {
     // Remove existing admin12
     await Faculty.deleteOne({ facultyId: 'admin12' });
 
-    // Create new admin in Faculty
-    const hashed = await bcrypt.hash('admin12', 10);
+    // Create new admin in Faculty (pre('save') hook will hash the password)
     await Faculty.create({
       facultyId: 'admin12',
-      password: hashed,
+      password: 'admin12',
       name: 'Admin',
       role: 'admin',
       email: 'admin@vignan.ac.in',
