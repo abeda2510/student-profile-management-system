@@ -8,6 +8,7 @@ import Documents from './pages/Documents';
 import FacultyDashboard from './pages/FacultyDashboard';
 import SectionReport from './pages/SectionReport';
 import AchievementDashboard from './pages/AchievementDashboard';
+import FacultyAchievements from './pages/FacultyAchievements';
 import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
 
@@ -110,7 +111,7 @@ export default function App() {
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/section-report" element={<SectionReport />} />
-                  <Route path="/achievement-report" element={<AchievementDashboard />} />
+                  <Route path="/achievement-report" element={<FacultyAchievements />} />
                   <Route path="/admin" element={<AdminSearch />} />
                 </Routes>
               </div>
