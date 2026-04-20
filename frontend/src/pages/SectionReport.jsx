@@ -153,6 +153,9 @@ export default function SectionReport() {
       const a = document.createElement('a'); a.href = url; a.download = 'certificates.zip'; a.click();
       URL.revokeObjectURL(url);
     } catch (e) { setError('ZIP failed: ' + e.message); }
+    setZipLoading(false);
+  };
+
   const uniqueStudents = results ? [...new Map(results.map(r => [r.regNumber, r])).values()] : [];
 
   return (
