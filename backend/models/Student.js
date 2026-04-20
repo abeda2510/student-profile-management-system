@@ -34,14 +34,15 @@ const studentSchema = new mongoose.Schema({
   cgpa: Number,
   counsellor: String, // assigned counsellor name/ID
   // Semester-wise CGPA
-  sem1Cgpa: Number,
-  sem2Cgpa: Number,
-  sem3Cgpa: Number,
-  sem4Cgpa: Number,
-  sem5Cgpa: Number,
-  sem6Cgpa: Number,
-  sem7Cgpa: Number,
-  sem8Cgpa: Number,
+  sem1Cgpa: Number, sem1Sgpa: Number,
+  sem2Cgpa: Number, sem2Sgpa: Number,
+  sem3Cgpa: Number, sem3Sgpa: Number,
+  sem4Cgpa: Number, sem4Sgpa: Number,
+  sem5Cgpa: Number, sem5Sgpa: Number,
+  sem6Cgpa: Number, sem6Sgpa: Number,
+  sem7Cgpa: Number, sem7Sgpa: Number,
+  sem8Cgpa: Number, sem8Sgpa: Number,
+  aadhaarNumber: String,
   // Academic history
   tenthSchool: String,
   tenthBoard: String,

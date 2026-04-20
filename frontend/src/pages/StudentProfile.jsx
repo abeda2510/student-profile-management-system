@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
-const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'MANAGEMENT', 'NRI', 'OTHER'];
+const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'INTER_MERIT', 'MANAGEMENT', 'OTHER'];
 
 const SectionCard = ({ icon, title, bg = '#eff6ff', children }) => (
   <div style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', marginBottom: 20 }}>
@@ -131,7 +131,10 @@ export default function StudentProfile() {
     const { _id, __v, createdAt, updatedAt, ...updates } = form;
     const nums = ['cgpa','admissionYear','currentYear','currentSemester','tenthYear','tenthPercent','interYear','interPercent'];
     nums.forEach(k => { if (updates[k]) updates[k] = parseFloat(updates[k]); });
-    for (let i = 1; i <= 8; i++) { if (updates[`sem${i}Cgpa`]) updates[`sem${i}Cgpa`] = parseFloat(updates[`sem${i}Cgpa`]); }
+    for (let i = 1; i <= 8; i++) {
+      if (updates[`sem${i}Cgpa`]) updates[`sem${i}Cgpa`] = parseFloat(updates[`sem${i}Cgpa`]);
+      if (updates[`sem${i}Sgpa`]) updates[`sem${i}Sgpa`] = parseFloat(updates[`sem${i}Sgpa`]);
+    }
     await api.put('/students/me', updates);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -193,7 +196,19 @@ export default function StudentProfile() {
         {/* Academic Details */}
         <SectionCard icon="🎓" title="Academic Details" bg="#faf5ff">
           <div style={grid2}>
-            <SelectF label="Admission Category" value={form.admissionCategory} onChange={v => set('admissionCategory', v)} options={CATEGORIES} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Category</label>
+              <select value={form.admissionCategory || ''} onChange={e => set('admissionCategory', e.target.value)}
+                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                <option value="">Select...</option>
+                {CATEGORIES.map(o => <option key={o} value={o}>{o.replace('_', ' ')}</option>)}
+              </select>
+              {form.admissionCategory === 'OTHER' && (
+                <input placeholder="Specify category..." value={form.admissionCategoryOther || ''}
+                  onChange={e => set('admissionCategoryOther', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', marginTop: 6 }} />
+              )}
+            </div>
             <Field label="Admission Year" value={form.admissionYear} onChange={v => set('admissionYear', v)} type="number" placeholder="e.g. 2023" />
             <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
             <Field label="Section" value={form.section} onChange={v => set('section', v)} />
@@ -234,73 +249,112 @@ export default function StudentProfile() {
         </SectionCard>
 
         {/* Semester CGPA */}
-        <SectionCard icon="📊" title="Semester-wise CGPA" bg="#eff6ff">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px 16px', marginBottom: 16 }}>
-            {[1,2,3,4,5,6,7,8].map(sem => (
-              <div key={sem} className="field-group">
-                <label className="field-label">Semester {sem}</label>
-                <input type="number" step="0.01" min="0" max="10"
-                  value={form[`sem${sem}Cgpa`] || ''}
-                  onChange={e => set(`sem${sem}Cgpa`, e.target.value)}
-                  placeholder="0.00" />
-              </div>
-            ))}
+        <SectionCard icon="📊" title="Semester-wise CGPA & SGPA" bg="#eff6ff">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: 20 }}>
+            {[1,2,3,4,5,6,7,8].map(sem => {
+              const semDocs = docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`));
+              return (
+                <div key={sem} style={{ background: '#f8fafc', borderRadius: 12, padding: '14px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>Semester {sem}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CGPA</label>
+                      <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
+                        style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #d1d5db', borderRadius: 7, fontSize: 13, background: '#fff', outline: 'none', marginTop: 3 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SGPA</label>
+                      <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
+                        style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #d1d5db', borderRadius: 7, fontSize: 13, background: '#fff', outline: 'none', marginTop: 3 }} />
+                    </div>
+                  </div>
+                  {/* Mark memo */}
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 5 }}>Mark Memo</div>
+                  {semDocs.map(d => (
+                    <div key={d._id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                      {(d.fileUrl || d.filepath) && <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>✓ View</a>}
+                      <button type="button" onClick={() => deleteDoc(d._id)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
+                    </div>
+                  ))}
+                  <SemUpload sem={sem} onUploaded={loadDocs} />
+                </div>
+              );
+            })}
           </div>
 
-          {overallCgpa && (
-            <div style={{ background: 'linear-gradient(135deg, #1e40af, #0369a1)', borderRadius: 14, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Overall CGPA</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{overallCgpa}</div>
-              </div>
-              <div style={{ fontSize: 48, opacity: 0.3 }}>⭐</div>
+          {/* Overall CGPA - auto calculated, read only */}
+          <div style={{ background: 'linear-gradient(135deg, #1e40af, #0369a1)', borderRadius: 14, padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Overall CGPA (Auto-calculated)</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{overallCgpa || '—'}</div>
             </div>
-          )}
-
-          {/* Semester mark memos */}
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>📎 Semester Mark Memos</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-              {[1,2,3,4,5,6,7,8].map(sem => {
-                const semDocs = docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`));
-                return (
-                  <div key={sem} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>Sem {sem}</div>
-                    {semDocs.map(d => (
-                      <div key={d._id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                        {(d.fileUrl || d.filepath) && <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>✓ View</a>}
-                        <button type="button" onClick={() => deleteDoc(d._id)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
-                      </div>
-                    ))}
-                    <SemUpload sem={sem} onUploaded={loadDocs} />
-                  </div>
-                );
-              })}
-            </div>
+            <div style={{ fontSize: 52, opacity: 0.2 }}>⭐</div>
           </div>
         </SectionCard>
 
         {/* ID Details + Documents */}
         <SectionCard icon="🪪" title="ID Details & Documents" bg="#fdf4ff">
-          <div style={grid2}>
-            <Field label="APAAR ID" value={form.apaarId} onChange={v => set('apaarId', v)} />
-            <Field label="ABC ID" value={form.abcId} onChange={v => set('abcId', v)} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginTop: 16 }}>
-            <InlineUpload docType="AADHAAR" label="Aadhaar Card" docs={docs.filter(d => d.docType === 'AADHAAR')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            <InlineUpload docType="PAN" label="PAN Card" docs={docs.filter(d => d.docType === 'PAN')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            <InlineUpload docType="VOTER_ID" label="Voter ID" docs={docs.filter(d => d.docType === 'VOTER_ID')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            <InlineUpload docType="APAAR_ABC" label="APAAR / ABC ID" docs={docs.filter(d => d.docType === 'APAAR_ABC')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            <InlineUpload docType="OTHER" label="Other Documents" docs={docs.filter(d => d.docType === 'OTHER')} onUploaded={loadDocs} onDelete={deleteDoc} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* APAAR / ABC ID */}
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🎓 APAAR / ABC ID</div>
+              <div style={grid2}>
+                <Field label="APAAR / ABC ID Number" value={form.apaarId} onChange={v => { set('apaarId', v); set('abcId', v); }} placeholder="Enter ID number" />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <InlineUpload docType="APAAR_ABC" label="Upload APAAR / ABC ID Document"
+                  docs={docs.filter(d => d.docType === 'APAAR_ABC')} onUploaded={loadDocs} onDelete={deleteDoc} />
+              </div>
+            </div>
+
+            {/* Aadhaar */}
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🪪 Aadhaar Card</div>
+              <Field label="Aadhaar Number" value={form.aadhaarNumber} onChange={v => set('aadhaarNumber', v)} placeholder="XXXX XXXX XXXX" />
+              <div style={{ marginTop: 12 }}>
+                <InlineUpload docType="AADHAAR" label="Upload Aadhaar Card"
+                  docs={docs.filter(d => d.docType === 'AADHAAR')} onUploaded={loadDocs} onDelete={deleteDoc} />
+              </div>
+            </div>
+
+            {/* PAN */}
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>💳 PAN Card</div>
+              <InlineUpload docType="PAN" label="Upload PAN Card"
+                docs={docs.filter(d => d.docType === 'PAN')} onUploaded={loadDocs} onDelete={deleteDoc} />
+            </div>
+
+            {/* Other */}
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>📁 Other Documents</div>
+              <InlineUpload docType="OTHER" label="Upload Other Documents"
+                docs={docs.filter(d => d.docType === 'OTHER')} onUploaded={loadDocs} onDelete={deleteDoc} />
+            </div>
           </div>
         </SectionCard>
 
         {/* Coding Profiles */}
         <SectionCard icon="💻" title="Coding & Social Profiles" bg="#f0fdf4">
-          <div style={grid3}>
-            <Field label="LinkedIn Profile URL" value={form.linkedIn} onChange={v => set('linkedIn', v)} placeholder="https://linkedin.com/in/..." />
-            <Field label="LeetCode Username" value={form.leetCode} onChange={v => set('leetCode', v)} placeholder="e.g. john_doe" />
-            <Field label="CodeChef Username" value={form.codeChef} onChange={v => set('codeChef', v)} placeholder="e.g. john_doe" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {[
+              { label: 'LinkedIn', key: 'linkedIn', placeholder: 'https://linkedin.com/in/username', img: 'https://cdn-icons-png.flaticon.com/512/174/174857.png', color: '#0a66c2' },
+              { label: 'LeetCode', key: 'leetCode', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ffa116' },
+              { label: 'CodeChef', key: 'codeChef', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638' },
+            ].map(({ label, key, placeholder, img, color }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                  <img src={img} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = label.charAt(0); }} />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</label>
+                  <input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder}
+                    style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }}
+                    onFocus={e => e.target.style.borderColor = color}
+                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                </div>
+              </div>
+            ))}
           </div>
         </SectionCard>
 
