@@ -154,8 +154,14 @@ export default function FacultyDashboard() {
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const params = new URLSearchParams();
       myStudents.forEach(st => { params.append('branch', st.branch); params.append('section', st.section); });
+      const certTypes = selItems.filter(i => ['INTERNSHIP','HACKATHON','MARK_MEMO'].includes(i));
+      if (certTypes.length === 0) { alert('ZIP only works for Internship, Hackathon, or Mark Memo. Select those items first.'); setZipLoading(false); return; }
+      certTypes.forEach(d => params.append('activityTypes', d));
       const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Server error' }));
+        throw new Error(err.message);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'counsellee_certificates.zip'; a.click();

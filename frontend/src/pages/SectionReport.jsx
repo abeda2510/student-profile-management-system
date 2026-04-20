@@ -139,15 +139,20 @@ export default function SectionReport() {
   };
 
   const downloadZip = async () => {
+    const certTypes = selItems.filter(i => ['INTERNSHIP','HACKATHON','MARK_MEMO'].includes(i));
+    if (certTypes.length === 0) { setError('ZIP only works for Internship, Hackathon, or Mark Memo certificates. Select those items first.'); return; }
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const params = new URLSearchParams();
       Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
-      selItems.forEach(d => params.append('activityTypes', d));
+      certTypes.forEach(d => params.append('activityTypes', d));
       const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Server error' }));
+        throw new Error(err.message);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'certificates.zip'; a.click();
