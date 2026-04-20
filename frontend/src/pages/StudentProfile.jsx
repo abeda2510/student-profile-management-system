@@ -5,7 +5,7 @@ const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
 const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'INTER_MERIT', 'MANAGEMENT', 'OTHER'];
 
 const SectionCard = ({ icon, title, bg = '#eff6ff', children }) => (
-  <div style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', marginBottom: 20 }}>
+  <div style={{ background: '#fff', borderRadius: 14, padding: '24px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', marginBottom: 20, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, paddingBottom: 14, borderBottom: '2px solid #f1f5f9' }}>
       <div style={{ width: 38, height: 38, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{icon}</div>
       <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{title}</div>
@@ -84,6 +84,8 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
 function SemUpload({ sem, onUploaded }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const inputRef = React.useRef();
+
   const upload = async () => {
     if (!file) return;
     setUploading(true);
@@ -94,14 +96,27 @@ function SemUpload({ sem, onUploaded }) {
     await api.post('/documents/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
     setFile(null); setUploading(false); onUploaded();
   };
+
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-      <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFile(e.target.files[0])}
-        style={{ fontSize: 11, flex: 1, minWidth: 0, padding: '5px 8px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 7 }} />
-      <button type="button" onClick={upload} disabled={!file || uploading}
-        style={{ background: file ? 'linear-gradient(135deg,#059669,#10b981)' : '#e2e8f0', color: file ? '#fff' : '#94a3b8', border: 'none', padding: '6px 12px', borderRadius: 7, fontSize: 11, cursor: file ? 'pointer' : 'default', fontWeight: 700, whiteSpace: 'nowrap' }}>
-        {uploading ? '...' : '↑'}
-      </button>
+    <div>
+      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png"
+        onChange={e => setFile(e.target.files[0])} style={{ display: 'none' }} />
+      {!file ? (
+        <button type="button" onClick={() => inputRef.current.click()}
+          style={{ width: '100%', padding: '7px 0', background: '#eff6ff', border: '1.5px dashed #93c5fd', borderRadius: 7, color: '#1e40af', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          📎 Choose File
+        </button>
+      ) : (
+        <div style={{ display: 'flex', gap: 5 }}>
+          <span style={{ fontSize: 10, color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '4px 0' }}>{file.name}</span>
+          <button type="button" onClick={upload} disabled={uploading}
+            style={{ background: '#059669', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: 6, fontSize: 10, cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            {uploading ? '...' : '↑ Upload'}
+          </button>
+          <button type="button" onClick={() => setFile(null)}
+            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 8px', borderRadius: 6, fontSize: 10, cursor: 'pointer' }}>✕</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -250,7 +265,7 @@ export default function StudentProfile() {
 
         {/* Semester CGPA */}
         <SectionCard icon="📊" title="Semester-wise CGPA & SGPA" bg="#eff6ff">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px', marginBottom: 20 }}>
             {[1,2,3,4,5,6,7,8].map(sem => {
               const semDocs = docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`));
               return (
