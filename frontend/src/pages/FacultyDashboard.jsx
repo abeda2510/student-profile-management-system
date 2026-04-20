@@ -173,12 +173,26 @@ export default function FacultyDashboard() {
             {searchTab === 'profile' && (
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{searchResult.name}</div>
-                <div style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>{searchResult.regNumber} | {searchResult.branch} | Sec {searchResult.section}</div>
-                {[['Email', searchResult.email], ['Phone', searchResult.phone], ['CGPA', searchResult.cgpa], ['Counsellor', searchResult.counsellor]].filter(([, v]) => v).map(([l, v]) => (
-                  <div key={l} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
-                    <span style={{ color: '#64748b', minWidth: 130 }}>{l}:</span><span style={{ fontWeight: 600 }}>{v}</span>
-                  </div>
-                ))}
+                <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>{searchResult.regNumber} | {searchResult.branch} | Sec {searchResult.section}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                  {[
+                    ['Email', searchResult.email], ['Phone', searchResult.phone],
+                    ['Date of Birth', searchResult.dob], ['Gender', searchResult.gender],
+                    ['Blood Group', searchResult.bloodGroup], ['Nationality', searchResult.nationality],
+                    ['Address', searchResult.address], ['Parent Name', searchResult.parentName],
+                    ['Parent Phone', searchResult.parentPhone], ['Admission Year', searchResult.admissionYear],
+                    ['Admission Category', searchResult.admissionCategory], ['Current Year', searchResult.currentYear],
+                    ['Current Semester', searchResult.currentSemester], ['CGPA', searchResult.cgpa],
+                    ['APAAR ID', searchResult.apaarId], ['ABC ID', searchResult.abcId],
+                    ['Counsellor', searchResult.counsellor], ['LinkedIn', searchResult.linkedIn],
+                    ['LeetCode', searchResult.leetCode], ['CodeChef', searchResult.codeChef],
+                  ].filter(([, v]) => v).map(([l, v]) => (
+                    <div key={l} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
+                      <span style={{ color: '#64748b', minWidth: 130, fontWeight: 500 }}>{l}:</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{String(v)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {searchTab === 'docs' && (
@@ -241,12 +255,26 @@ export default function FacultyDashboard() {
                 {studentTab === 'profile' && (
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16 }}>
                     <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{selectedStudent.name}</div>
-                    <div style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>{selectedStudent.regNumber} | {selectedStudent.branch}</div>
-                    {[['Email', selectedStudent.email], ['Phone', selectedStudent.phone], ['CGPA', selectedStudent.cgpa], ['Parent', selectedStudent.parentName], ['Parent Phone', selectedStudent.parentPhone]].filter(([, v]) => v).map(([l, v]) => (
-                      <div key={l} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
-                        <span style={{ color: '#64748b', minWidth: 130 }}>{l}:</span><span style={{ fontWeight: 600 }}>{v}</span>
-                      </div>
-                    ))}
+                    <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>{selectedStudent.regNumber} | {selectedStudent.branch}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                      {[
+                        ['Email', selectedStudent.email], ['Phone', selectedStudent.phone],
+                        ['Date of Birth', selectedStudent.dob], ['Gender', selectedStudent.gender],
+                        ['Blood Group', selectedStudent.bloodGroup], ['Address', selectedStudent.address],
+                        ['Parent Name', selectedStudent.parentName], ['Parent Phone', selectedStudent.parentPhone],
+                        ['Admission Year', selectedStudent.admissionYear], ['Admission Category', selectedStudent.admissionCategory],
+                        ['Branch', selectedStudent.branch], ['Section', selectedStudent.section],
+                        ['Current Year', selectedStudent.currentYear], ['Current Semester', selectedStudent.currentSemester],
+                        ['CGPA', selectedStudent.cgpa], ['APAAR ID', selectedStudent.apaarId],
+                        ['ABC ID', selectedStudent.abcId], ['LinkedIn', selectedStudent.linkedIn],
+                        ['LeetCode', selectedStudent.leetCode], ['CodeChef', selectedStudent.codeChef],
+                      ].filter(([, v]) => v).map(([l, v]) => (
+                        <div key={l} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
+                          <span style={{ color: '#64748b', minWidth: 130, fontWeight: 500 }}>{l}:</span>
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {studentTab === 'docs' && (
