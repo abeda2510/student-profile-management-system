@@ -32,7 +32,7 @@ router.put('/me', protect, async (req, res) => {
   }
 });
 
-// Student profile PDF — resume style
+// Student profile PDF — accessible by student (own) or faculty/admin (any)
 router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
   try {
     const { regNumber } = req.params;
@@ -42,238 +42,202 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
     const Achievement = require('../models/Achievement');
-    const [achievements] = await Promise.all([
+    const Document = require('../models/Document');
+    const [achievements, documents] = await Promise.all([
       Achievement.find({ regNumber, status: 'APPROVED' }).sort({ createdAt: -1 }),
+      Document.find({ regNumber }).sort({ createdAt: -1 }),
     ]);
 
     const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument({ margin: 55, size: 'A4' });
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${regNumber}_resume.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${regNumber}_profile.pdf"`);
     doc.pipe(res);
 
-    const L = 55, R = 540, W = R - L;
-    let y = 55;
+    const W = 495;
+    const blue = '#1e40af';
+    const gray = '#64748b';
+    const light = '#f1f5f9';
 
-    const checkPage = (need = 50) => {
-      if (y + need > 800) { doc.addPage(); y = 55; }
+    // ── HEADER ──────────────────────────────────────────────
+    doc.rect(50, 50, W, 110).fill('#1e3a8a');
+    doc.fillColor('#fff')
+      .fontSize(10).font('Helvetica').text("VIGNAN'S FOUNDATION FOR SCIENCE, TECHNOLOGY & RESEARCH", 50, 62, { width: W, align: 'center' })
+      .fontSize(8).text('(Deemed to be University) · Estd. u/s 3 of UGC Act 1956', 50, 76, { width: W, align: 'center' });
+    doc.moveTo(70, 90).lineTo(W + 30, 90).strokeColor('#93c5fd').lineWidth(0.5).stroke();
+    doc.fontSize(18).font('Helvetica-Bold').text('STUDENT PROFILE REPORT', 50, 96, { width: W, align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').text(student.name || '—', 50, 118, { width: W, align: 'center' });
+    doc.fillColor('#93c5fd').fontSize(9).font('Helvetica')
+      .text(`${student.branch || '—'} | Year ${student.currentYear || '—'} | Section ${student.section || '—'} | Sem ${student.currentSemester || '—'}`, 50, 136, { width: W, align: 'center' });
+
+    let y = 175;
+
+    const sectionTitle = (title) => {
+      doc.moveTo(50, y).lineTo(545, y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+      y += 8;
+      doc.rect(50, y, W, 18).fill(blue);
+      doc.fillColor('#fff').fontSize(9).font('Helvetica-Bold').text(title.toUpperCase(), 56, y + 5);
+      y += 26;
+      doc.fillColor('#0f172a');
     };
 
-    // ── section heading: bold + underline ──────────────────
-    const heading = (title) => {
-      checkPage(30);
-      y += 6;
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000').text(title, L, y);
-      const tw = doc.widthOfString(title);
-      doc.moveTo(L, y + 13).lineTo(R, y + 13).strokeColor('#000000').lineWidth(0.8).stroke();
-      y += 18;
+    const row2col = (label1, val1, label2, val2) => {
+      const half = W / 2 - 10;
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(label1, 50, y, { width: 90 });
+      doc.font('Helvetica').fillColor('#0f172a').text(String(val1 || '—'), 145, y, { width: half - 95 });
+      if (label2) {
+        doc.font('Helvetica-Bold').fillColor(gray).text(label2, 300, y, { width: 90 });
+        doc.font('Helvetica').fillColor('#0f172a').text(String(val2 || '—'), 395, y, { width: half - 95 });
+      }
+      y += 16;
     };
 
-    // ── bullet line ────────────────────────────────────────
-    const bullet = (text, indent = 10) => {
-      checkPage(16);
-      doc.fontSize(9.5).font('Helvetica').fillColor('#000000')
-        .text(`\u2022  ${text}`, L + indent, y, { width: W - indent });
-      y += doc.heightOfString(`\u2022  ${text}`, { width: W - indent }) + 3;
+    const row1col = (label, val) => {
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(label, 50, y, { width: 120 });
+      doc.font('Helvetica').fillColor('#0f172a').text(String(val || '—'), 175, y, { width: W - 125 });
+      y += 16;
     };
 
-    // ── entry with right-aligned date ──────────────────────
-    const entryHeader = (left, right) => {
-      checkPage(16);
-      doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text(left, L, y, { width: W - 100, continued: false });
-      doc.fontSize(9.5).font('Helvetica').fillColor('#000000').text(right || '', L, y, { width: W, align: 'right' });
-      y += 14;
+    const checkPage = (needed = 60) => {
+      if (y + needed > 780) { doc.addPage(); y = 50; }
     };
 
-    const subLine = (text) => {
-      checkPage(14);
-      doc.fontSize(9.5).font('Helvetica-Oblique').fillColor('#333333').text(text, L, y, { width: W });
-      y += 13;
-    };
+    // ── IDENTITY STRIP ───────────────────────────────────────
+    doc.rect(50, y, W, 28).fill(light);
+    doc.fillColor(blue).fontSize(9).font('Helvetica-Bold').text('Reg. No:', 56, y + 9);
+    doc.fillColor('#0f172a').font('Helvetica').text(student.regNumber || '—', 110, y + 9);
+    doc.fillColor(blue).font('Helvetica-Bold').text('Email:', 230, y + 9);
+    doc.fillColor('#0f172a').font('Helvetica').text(student.email || '—', 265, y + 9, { width: 200 });
+    y += 36;
+    doc.rect(50, y - 8, W, 20).fill(light);
+    doc.fillColor(blue).fontSize(9).font('Helvetica-Bold').text('Phone:', 56, y - 2);
+    doc.fillColor('#0f172a').font('Helvetica').text(student.phone || '—', 100, y - 2);
+    doc.fillColor(blue).font('Helvetica-Bold').text('Counsellor:', 230, y - 2);
+    doc.fillColor('#0f172a').font('Helvetica').text(student.counsellor || '—', 295, y - 2);
+    y += 20;
 
-    const normalLine = (text) => {
-      checkPage(14);
-      doc.fontSize(9.5).font('Helvetica').fillColor('#000000').text(text, L, y, { width: W });
-      y += 13;
-    };
-
-    // ════════════════════════════════════════════════════════
-    // HEADER — Name + contact
-    // ════════════════════════════════════════════════════════
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000')
-      .text((student.name || 'STUDENT NAME').toUpperCase(), L, y, { width: W, align: 'center' });
-    y += 22;
-
-    const contactParts = [
-      student.phone,
-      student.email,
-      student.address ? student.address.split(',').slice(-2).join(',').trim() : null,
-      student.linkedIn ? 'LinkedIn' : null,
-      student.leetCode ? `LeetCode: ${student.leetCode}` : null,
-    ].filter(Boolean);
-    doc.fontSize(9.5).font('Helvetica').fillColor('#000000')
-      .text(contactParts.join('  |  '), L, y, { width: W, align: 'center' });
-    y += 14;
-    doc.moveTo(L, y).lineTo(R, y).strokeColor('#000000').lineWidth(0.8).stroke();
-    y += 10;
-
-    // ════════════════════════════════════════════════════════
-    // EDUCATION
-    // ════════════════════════════════════════════════════════
-    heading('Education');
-
-    // B.Tech
-    const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(student[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
-    const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : student.cgpa;
-    entryHeader(
-      `Bachelor of Technology in ${student.branch || '[Branch]'}`,
-      `${student.admissionYear || 'MM/YYYY'} – Present`
-    );
-    subLine(`Vignan's Foundation for Science, Technology & Research (Deemed University)${overallCgpa ? `  CGPA: ${overallCgpa}/10.0` : ''}`);
+    // ── PERSONAL DETAILS ─────────────────────────────────────
+    sectionTitle('Personal Details');
+    row2col('Date of Birth', student.dob, 'Gender', student.gender);
+    row2col('Blood Group', student.bloodGroup, 'Nationality', student.nationality);
+    row2col('Religion', student.religion, 'Caste / Category', student.caste);
+    row1col('Address', student.address);
+    row2col('Parent Name', student.parentName, 'Parent Phone', student.parentPhone);
     y += 4;
 
-    // Intermediate
-    if (student.interCollege || student.interPercent) {
-      entryHeader(
-        `12th / Intermediate${student.interGroup ? ' (' + student.interGroup + ')' : ''}`,
-        student.interYear ? `${student.interYear}` : ''
-      );
-      subLine(`${student.interCollege || '[College]'}${student.interBoard ? ', ' + student.interBoard : ''}${student.interPercent ? '  |  ' + student.interPercent + '%' : ''}`);
-      y += 4;
-    }
+    // ── ACADEMIC DETAILS ─────────────────────────────────────
+    checkPage(80);
+    sectionTitle('Academic Details');
+    row2col('Admission Category', student.admissionCategory, 'Admission Year', student.admissionYear);
+    row2col('Branch', student.branch, 'Current Year', student.currentYear);
+    row2col('Current Semester', student.currentSemester, 'CGPA', student.cgpa);
+    row2col('APAAR ID', student.apaarId, 'ABC ID', student.abcId);
+    y += 4;
 
-    // 10th
+    // ── EDUCATION ────────────────────────────────────────────
+    checkPage(80);
+    sectionTitle('Education History');
     if (student.tenthSchool || student.tenthPercent) {
-      entryHeader('10th Standard', student.tenthYear ? `${student.tenthYear}` : '');
-      subLine(`${student.tenthSchool || '[School]'}${student.tenthBoard ? ', ' + student.tenthBoard : ''}${student.tenthPercent ? '  |  ' + student.tenthPercent + '%' : ''}`);
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(blue).text('10th Standard', 50, y); y += 14;
+      row2col('School', student.tenthSchool, 'Board', student.tenthBoard);
+      row2col('Year', student.tenthYear, 'Percentage', student.tenthPercent ? student.tenthPercent + '%' : null);
+      y += 4;
+    }
+    if (student.interCollege || student.interPercent) {
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(blue).text('12th / Intermediate', 50, y); y += 14;
+      row2col('College', student.interCollege, 'Board', student.interBoard);
+      row2col('Group', student.interGroup, 'Year', student.interYear);
+      row1col('Percentage', student.interPercent ? student.interPercent + '%' : null);
       y += 4;
     }
 
-    // ════════════════════════════════════════════════════════
-    // TECHNICAL SKILLS / CODING PROFILES
-    // ════════════════════════════════════════════════════════
-    if (student.linkedIn || student.leetCode || student.codeChef) {
-      checkPage(50);
-      heading('Technical Profiles');
-      if (student.leetCode) {
-        const lc = `LeetCode: leetcode.com/${student.leetCode}` +
-          (student.leetCodeSolved != null ? `  |  Solved: ${student.leetCodeSolved}` +
-            (student.leetCodeEasy != null ? ` (Easy: ${student.leetCodeEasy}, Medium: ${student.leetCodeMedium}, Hard: ${student.leetCodeHard})` : '') : '');
-        bullet(lc);
-      }
-      if (student.codeChef) {
-        const cc = `CodeChef: codechef.com/users/${student.codeChef}` +
-          (student.codeChefRating != null ? `  |  Rating: ${student.codeChefRating}${student.codeChefStars ? ', Stars: ' + student.codeChefStars : ''}` : '');
-        bullet(cc);
-      }
-      if (student.linkedIn) bullet(`LinkedIn: ${student.linkedIn}`);
-      y += 4;
-    }
-
-    // ════════════════════════════════════════════════════════
-    // INTERNSHIP EXPERIENCE
-    // ════════════════════════════════════════════════════════
-    const internships = achievements.filter(a => a.activityType === 'INTERNSHIP');
-    if (internships.length > 0) {
-      heading('Internship Experience');
-      internships.forEach(a => {
-        entryHeader(a.title, a.academicYear || '');
-        if (a.description) subLine(a.description);
-        if (a.position) bullet(`Role: ${a.position}`);
-        y += 4;
-      });
-    }
-
-    // ════════════════════════════════════════════════════════
-    // CERTIFICATIONS
-    // ════════════════════════════════════════════════════════
-    const certs = achievements.filter(a => a.activityType === 'CERTIFICATION' || a.activityType === 'ONLINE_COURSE');
-    if (certs.length > 0) {
-      heading('Certifications');
-      certs.forEach(a => {
-        bullet(`${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  —  ' + a.position : ''}`);
-      });
-      y += 4;
-    }
-
-    // ════════════════════════════════════════════════════════
-    // ACADEMIC ACHIEVEMENTS & ACTIVITIES
-    // ════════════════════════════════════════════════════════
-    const others = achievements.filter(a => !['INTERNSHIP','CERTIFICATION','ONLINE_COURSE'].includes(a.activityType));
-    if (others.length > 0) {
-      heading('Academic Achievements & Activities');
-      others.forEach(a => {
-        bullet(`${a.title}${a.activityType ? '  [' + a.activityType.replace(/_/g,' ') + ']' : ''}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`);
-      });
-      y += 4;
-    }
-
-    // ════════════════════════════════════════════════════════
-    // SEMESTER CGPA TABLE
-    // ════════════════════════════════════════════════════════
-    const semData = [];
+    // ── SEMESTER CGPA TABLE ───────────────────────────────────
+    checkPage(100);
+    sectionTitle('Semester-wise CGPA / SGPA');
+    const colW = [60, 80, 80];
+    const tableX = 50;
+    doc.rect(tableX, y, 220, 16).fill(blue);
+    let cx = tableX + 4;
+    ['Sem','CGPA','SGPA'].forEach((h, i) => {
+      doc.fillColor('#fff').fontSize(8).font('Helvetica-Bold').text(h, cx, y + 4, { width: colW[i] });
+      cx += colW[i];
+    });
+    y += 16;
+    let overallCgpa = null;
     for (let s = 1; s <= 8; s++) {
-      const c = student[`sem${s}Cgpa`], g = student[`sem${s}Sgpa`];
-      if (c != null || g != null) semData.push({ sem: s, cgpa: c, sgpa: g });
-    }
-    if (semData.length > 0) {
-      checkPage(semData.length * 14 + 40);
-      heading('Semester-wise Academic Performance');
-      const cols = [80, 80, 80];
-      const tx = L;
-      // header
-      doc.rect(tx, y, 240, 15).fill('#1e40af');
-      ['Semester','CGPA','SGPA'].forEach((h, i) => {
-        doc.fillColor('#fff').fontSize(8.5).font('Helvetica-Bold')
-          .text(h, tx + cols.slice(0,i).reduce((a,b)=>a+b,0) + 4, y + 3, { width: cols[i] });
+      const cgpa = student[`sem${s}Cgpa`];
+      const sgpa = student[`sem${s}Sgpa`];
+      if (cgpa == null && sgpa == null) continue;
+      if (cgpa != null) overallCgpa = cgpa;
+      doc.rect(tableX, y, 220, 14).fill(s % 2 === 0 ? light : '#fff');
+      cx = tableX + 4;
+      [`Semester ${s}`, cgpa != null ? String(cgpa) : '—', sgpa != null ? String(sgpa) : '—'].forEach((v, i) => {
+        doc.fillColor('#0f172a').fontSize(8).font('Helvetica').text(v, cx, y + 3, { width: colW[i] });
+        cx += colW[i];
       });
-      y += 15;
-      semData.forEach((row, i) => {
-        doc.rect(tx, y, 240, 13).fill(i % 2 === 0 ? '#f8fafc' : '#fff');
-        const vals = [`Semester ${row.sem}`, row.cgpa != null ? String(row.cgpa) : '—', row.sgpa != null ? String(row.sgpa) : '—'];
-        vals.forEach((v, j) => {
-          doc.fillColor('#000').fontSize(8.5).font('Helvetica')
-            .text(v, tx + cols.slice(0,j).reduce((a,b)=>a+b,0) + 4, y + 2, { width: cols[j] });
-        });
-        y += 13;
-      });
-      if (overallCgpa) {
-        doc.rect(tx, y, 240, 14).fill('#1e3a8a');
-        doc.fillColor('#fff').fontSize(8.5).font('Helvetica-Bold').text('Overall CGPA', tx + 4, y + 3, { width: 76 });
-        doc.text(String(overallCgpa), tx + 84, y + 3, { width: 76 });
-        y += 14;
-      }
-      y += 8;
-    }
-
-    // ════════════════════════════════════════════════════════
-    // PERSONAL DETAILS (compact, at bottom)
-    // ════════════════════════════════════════════════════════
-    checkPage(60);
-    heading('Personal Details');
-    const personal = [
-      ['Reg. Number', student.regNumber], ['Date of Birth', student.dob],
-      ['Gender', student.gender], ['Blood Group', student.bloodGroup],
-      ['Nationality', student.nationality], ['Admission Category', student.admissionCategory],
-      ['APAAR ID', student.apaarId], ['ABC ID', student.abcId],
-      ['Counsellor', student.counsellor],
-    ].filter(([,v]) => v);
-    for (let i = 0; i < personal.length; i += 2) {
-      checkPage(14);
-      const [l1, v1] = personal[i];
-      const [l2, v2] = personal[i+1] || [];
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#333').text(l1 + ':', L, y, { width: 90, continued: false });
-      doc.font('Helvetica').fillColor('#000').text(String(v1), L + 95, y, { width: W/2 - 95 });
-      if (l2) {
-        doc.font('Helvetica-Bold').fillColor('#333').text(l2 + ':', L + W/2, y, { width: 90 });
-        doc.font('Helvetica').fillColor('#000').text(String(v2), L + W/2 + 95, y, { width: W/2 - 95 });
-      }
       y += 14;
     }
+    if (overallCgpa != null) {
+      doc.rect(tableX, y, 220, 16).fill('#1e3a8a');
+      doc.fillColor('#fff').fontSize(8).font('Helvetica-Bold').text('Overall CGPA', tableX + 4, y + 4, { width: 60 });
+      doc.text(String(overallCgpa), tableX + 64, y + 4, { width: 80 });
+      y += 16;
+    }
+    y += 8;
 
-    // ── footer ─────────────────────────────────────────────
-    doc.fontSize(7.5).font('Helvetica').fillColor('#888888')
-      .text(`Generated: ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })}  ·  Vignan's Foundation for Science, Technology & Research`, L, 820, { width: W, align: 'center' });
+    // ── ACHIEVEMENTS ─────────────────────────────────────────
+    if (achievements.length > 0) {
+      checkPage(60);
+      sectionTitle('Achievements & Certifications');
+      const groups = {};
+      achievements.forEach(a => { const t = a.activityType || 'OTHER'; if (!groups[t]) groups[t] = []; groups[t].push(a); });
+      for (const [type, items] of Object.entries(groups)) {
+        checkPage(30);
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(blue).text(type.replace(/_/g, ' '), 50, y); y += 14;
+        items.forEach(a => {
+          checkPage(20);
+          doc.fontSize(8).font('Helvetica').fillColor('#0f172a')
+            .text(`• ${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`, 58, y, { width: W - 8 });
+          y += 13;
+        });
+        y += 4;
+      }
+    }
+
+    // ── DOCUMENTS ────────────────────────────────────────────
+    if (documents.length > 0) {
+      checkPage(60);
+      sectionTitle('Uploaded Documents');
+      documents.forEach(d => {
+        checkPage(16);
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(d.docType || '', 50, y, { width: 130 });
+        doc.font('Helvetica').fillColor('#0f172a').text(d.label || d.filename || '—', 185, y, { width: W - 135 });
+        y += 14;
+      });
+      y += 4;
+    }
+
+    // ── CODING PROFILES ──────────────────────────────────────
+    if (student.linkedIn || student.leetCode || student.codeChef) {
+      checkPage(60);
+      sectionTitle('Coding & Professional Profiles');
+      if (student.linkedIn) row1col('LinkedIn', student.linkedIn);
+      if (student.leetCode) {
+        const lc = `leetcode.com/${student.leetCode}` + (student.leetCodeSolved != null ? `  |  Solved: ${student.leetCodeSolved}` : '');
+        row1col('LeetCode', lc);
+      }
+      if (student.codeChef) {
+        const cc = `codechef.com/users/${student.codeChef}` + (student.codeChefRating != null ? `  |  Rating: ${student.codeChefRating}` : '');
+        row1col('CodeChef', cc);
+      }
+    }
+
+    // ── FOOTER ───────────────────────────────────────────────
+    const footerY = 810;
+    doc.moveTo(50, footerY - 8).lineTo(545, footerY - 8).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.fontSize(7).font('Helvetica').fillColor(gray)
+      .text(`Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, footerY, { width: W / 2 })
+      .text("Vignan's Foundation for Science, Technology & Research · Deemed to be University", 50, footerY, { width: W, align: 'right' });
 
     doc.end();
   } catch (err) {
