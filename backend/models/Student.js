@@ -32,6 +32,15 @@ const studentSchema = new mongoose.Schema({
   codeChef: String,
   leetCode: String,
   cgpa: Number,
+  // Semester-wise CGPA
+  sem1Cgpa: Number,
+  sem2Cgpa: Number,
+  sem3Cgpa: Number,
+  sem4Cgpa: Number,
+  sem5Cgpa: Number,
+  sem6Cgpa: Number,
+  sem7Cgpa: Number,
+  sem8Cgpa: Number,
   // Academic history
   tenthSchool: String,
   tenthBoard: String,
