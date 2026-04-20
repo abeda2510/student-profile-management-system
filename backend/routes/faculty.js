@@ -88,38 +88,48 @@ async function fetchLeetCodeStats(username) {
   } catch { return null; }
 }
 
-// CodeChef stats fetch via multiple fallback methods
+// CodeChef stats fetch - try multiple endpoints
 async function fetchCodeChefStats(username) {
   if (!username) return null;
   const axios = require('axios');
 
-  // Try method 1: codechef-api.vercel.app
-  try {
-    const { data } = await axios.get(`https://codechef-api.vercel.app/handle/${username}`, { timeout: 5000 });
-    if (data && data.currentRating) {
-      return { rating: data.currentRating, stars: data.stars ? parseInt(data.stars) : null, rank: data.globalRank || null };
-    }
-  } catch {}
+  // Try: codeforces-style unofficial endpoint
+  const endpoints = [
+    `https://codechef-api.vercel.app/handle/${username}`,
+    `https://competitive-coding-api.herokuapp.com/api/codechef/${username}`,
+    `https://alfa-leetcode-api.onrender.com/codechef/${username}`,
+  ];
 
-  // Try method 2: competitive-coding-api
-  try {
-    const { data } = await axios.get(`https://competitive-coding-api.herokuapp.com/api/codechef/${username}`, { timeout: 5000 });
-    if (data && data.status === 'Success') {
-      return { rating: data.rating ? parseInt(data.rating) : null, stars: data.stars ? parseInt(data.stars) : null, rank: data.global_rank ? parseInt(data.global_rank) : null };
-    }
-  } catch {}
+  for (const url of endpoints) {
+    try {
+      const { data } = await axios.get(url, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (data && (data.currentRating || data.rating)) {
+        return {
+          rating: data.currentRating || data.rating || null,
+          stars: data.stars ? parseInt(String(data.stars)) : null,
+          rank: data.globalRank || data.global_rank || null,
+        };
+      }
+    } catch {}
+  }
 
-  // Try method 3: parse CodeChef page JSON
+  // Last resort: scrape with cookie bypass
   try {
     const { data: html } = await axios.get(`https://www.codechef.com/users/${username}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }, timeout: 8000
+      timeout: 8000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+      }
     });
-    const ratingMatch = html.match(/"currentRating"\s*:\s*(\d+)/);
-    const starsMatch = html.match(/(\d+)\s*[★\*]/);
+    const ratingMatch = html.match(/"currentRating"\s*:\s*(\d+)/) || html.match(/Rating[^0-9]*(\d{3,4})/);
+    const starsMatch = html.match(/(\d)\s*Star/) || html.match(/(\d)★/);
     const rankMatch = html.match(/"globalRank"\s*:\s*(\d+)/);
     if (ratingMatch) {
       return {
-        rating: ratingMatch ? parseInt(ratingMatch[1]) : null,
+        rating: parseInt(ratingMatch[1]),
         stars: starsMatch ? parseInt(starsMatch[1]) : null,
         rank: rankMatch ? parseInt(rankMatch[1]) : null,
       };
