@@ -217,9 +217,22 @@ export default function FacultyDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {searchAchs.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13 }}>No achievements.</div>}
                 {searchAchs.map(a => (
-                  <div key={a._id} style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 14px' }}>
-                    <div style={{ fontWeight: 700 }}>{a.title}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{a.activityType?.replace(/_/g, ' ')} | {a.academicYear}</div>
+                  <div key={a._id} style={{ background: '#f8fafc', borderRadius: 8, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{a.title}</div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        <span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 99, padding: '1px 8px', fontSize: 11, fontWeight: 700, marginRight: 6 }}>{a.activityType?.replace(/_/g, ' ')}</span>
+                        {a.academicYear && <span style={{ marginRight: 6 }}>{a.academicYear}</span>}
+                        {a.position && <span style={{ marginRight: 6 }}>| {a.position}</span>}
+                        <span style={{ background: a.status === 'APPROVED' ? '#d1fae5' : '#fef3c7', color: a.status === 'APPROVED' ? '#065f46' : '#92400e', borderRadius: 99, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>{a.status}</span>
+                      </div>
+                    </div>
+                    {(a.certificateUrl || a.certificatePath) && (
+                      <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                        style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 10, textDecoration: 'none' }}>
+                        📎 View
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
