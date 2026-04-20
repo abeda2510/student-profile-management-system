@@ -88,55 +88,52 @@ async function fetchLeetCodeStats(username) {
   } catch { return null; }
 }
 
-// CodeChef stats fetch - try multiple endpoints
+// CodeChef stats fetch - parse from HTML page
 async function fetchCodeChefStats(username) {
   if (!username) return null;
   const axios = require('axios');
+  const clean = username.replace(/^https?:\/\/(www\.)?codechef\.com\/users\//i, '').replace(/\/$/, '').trim();
+  if (!clean) return null;
 
-  // Try: codeforces-style unofficial endpoint
-  const endpoints = [
-    `https://codechef-api.vercel.app/handle/${username}`,
-    `https://competitive-coding-api.herokuapp.com/api/codechef/${username}`,
-    `https://alfa-leetcode-api.onrender.com/codechef/${username}`,
-  ];
-
-  for (const url of endpoints) {
-    try {
-      const { data } = await axios.get(url, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } });
-      if (data && (data.currentRating || data.rating)) {
-        return {
-          rating: data.currentRating || data.rating || null,
-          stars: data.stars ? parseInt(String(data.stars)) : null,
-          rank: data.globalRank || data.global_rank || null,
-        };
-      }
-    } catch {}
-  }
-
-  // Last resort: scrape with cookie bypass
   try {
-    const { data: html } = await axios.get(`https://www.codechef.com/users/${username}`, {
-      timeout: 8000,
+    const { data: html } = await axios.get(`https://www.codechef.com/users/${clean}`, {
+      timeout: 10000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
       }
     });
-    const ratingMatch = html.match(/"currentRating"\s*:\s*(\d+)/) || html.match(/Rating[^0-9]*(\d{3,4})/);
-    const starsMatch = html.match(/(\d)\s*Star/) || html.match(/(\d)★/);
-    const rankMatch = html.match(/"globalRank"\s*:\s*(\d+)/);
-    if (ratingMatch) {
-      return {
-        rating: parseInt(ratingMatch[1]),
-        stars: starsMatch ? parseInt(starsMatch[1]) : null,
-        rank: rankMatch ? parseInt(rankMatch[1]) : null,
-      };
-    }
-  } catch {}
 
-  return null;
+    // Stars: appears as "1★username" or "2★username" in the HTML
+    const starsMatch = html.match(/(\d+)★/) || html.match(/(\d+)\s*Star/i);
+    const stars = starsMatch ? parseInt(starsMatch[1]) : null;
+
+    // Rating: look for number near "CodeChef Rating" or in rating section
+    const ratingMatch = html.match(/(\d{3,4})\s*\n?\s*\(Div\s*\d\)/) ||
+                        html.match(/currentRating["\s:]+(\d+)/) ||
+                        html.match(/rating["\s:]+(\d{3,4})/i);
+    const rating = ratingMatch ? parseInt(ratingMatch[1]) : null;
+
+    // Global rank
+    const rankMatch = html.match(/(\d{4,7})\s*\n?\s*Global\s*Rank/i) ||
+                      html.match(/globalRank["\s:]+(\d+)/);
+    const rank = rankMatch ? parseInt(rankMatch[1]) : null;
+
+    // Total problems solved
+    const solvedMatch = html.match(/Total Problems Solved:\s*(\d+)/i);
+    const solved = solvedMatch ? parseInt(solvedMatch[1]) : null;
+
+    if (stars !== null || rating !== null || rank !== null) {
+      return { rating, stars, rank, solved };
+    }
+    return null;
+  } catch (err) {
+    console.error('CodeChef fetch error:', err.message);
+    return null;
+  }
 }
 async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
