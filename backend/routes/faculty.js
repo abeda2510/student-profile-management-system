@@ -68,16 +68,52 @@ router.get('/students', protect, facultyOnly, async (req, res) => {
   res.json(students);
 });
 
+// LeetCode stats cache (in-memory, per request)
+const lcCache = {};
+async function fetchLeetCodeStats(username) {
+  if (!username) return null;
+  if (lcCache[username]) return lcCache[username];
+  try {
+    const axios = require('axios');
+    const { data } = await axios.post('https://leetcode.com/graphql', {
+      query: `query { matchedUser(username: "${username}") { submitStats { acSubmissionNum { difficulty count } } } }`
+    }, { headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' }, timeout: 5000 });
+    const nums = data?.data?.matchedUser?.submitStats?.acSubmissionNum || [];
+    const stats = { total: 0, easy: 0, medium: 0, hard: 0 };
+    nums.forEach(n => {
+      if (n.difficulty === 'All') stats.total = n.count;
+      if (n.difficulty === 'Easy') stats.easy = n.count;
+      if (n.difficulty === 'Medium') stats.medium = n.count;
+      if (n.difficulty === 'Hard') stats.hard = n.count;
+    });
+    lcCache[username] = stats;
+    return stats;
+  } catch { return null; }
+}
+
 // Helper: resolve data for one student + one docType
 async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
   if (docType === 'ABC_ID') return { ...base, data: st.abcId || '—' };
   if (docType === 'APAAR_ID') return { ...base, data: st.apaarId || '—' };
   if (docType === 'LEETCODE') return { ...base, data: st.leetCode ? `leetcode.com/${st.leetCode}` : '—' };
-  if (docType === 'LEETCODE_SOLVED') return { ...base, data: st.leetCodeSolved != null ? String(st.leetCodeSolved) : '—' };
-  if (docType === 'LEETCODE_EASY') return { ...base, data: st.leetCodeEasy != null ? String(st.leetCodeEasy) : '—' };
-  if (docType === 'LEETCODE_MEDIUM') return { ...base, data: st.leetCodeMedium != null ? String(st.leetCodeMedium) : '—' };
-  if (docType === 'LEETCODE_HARD') return { ...base, data: st.leetCodeHard != null ? String(st.leetCodeHard) : '—' };
+
+  // Auto-fetch LeetCode stats if username exists
+  if (['LEETCODE_SOLVED','LEETCODE_EASY','LEETCODE_MEDIUM','LEETCODE_HARD'].includes(docType)) {
+    // Use stored value if available
+    const stored = { LEETCODE_SOLVED: st.leetCodeSolved, LEETCODE_EASY: st.leetCodeEasy, LEETCODE_MEDIUM: st.leetCodeMedium, LEETCODE_HARD: st.leetCodeHard };
+    if (stored[docType] != null) return { ...base, data: String(stored[docType]) };
+    // Try live fetch
+    if (st.leetCode) {
+      const stats = await fetchLeetCodeStats(st.leetCode);
+      if (stats) {
+        const map = { LEETCODE_SOLVED: stats.total, LEETCODE_EASY: stats.easy, LEETCODE_MEDIUM: stats.medium, LEETCODE_HARD: stats.hard };
+        return { ...base, data: String(map[docType] || 0) };
+      }
+    }
+    return { ...base, data: '—' };
+  }
+
   if (docType === 'CODECHEF') return { ...base, data: st.codeChef ? `codechef.com/users/${st.codeChef}` : '—' };
   if (docType === 'CODECHEF_RATING') return { ...base, data: st.codeChefRating != null ? String(st.codeChefRating) : '—' };
   if (docType === 'CODECHEF_STARS') return { ...base, data: st.codeChefStars != null ? String(st.codeChefStars) : '—' };
