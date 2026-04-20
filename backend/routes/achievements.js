@@ -222,6 +222,173 @@ router.get('/ranking/department', protect, facultyOrAdmin, async (req, res) => {
   res.json(result);
 });
 
+// Faculty: achievement report with filters
+router.get('/faculty-report', protect, async (req, res) => {
+  try {
+    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const achFilter = {};
+    if (academicYear) achFilter.academicYear = academicYear;
+    if (activityType) achFilter.activityType = activityType;
+    if (activityTypes) achFilter.activityType = { $in: activityTypes.split(',') };
+
+    if (branch || section || currentYear) {
+      const studentFilter = { role: 'student' };
+      if (branch) studentFilter.branch = branch;
+      if (section) studentFilter.section = section;
+      if (currentYear) studentFilter.currentYear = parseInt(currentYear);
+      const students = await Student.find(studentFilter).select('regNumber name branch section currentYear');
+      const regNumbers = students.map(s => s.regNumber);
+      achFilter.regNumber = { $in: regNumbers };
+      const achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+      const studentMap = {};
+      students.forEach(s => { studentMap[s.regNumber] = s; });
+      return res.json(achievements.map(a => ({
+        ...a.toObject(),
+        studentName: studentMap[a.regNumber]?.name || a.regNumber,
+        branch: studentMap[a.regNumber]?.branch,
+        section: studentMap[a.regNumber]?.section,
+        currentYear: studentMap[a.regNumber]?.currentYear,
+      })));
+    }
+
+    const achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+    const regNumbers = [...new Set(achievements.map(a => a.regNumber))];
+    const students = await Student.find({ regNumber: { $in: regNumbers } }).select('regNumber name branch section currentYear');
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.regNumber] = s; });
+    res.json(achievements.map(a => ({
+      ...a.toObject(),
+      studentName: studentMap[a.regNumber]?.name || a.regNumber,
+      branch: studentMap[a.regNumber]?.branch,
+      section: studentMap[a.regNumber]?.section,
+      currentYear: studentMap[a.regNumber]?.currentYear,
+    })));
+  } catch (err) {
+    console.error('faculty-report error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Faculty: achievement report Excel download
+router.get('/faculty-report/excel', protect, async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const achFilter = {};
+    if (academicYear) achFilter.academicYear = academicYear;
+    if (activityType) achFilter.activityType = activityType;
+    if (activityTypes) achFilter.activityType = { $in: activityTypes.split(',') };
+    const studentFilter = { role: 'student' };
+    if (branch) studentFilter.branch = branch;
+    if (section) studentFilter.section = section;
+    if (currentYear) studentFilter.currentYear = parseInt(currentYear);
+    let students = [];
+    if (branch || section || currentYear) {
+      students = await Student.find(studentFilter).select('regNumber name branch section currentYear');
+      const regNumbers = students.map(s => s.regNumber);
+      if (regNumbers.length) achFilter.regNumber = { $in: regNumbers };
+    }
+    const achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+    if (!students.length) {
+      const regs = [...new Set(achievements.map(a => a.regNumber))];
+      students = await Student.find({ regNumber: { $in: regs } }).select('regNumber name branch section currentYear');
+    }
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.regNumber] = s; });
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Achievements');
+    ws.mergeCells('A1:H1');
+    ws.getCell('A1').value = "Vignan's Foundation for Science, Technology & Research";
+    ws.getCell('A1').font = { bold: true, size: 12 };
+    ws.getCell('A1').alignment = { horizontal: 'center' };
+    ws.addRow([]);
+    const hRow = ws.addRow(['S.No','Reg No','Name','Branch','Title','Academic Year','Points','Certificate URL']);
+    hRow.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+      cell.alignment = { horizontal: 'center' };
+      cell.border = { top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'} };
+    });
+    [6,16,24,10,30,14,10,40].forEach((w,i) => { ws.getColumn(i+1).width = w; });
+    achievements.forEach((a, i) => {
+      const st = studentMap[a.regNumber];
+      const row = ws.addRow([i+1, a.regNumber, st?.name||'', st?.branch||'', a.title, a.academicYear||'', a.points, a.certificateUrl||a.certificatePath||'']);
+      row.eachCell(cell => { cell.border = { top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'} }; });
+      if (i%2===1) row.eachCell(cell => { cell.fill = { type:'pattern',pattern:'solid',fgColor:{argb:'FFF0FDF4'} }; });
+    });
+    res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition','attachment; filename="achievements_report.xlsx"');
+    await wb.xlsx.write(res); res.end();
+  } catch (err) {
+    console.error('excel error:', err);
+    if (!res.headersSent) res.status(500).json({ message: err.message });
+  }
+});
+
+// Faculty: ZIP download of certificates
+router.get('/faculty-report/zip', protect, async (req, res) => {
+  try {
+    const archiver = require('archiver');
+    const axios = require('axios');
+    const path = require('path');
+    const fs = require('fs');
+    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const achFilter = {};
+    if (academicYear) achFilter.academicYear = academicYear;
+    if (activityType) achFilter.activityType = activityType;
+    if (activityTypes) achFilter.activityType = { $in: activityTypes.split(',') };
+    const studentFilter = { role: 'student' };
+    if (branch) studentFilter.branch = branch;
+    if (section) studentFilter.section = section;
+    if (currentYear) studentFilter.currentYear = parseInt(currentYear);
+    let students = [];
+    if (branch || section || currentYear) {
+      students = await Student.find(studentFilter).select('regNumber name branch section');
+      const regNumbers = students.map(s => s.regNumber);
+      if (regNumbers.length) achFilter.regNumber = { $in: regNumbers };
+    }
+    const achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+    if (!students.length) {
+      const regs = [...new Set(achievements.map(a => a.regNumber))];
+      students = await Student.find({ regNumber: { $in: regs } }).select('regNumber name branch section');
+    }
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.regNumber] = s; });
+    const withCert = achievements.filter(a => (a.certificateUrl && a.certificateUrl.startsWith('http')) || (a.certificatePath && !a.certificatePath.startsWith('http') && fs.existsSync(a.certificatePath)));
+    if (withCert.length === 0) return res.status(404).json({ message: 'No certificates found' });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="certificates.zip"');
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', err => { throw err; });
+    archive.pipe(res);
+    for (const a of withCert) {
+      const st = studentMap[a.regNumber];
+      const safeName = (st?.name || a.regNumber).replace(/[^a-zA-Z0-9_ -]/g, '_');
+      const safeType = (a.activityType || 'cert').replace(/[^a-zA-Z0-9_]/g, '_');
+      const safeTitle = (a.title || 'certificate').replace(/[^a-zA-Z0-9_ -]/g, '_').substring(0, 40);
+      const url = a.certificateUrl;
+      if (url && url.startsWith('http')) {
+        try {
+          const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
+          const contentType = response.headers['content-type'] || '';
+          let ext = path.extname(url.split('?')[0]) || '.bin';
+          if (contentType.includes('pdf')) ext = '.pdf';
+          else if (contentType.includes('png')) ext = '.png';
+          else if (contentType.includes('jpg') || contentType.includes('jpeg')) ext = '.jpg';
+          archive.append(Buffer.from(response.data), { name: a.regNumber + '_' + safeName + '_' + safeType + '_' + safeTitle + ext });
+        } catch (err) { console.error('cert fetch failed:', err.message); }
+      } else if (a.certificatePath && fs.existsSync(a.certificatePath)) {
+        const ext = path.extname(a.certificatePath) || '.bin';
+        archive.file(a.certificatePath, { name: a.regNumber + '_' + safeName + '_' + safeType + '_' + safeTitle + ext });
+      }
+    }
+    await archive.finalize();
+  } catch (err) {
+    console.error('ZIP error:', err);
+    if (!res.headersSent) res.status(500).json({ message: 'ZIP failed: ' + err.message });
+  }
+});
+
 // ── Admin: get achievements by reg number ────────────────
 router.get('/:regNumber', protect, facultyOrAdmin, async (req, res) => {
   const filter = { regNumber: req.params.regNumber };
