@@ -91,22 +91,45 @@ async function fetchLeetCodeStats(username) {
   } catch { return null; }
 }
 
-// CodeChef stats fetch via unofficial API
+// CodeChef stats fetch via multiple fallback methods
 async function fetchCodeChefStats(username) {
   if (!username) return null;
+  const axios = require('axios');
+
+  // Try method 1: codechef-api.vercel.app
   try {
-    const axios = require('axios');
-    const { data } = await axios.get(`https://codechef-api.vercel.app/handle/${username}`, {
-      timeout: 6000,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+    const { data } = await axios.get(`https://codechef-api.vercel.app/handle/${username}`, { timeout: 5000 });
+    if (data && data.currentRating) {
+      return { rating: data.currentRating, stars: data.stars ? parseInt(data.stars) : null, rank: data.globalRank || null };
+    }
+  } catch {}
+
+  // Try method 2: competitive-coding-api
+  try {
+    const { data } = await axios.get(`https://competitive-coding-api.herokuapp.com/api/codechef/${username}`, { timeout: 5000 });
+    if (data && data.status === 'Success') {
+      return { rating: data.rating ? parseInt(data.rating) : null, stars: data.stars ? parseInt(data.stars) : null, rank: data.global_rank ? parseInt(data.global_rank) : null };
+    }
+  } catch {}
+
+  // Try method 3: parse CodeChef page JSON
+  try {
+    const { data: html } = await axios.get(`https://www.codechef.com/users/${username}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }, timeout: 8000
     });
-    if (!data || data.status === 'Failed') return null;
-    return {
-      rating: data.currentRating || null,
-      stars: data.stars ? parseInt(data.stars) : null,
-      rank: data.globalRank || null,
-    };
-  } catch { return null; }
+    const ratingMatch = html.match(/"currentRating"\s*:\s*(\d+)/);
+    const starsMatch = html.match(/(\d+)\s*[★\*]/);
+    const rankMatch = html.match(/"globalRank"\s*:\s*(\d+)/);
+    if (ratingMatch) {
+      return {
+        rating: ratingMatch ? parseInt(ratingMatch[1]) : null,
+        stars: starsMatch ? parseInt(starsMatch[1]) : null,
+        rank: rankMatch ? parseInt(rankMatch[1]) : null,
+      };
+    }
+  } catch {}
+
+  return null;
 }
 async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
