@@ -174,7 +174,7 @@ export default function AdminSearch() {
                 <select value={selFaculty} onChange={e => setSelFaculty(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}>
                   <option value="">-- Select Faculty --</option>
-                  {facultyList.map(f => <option key={f._id} value={f.name}>{f.name} ({f.department})</option>)}
+                  {facultyList.map(f => <option key={f._id} value={f.name}>{f.facultyId} — {f.name} ({f.department})</option>)}
                 </select>
               </div>
               <div>
