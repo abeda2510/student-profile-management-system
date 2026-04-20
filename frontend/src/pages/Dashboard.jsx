@@ -55,7 +55,6 @@ export default function Dashboard() {
     <div>
       {/* Welcome banner */}
       <div style={{ background: 'linear-gradient(135deg, #1e40af 0%, #059669 100%)', borderRadius: 16, padding: '28px 32px', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 20, color: '#fff' }}>
-        <img src={LOGO} alt="Vignan" style={{ width: 64, height: 64, borderRadius: 14, objectFit: 'cover', border: '3px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Welcome, {name || '—'} 👋</div>
           <div style={{ fontSize: 13, opacity: 0.85 }}>Comprehensive Student Achievement & Profile Management System</div>
