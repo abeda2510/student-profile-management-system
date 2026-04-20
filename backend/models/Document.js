@@ -11,6 +11,8 @@ const documentSchema = new mongoose.Schema({
   label: String,
   filename: String,
   filepath: String,
+  fileUrl: String,
+  cloudinaryId: String,
   uploadedAt: { type: Date, default: Date.now }
 }, { collection: 'documents' }); // → documents collection
 

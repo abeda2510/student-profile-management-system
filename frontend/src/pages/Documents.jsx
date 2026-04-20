@@ -74,7 +74,7 @@ export default function Documents() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <a href={`/uploads/documents/${localStorage.getItem('regNumber')}/${d.filename}`}
+              <a href={d.fileUrl || d.filepath}
                 target="_blank" rel="noreferrer"
                 style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
                 View
