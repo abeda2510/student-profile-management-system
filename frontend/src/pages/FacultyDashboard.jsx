@@ -124,7 +124,7 @@ export default function FacultyDashboard() {
                       <span style={{ fontWeight: 600 }}>{d.label || d.filename}</span>
                       <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
                     </div>
-                    <a href={`/uploads/documents/${student.regNumber}/${d.filename}`} target="_blank" rel="noreferrer"
+                    <a href={d.fileUrl || d.filepath || '#'} target="_blank" rel="noreferrer"
                       style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>View</a>
                   </div>
                 </div>
@@ -145,8 +145,8 @@ export default function FacultyDashboard() {
                     {a.issuingOrg && <span>Org: {a.issuingOrg} &nbsp;|&nbsp; </span>}
                     {a.position && <span>Position: {a.position}</span>}
                   </div>
-                  {a.certificateFile && (
-                    <a href={`/uploads/achievements/${student.regNumber}/${a.certificateFile}`}
+                  {(a.certificateUrl || a.certificatePath) && (
+                    <a href={a.certificateUrl || a.certificatePath}
                       target="_blank" rel="noreferrer"
                       style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>
                       View Certificate
