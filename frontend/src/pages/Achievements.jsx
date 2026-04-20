@@ -126,37 +126,42 @@ export default function Achievements() {
       {/* Add Form */}
       {showForm && (
         <div style={s.card}>
-          <h3 style={{ marginBottom: 16, color: '#374151' }}>Add Achievement</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ margin: 0, color: '#374151', fontSize: 16, fontWeight: 700 }}>Add Achievement — TECHNICAL</h3>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: 14, cursor: 'pointer', color: '#64748b', fontWeight: 600 }}>✕ Close</button>
+          </div>
           <form onSubmit={submit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-              <div>
-                <input style={s.input} placeholder="Title *" value={form.title} onChange={e => set('title', e.target.value)} required />
-                <select style={s.input} value={form.activityType} onChange={e => set('activityType', e.target.value)} required>
-                  <option value="">Activity Type *</option>
-                  {TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
+              <input style={s.input} placeholder="Title *" value={form.title} onChange={e => set('title', e.target.value)} required />
+              <input style={s.input} placeholder="Issuing Organization" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)} />
+              <select style={s.input} value={form.activityType} onChange={e => set('activityType', e.target.value)} required>
+                <option value="">Activity Type *</option>
+                {TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+              </select>
+              <select style={s.input} value={form.position} onChange={e => set('position', e.target.value)}>
+                <option value="">🏆 Position / Award</option>
+                <option value="1st Place">1st Place</option>
+                <option value="2nd Place">2nd Place</option>
+                <option value="3rd Place">3rd Place</option>
+                <option value="Winner">Winner</option>
+                <option value="Runner Up">Runner Up</option>
+                <option value="Participation">Participation</option>
+                <option value="Completed">Completed</option>
+                <option value="Other">Other</option>
+              </select>
+              <input style={s.input} placeholder="Academic Year (e.g. 2023-24)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)} />
+              <input style={s.input} type="date" value={form.date} onChange={e => set('date', e.target.value)} />
+              {subTypes.length > 0 && (
+                <select style={s.input} value={form.subType} onChange={e => set('subType', e.target.value)}>
+                  <option value="">Participation Level</option>
+                  {subTypes.map(st => <option key={st} value={st}>{st}</option>)}
                 </select>
-                {subTypes.length > 0 && (
-                  <select style={s.input} value={form.subType} onChange={e => set('subType', e.target.value)}>
-                    <option value="">Participation Level</option>
-                    {subTypes.map(st => <option key={st} value={st}>{st}</option>)}
-                  </select>
-                )}
-                <input style={s.input} placeholder="Academic Year (e.g. 2023-24)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)} />
-                <input style={s.input} placeholder="Semester" type="number" value={form.semester} onChange={e => set('semester', e.target.value)} />
-              </div>
-              <div>
-                <input style={s.input} placeholder="Issuing Organization" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)} />
-                <input style={s.input} placeholder="Position / Award" value={form.position} onChange={e => set('position', e.target.value)} />
-                <input style={s.input} type="date" value={form.date} onChange={e => set('date', e.target.value)} />
-                <input style={s.input} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} />
-              </div>
+              )}
+              <input style={{ ...s.input, gridColumn: subTypes.length > 0 ? '2' : '1 / span 2' }} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} />
             </div>
-            <textarea style={{ ...s.input, height: 70, resize: 'vertical' }} placeholder="Description"
+            <textarea style={{ ...s.input, height: 80, resize: 'vertical', marginTop: 4 }} placeholder="Description"
               value={form.description} onChange={e => set('description', e.target.value)} />
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-              ℹ️ Achievement will be reviewed by faculty before points are awarded.
-            </div>
-            <button style={s.btn()} type="submit">Submit for Review</button>
+            <button style={{ ...s.btn(), marginTop: 4 }} type="submit">Submit</button>
           </form>
         </div>
       )}
