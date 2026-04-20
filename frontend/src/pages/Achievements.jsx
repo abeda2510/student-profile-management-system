@@ -194,8 +194,8 @@ export default function Achievements() {
                   Review note: {a.reviewNote}
                 </div>
               )}
-              {a.certificateFile && (
-                <a href={`/uploads/achievements/${localStorage.getItem('regNumber')}/${a.certificateFile}`}
+              {(a.certificateUrl || a.certificatePath) && (
+                <a href={a.certificateUrl || a.certificatePath}
                   target="_blank" rel="noreferrer"
                   style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>
                   📎 View Certificate
