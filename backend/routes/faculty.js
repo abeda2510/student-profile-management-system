@@ -73,10 +73,28 @@ async function getStudentDocData(st, docType) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
   if (docType === 'ABC_ID') return { ...base, data: st.abcId || '—' };
   if (docType === 'APAAR_ID') return { ...base, data: st.apaarId || '—' };
-  
   if (docType === 'LEETCODE') return { ...base, data: st.leetCode ? `leetcode.com/${st.leetCode}` : '—' };
+  if (docType === 'LEETCODE_SOLVED') return { ...base, data: st.leetCodeSolved != null ? String(st.leetCodeSolved) : '—' };
+  if (docType === 'LEETCODE_EASY') return { ...base, data: st.leetCodeEasy != null ? String(st.leetCodeEasy) : '—' };
+  if (docType === 'LEETCODE_MEDIUM') return { ...base, data: st.leetCodeMedium != null ? String(st.leetCodeMedium) : '—' };
+  if (docType === 'LEETCODE_HARD') return { ...base, data: st.leetCodeHard != null ? String(st.leetCodeHard) : '—' };
   if (docType === 'CODECHEF') return { ...base, data: st.codeChef ? `codechef.com/users/${st.codeChef}` : '—' };
+  if (docType === 'CODECHEF_RATING') return { ...base, data: st.codeChefRating != null ? String(st.codeChefRating) : '—' };
+  if (docType === 'CODECHEF_STARS') return { ...base, data: st.codeChefStars != null ? String(st.codeChefStars) : '—' };
+  if (docType === 'CODECHEF_RANK') return { ...base, data: st.codeChefRank != null ? String(st.codeChefRank) : '—' };
   if (docType === 'LINKEDIN') return { ...base, data: st.linkedIn || '—' };
+  if (docType === 'EMAIL') return { ...base, data: st.email || '—' };
+  if (docType === 'PHONE') return { ...base, data: st.phone || '—' };
+  if (docType === 'PARENT_NAME') return { ...base, data: st.parentName || '—' };
+  if (docType === 'PARENT_PHONE') return { ...base, data: st.parentPhone || '—' };
+  if (docType === 'ADDRESS') return { ...base, data: st.address || '—' };
+  if (docType === 'CGPA') return { ...base, data: st.cgpa != null ? String(st.cgpa) : '—' };
+  if (docType === 'ADMISSION_CATEGORY') return { ...base, data: st.admissionCategory || '—' };
+  if (docType === 'CURRENT_YEAR') return { ...base, data: st.currentYear != null ? String(st.currentYear) : '—' };
+  if (docType === 'CURRENT_SEMESTER') return { ...base, data: st.currentSemester != null ? String(st.currentSemester) : '—' };
+  if (docType === 'DOB') return { ...base, data: st.dob || '—' };
+  if (docType === 'GENDER') return { ...base, data: st.gender || '—' };
+  if (docType === 'BLOOD_GROUP') return { ...base, data: st.bloodGroup || '—' };
   if (docType === 'INTERNSHIP') {
     const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
