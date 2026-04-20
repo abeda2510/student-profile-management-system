@@ -142,8 +142,8 @@ input::placeholder { color: #94a3b8; }
 .info-value { color: #0f172a; font-weight: 600; }
 
 /* Field group */
-.field-group { display: flex; flex-direction: column; gap: 5px; }
-.field-label { font-size: 12px; font-weight: 600; color: #475569; letter-spacing: 0.3px; }
+.field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.field-label { font-size: 12px; font-weight: 600; color: #475569; letter-spacing: 0.3px; display: block; margin-bottom: 4px; }
 
 /* Upload box */
 .upload-box {

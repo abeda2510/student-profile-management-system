@@ -4,29 +4,31 @@ import api from '../api';
 const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
 const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'MANAGEMENT', 'NRI', 'OTHER'];
 
-const SectionCard = ({ icon, title, color = '#1e40af', bg = '#eff6ff', children }) => (
-  <div className="card" style={{ marginBottom: 20 }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
-      <div style={{ width: 40, height: 40, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
-      <div>
-        <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{title}</div>
-      </div>
+const SectionCard = ({ icon, title, bg = '#eff6ff', children }) => (
+  <div style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', marginBottom: 20 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, paddingBottom: 14, borderBottom: '2px solid #f1f5f9' }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{icon}</div>
+      <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{title}</div>
     </div>
     {children}
   </div>
 );
 
 const Field = ({ label, value, onChange, type = 'text', placeholder = '', span = 1 }) => (
-  <div style={{ gridColumn: `span ${span}` }} className="field-group">
-    <label className="field-label">{label}</label>
-    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder || label} />
+  <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', letterSpacing: '0.3px' }}>{label}</label>
+    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder || label}
+      style={{ padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 14, background: '#f8fafc', outline: 'none', transition: 'border-color 0.15s', fontFamily: 'inherit' }}
+      onFocus={e => e.target.style.borderColor = '#3b82f6'}
+      onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
   </div>
 );
 
 const SelectF = ({ label, value, onChange, options }) => (
-  <div className="field-group">
-    <label className="field-label">{label}</label>
-    <select value={value || ''} onChange={e => onChange(e.target.value)}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b', letterSpacing: '0.3px' }}>{label}</label>
+    <select value={value || ''} onChange={e => onChange(e.target.value)}
+      style={{ padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 14, background: '#f8fafc', outline: 'none', fontFamily: 'inherit' }}>
       <option value="">Select {label}</option>
       {options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
@@ -140,8 +142,8 @@ export default function StudentProfile() {
     return vals.length ? (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(2) : form.cgpa || null;
   })();
 
-  const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' };
-  const grid3 = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px 20px' };
+  const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 24px' };
+  const grid3 = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '18px 24px' };
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
