@@ -4,16 +4,24 @@ import api from '../api';
 const CATEGORIES = [
   { key: 'TECHNICAL', label: 'Technical', icon: '💻', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
     desc: 'Hackathons, Competitions, Workshops, Research',
-    types: ['HACKATHON','IDEATHON','TECHNICAL_COMPETITION','RESEARCH_PUBLICATION','INTERNSHIP','WORKSHOP','SEMINAR','PROJECT'] },
+    types: ['HACKATHON','IDEATHON','TECHNICAL_COMPETITION','RESEARCH_PUBLICATION','INTERNSHIP','WORKSHOP','SEMINAR','PROJECT'],
+    typeIcons: { HACKATHON:'⚡', IDEATHON:'💡', TECHNICAL_COMPETITION:'🏆', RESEARCH_PUBLICATION:'📄', INTERNSHIP:'💼', WORKSHOP:'🔧', SEMINAR:'🎤', PROJECT:'📁' }
+  },
   { key: 'NON_TECHNICAL', label: 'Non-Technical', icon: '🎭', color: '#d97706', bg: '#fffbeb', border: '#fde68a',
     desc: 'Cultural, Sports, Social Activities',
-    types: ['SPORTS','CULTURAL','DANCE','MUSIC','ART','VOLUNTEERING','NSS','NCC'] },
+    types: ['SPORTS','CULTURAL','DANCE','MUSIC','ART','VOLUNTEERING','NSS','NCC'],
+    typeIcons: { SPORTS:'⚽', CULTURAL:'🎨', DANCE:'💃', MUSIC:'🎵', ART:'🖼️', VOLUNTEERING:'🤝', NSS:'🌿', NCC:'🎖️' }
+  },
   { key: 'NPTEL', label: 'NPTEL', icon: '🎓', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe',
     desc: 'NPTEL Course Certifications',
-    types: ['NPTEL_ELITE','NPTEL_SILVER','NPTEL_GOLD','NPTEL_COURSE'] },
+    types: ['NPTEL_ELITE','NPTEL_SILVER','NPTEL_GOLD','NPTEL_COURSE'],
+    typeIcons: { NPTEL_ELITE:'🥇', NPTEL_SILVER:'🥈', NPTEL_GOLD:'🥉', NPTEL_COURSE:'📚' }
+  },
   { key: 'CERTIFICATIONS', label: 'Certifications', icon: '📜', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0',
     desc: 'Professional Certifications & Courses',
-    types: ['AWS','GOOGLE','MICROSOFT','CISCO','COURSERA','UDEMY','LINKEDIN_LEARNING'] },
+    types: ['AWS','GOOGLE','MICROSOFT','CISCO','COURSERA','UDEMY','LINKEDIN_LEARNING'],
+    typeIcons: { AWS:'☁️', GOOGLE:'🔍', MICROSOFT:'🪟', CISCO:'🌐', COURSERA:'📖', UDEMY:'🎯', LINKEDIN_LEARNING:'💼' }
+  },
 ];
 
 const YEARS = Array.from({length:8},(_,i)=>{ const y=2020+i; return `${y}-${y+1}`; });
@@ -107,12 +115,13 @@ export default function FacultyAchievements() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
           {CATEGORIES.map(cat => (
             <div key={cat.key} onClick={() => setSelectedCat(cat)}
-              style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 16, padding: '24px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 20px ${cat.color}22`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ fontSize: 38, marginBottom: 10 }}>{cat.icon}</div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: cat.color, marginBottom: 5 }}>{cat.label}</div>
-              <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>{cat.desc}</div>
+              style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 16, padding: '28px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${cat.color}22`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
+              <div style={{ fontSize: 44, marginBottom: 12 }}>{cat.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 6 }}>{cat.label}</div>
+              <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5, marginBottom: 14 }}>{cat.desc}</div>
+              <div style={{ background: cat.color, color: '#fff', borderRadius: 8, padding: '7px 0', fontSize: 12, fontWeight: 700 }}>+ Add {cat.label}</div>
             </div>
           ))}
         </div>
@@ -137,7 +146,8 @@ export default function FacultyAchievements() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {selectedCat.types.map(type => (
                 <span key={type} onClick={() => toggleType(type)}
-                  style={{ padding: '5px 14px', borderRadius: 99, border: `1.5px solid ${selectedTypes.includes(type) ? selectedCat.color : '#e2e8f0'}`, background: selectedTypes.includes(type) ? selectedCat.bg : '#fff', color: selectedTypes.includes(type) ? selectedCat.color : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px 14px', borderRadius: 99, border: `1.5px solid ${selectedTypes.includes(type) ? selectedCat.color : '#e2e8f0'}`, background: selectedTypes.includes(type) ? selectedCat.bg : '#fff', color: selectedTypes.includes(type) ? selectedCat.color : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.12s', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span>{selectedCat.typeIcons?.[type] || ''}</span>
                   {type.replace(/_/g, ' ')}
                 </span>
               ))}
