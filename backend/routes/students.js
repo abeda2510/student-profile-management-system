@@ -45,4 +45,61 @@ router.get('/', protect, adminOnly, async (req, res) => {
   res.json(students);
 });
 
+// Admin: bulk assign counsellors from Excel/CSV
+router.post('/bulk-counsellor', protect, adminOnly, async (req, res) => {
+  try {
+    const XLSX = require('xlsx');
+    const multer = require('multer');
+    const upload = multer({ storage: multer.memoryStorage() });
+
+    // Parse uploaded file from req (already handled by multer middleware below)
+    const { rows } = req.body;
+    if (!rows || !Array.isArray(rows)) return res.status(400).json({ message: 'Invalid data' });
+
+    let updated = 0, notFound = 0;
+    for (const row of rows) {
+      const regNumber = String(row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] || '').trim();
+      const counsellor = String(row.counsellor || row.Counsellor || row['Counsellor Name'] || '').trim();
+      if (!regNumber || !counsellor) continue;
+      const result = await Student.updateOne({ regNumber }, { $set: { counsellor } });
+      if (result.matchedCount > 0) updated++;
+      else notFound++;
+    }
+    res.json({ message: `Updated ${updated} students. ${notFound} not found.`, updated, notFound });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Admin: upload Excel/CSV for counsellor assignment (file upload)
+router.post('/bulk-counsellor-file', protect, adminOnly, (req, res) => {
+  const XLSX = require('xlsx');
+  const multer = require('multer');
+  const upload = multer({ storage: multer.memoryStorage() }).single('file');
+
+  upload(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: 'File upload error' });
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    try {
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      let updated = 0, notFound = 0;
+      for (const row of rows) {
+        const regNumber = String(row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] || '').trim();
+        const counsellor = String(row.counsellor || row.Counsellor || row['Counsellor Name'] || row['counsellor_name'] || '').trim();
+        if (!regNumber || !counsellor) continue;
+        const result = await Student.updateOne({ regNumber }, { $set: { counsellor } });
+        if (result.matchedCount > 0) updated++;
+        else notFound++;
+      }
+      res.json({ message: `Updated ${updated} students. ${notFound} reg numbers not found.`, updated, notFound });
+    } catch (err) {
+      res.status(500).json({ message: 'Failed to parse file: ' + err.message });
+    }
+  });
+});
+
 module.exports = router;

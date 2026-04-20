@@ -32,6 +32,7 @@ const studentSchema = new mongoose.Schema({
   codeChef: String,
   leetCode: String,
   cgpa: Number,
+  counsellor: String, // assigned counsellor name/ID
   // Semester-wise CGPA
   sem1Cgpa: Number,
   sem2Cgpa: Number,
