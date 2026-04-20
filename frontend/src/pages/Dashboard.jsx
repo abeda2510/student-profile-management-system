@@ -77,7 +77,7 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 28 }}>
         {[cards[0], cards[1]].map(c => (
           <Link key={c.link} to={c.link} style={{ textDecoration: 'none' }}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', border: `1.5px solid ${c.border}`, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10 }}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', border: `1.5px solid ${c.border}`, cursor: 'pointer', transition: 'transform 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10, minHeight: 200 }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
               <div style={{ width: 64, height: 64, borderRadius: 16, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
