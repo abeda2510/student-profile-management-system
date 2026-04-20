@@ -37,10 +37,17 @@ router.get('/all-faculty', protect, async (req, res) => {
 router.post('/assign-counsellees', protect, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
   try {
-    const { facultyName, regNumbers } = req.body;
-    if (!facultyName || !regNumbers?.length) return res.status(400).json({ message: 'facultyName and regNumbers required' });
-    const result = await Student.updateMany({ regNumber: { $in: regNumbers } }, { $set: { counsellor: facultyName } });
-    res.json({ message: `Assigned ${result.modifiedCount} students to ${facultyName}` });
+    const { facultyName, facultyId, regNumbers } = req.body;
+    if (!regNumbers?.length) return res.status(400).json({ message: 'regNumbers required' });
+    let name = facultyName;
+    if (!name && facultyId) {
+      const faculty = await Faculty.findOne({ facultyId });
+      if (!faculty) return res.status(404).json({ message: `Faculty ID "${facultyId}" not found` });
+      name = faculty.name;
+    }
+    if (!name) return res.status(400).json({ message: 'facultyId or facultyName required' });
+    const result = await Student.updateMany({ regNumber: { $in: regNumbers } }, { $set: { counsellor: name } });
+    res.json({ message: `Assigned ${result.modifiedCount} students to ${name}` });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

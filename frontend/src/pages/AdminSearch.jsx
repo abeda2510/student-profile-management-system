@@ -170,12 +170,10 @@ export default function AdminSearch() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 }}>Select Faculty</label>
-                <select value={selFaculty} onChange={e => setSelFaculty(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}>
-                  <option value="">-- Select Faculty --</option>
-                  {facultyList.map(f => <option key={f._id} value={f.name}>{f.facultyId} — {f.name} ({f.department})</option>)}
-                </select>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 }}>Faculty ID</label>
+                <input value={selFaculty} onChange={e => setSelFaculty(e.target.value)}
+                  placeholder="Enter Faculty ID (e.g. 2)"
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 }}>Student Reg Numbers (comma separated)</label>
@@ -188,7 +186,7 @@ export default function AdminSearch() {
               if (!selFaculty || !assignRegs.trim()) return setAssignResult('Select faculty and enter reg numbers');
               const regs = assignRegs.split(',').map(r => r.trim()).filter(Boolean);
               try {
-                const { data } = await api.post('/faculty/assign-counsellees', { facultyName: selFaculty, regNumbers: regs });
+                const { data } = await api.post('/faculty/assign-counsellees', { facultyId: selFaculty, regNumbers: regs });
                 setAssignResult(data.message);
                 setAssignRegs('');
               } catch (err) { setAssignResult('Failed: ' + (err.response?.data?.message || err.message)); }
