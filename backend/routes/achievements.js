@@ -354,8 +354,11 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     }
     const studentMap = {};
     students.forEach(s => { studentMap[s.regNumber] = s; });
-    const withCert = achievements.filter(a => (a.certificateUrl && a.certificateUrl.startsWith('http')) || (a.certificatePath && !a.certificatePath.startsWith('http') && fs.existsSync(a.certificatePath)));
-    if (withCert.length === 0) return res.status(404).json({ message: 'No certificates with downloadable files found. Certificates may have been uploaded before cloud storage was enabled.' });
+    const withCert = achievements.filter(a => {
+      const url = a.certificateUrl || a.certificatePath || '';
+      return url.startsWith('http') || (url && !url.startsWith('http') && fs.existsSync(url));
+    });
+    if (withCert.length === 0) return res.status(404).json({ message: 'No certificates found. Students may not have uploaded certificates yet.' });
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="certificates.zip"');
     const archive = archiver('zip', { zlib: { level: 6 } });
@@ -366,8 +369,8 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
       const safeName = (st?.name || a.regNumber).replace(/[^a-zA-Z0-9_ -]/g, '_');
       const safeType = (a.activityType || 'cert').replace(/[^a-zA-Z0-9_]/g, '_');
       const safeTitle = (a.title || 'certificate').replace(/[^a-zA-Z0-9_ -]/g, '_').substring(0, 40);
-      const url = a.certificateUrl;
-      if (url && url.startsWith('http')) {
+      const url = a.certificateUrl || a.certificatePath || '';
+      if (url.startsWith('http')) {
         try {
           const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
           const contentType = response.headers['content-type'] || '';
