@@ -107,8 +107,8 @@ async function fetchCodeChefStats(username) {
       }
     });
 
-    // Stars: appears as "1★username" or "2★username" in the HTML
-    const starsMatch = html.match(/(\d+)★/) || html.match(/(\d+)\s*Star/i);
+    // Stars: appears as "1★amruthadarsi17" in the username display - must be 1-7
+    const starsMatch = html.match(/([1-7])★/) || html.match(/([1-7])\s*Star\s*Coder/i);
     const stars = starsMatch ? parseInt(starsMatch[1]) : null;
 
     // Rating: look for number near "CodeChef Rating" or in rating section
