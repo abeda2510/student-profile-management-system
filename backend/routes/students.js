@@ -102,4 +102,16 @@ router.post('/bulk-counsellor-file', protect, adminOnly, (req, res) => {
   });
 });
 
+// Admin: assign counsellor to specific students
+router.post('/assign-counsellor', protect, adminOnly, async (req, res) => {
+  try {
+    const { regNumbers, counsellor } = req.body;
+    if (!regNumbers || !counsellor) return res.status(400).json({ message: 'regNumbers and counsellor required' });
+    const result = await Student.updateMany({ regNumber: { $in: regNumbers } }, { $set: { counsellor } });
+    res.json({ message: `Assigned ${counsellor} to ${result.modifiedCount} students` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
