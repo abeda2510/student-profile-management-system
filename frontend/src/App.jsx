@@ -7,7 +7,7 @@ import Achievements from './pages/Achievements';
 import Documents from './pages/Documents';
 import FacultyDashboard from './pages/FacultyDashboard';
 import SectionReport from './pages/SectionReport';
-import AchievementReport from './pages/AchievementReport';
+import AchievementDashboard from './pages/AchievementDashboard';
 import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
 import Navbar from './components/Navbar';
@@ -38,7 +38,7 @@ export default function App() {
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/section-report" element={<SectionReport />} />
-                  <Route path="/achievement-report" element={<AchievementReport />} />
+                  <Route path="/achievement-report" element={<AchievementDashboard />} />
                   <Route path="/admin" element={<AdminSearch />} />
                 </Routes>
               </div>

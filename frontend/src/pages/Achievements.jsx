@@ -109,9 +109,9 @@ export default function Achievements() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
         {[
-          { label: 'Total Points', value: myPoints.points, color: '#1e40af', bg: 'linear-gradient(135deg,#1e40af,#2563eb)', icon: '🏆' },
-          { label: 'Approved', value: myPoints.approved, color: '#059669', bg: 'linear-gradient(135deg,#059669,#10b981)', icon: '✅' },
-          { label: 'Pending Review', value: list.filter(a => a.status === 'PENDING').length, color: '#d97706', bg: 'linear-gradient(135deg,#d97706,#f59e0b)', icon: '⏳' },
+          { label: 'Total Points', value: myPoints.points, bg: 'linear-gradient(135deg,#1e40af,#2563eb)', icon: '🏆' },
+          { label: 'Approved', value: myPoints.approved, bg: 'linear-gradient(135deg,#059669,#10b981)', icon: '✅' },
+          { label: 'Pending Review', value: list.filter(a => a.status === 'PENDING').length, bg: 'linear-gradient(135deg,#d97706,#f59e0b)', icon: '⏳' },
         ].map(s => (
           <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
             <div style={{ fontSize: 32 }}>{s.icon}</div>
@@ -212,7 +212,7 @@ export default function Achievements() {
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="submit" disabled={submitting}
                 style={{ background: `linear-gradient(135deg,${selectedCat.color},${selectedCat.color}dd)`, color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: submitting ? 0.7 : 1 }}>
-                {submitting ? 'Submitting...' : '✓ Submit for Review'}
+                {submitting ? 'Submitting...' : '✓ Submit'}
               </button>
               <button type="button" onClick={closeForm}
                 style={{ background: '#f1f5f9', color: '#64748b', border: 'none', padding: '11px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
@@ -222,17 +222,6 @@ export default function Achievements() {
           </form>
         </div>
       )}
-
-      {/* Filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Filter:</span>
-        {['', 'PENDING', 'APPROVED', 'REJECTED'].map(st => (
-          <button key={st} onClick={() => setFilter(f => ({ ...f, status: st }))}
-            style={{ padding: '5px 14px', borderRadius: 99, border: `1.5px solid ${filter.status === st ? '#1e40af' : '#e2e8f0'}`, background: filter.status === st ? '#eff6ff' : '#fff', color: filter.status === st ? '#1e40af' : '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-            {st || 'All'}
-          </button>
-        ))}
-      </div>
 
       {/* Achievement List */}
       {list.length === 0 && (
