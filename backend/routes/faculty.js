@@ -117,9 +117,11 @@ async function fetchCodeChefStats(username) {
                         html.match(/rating["\s:]+(\d{3,4})/i);
     const rating = ratingMatch ? parseInt(ratingMatch[1]) : null;
 
-    // Global rank
-    const rankMatch = html.match(/(\d{4,7})\s*\n?\s*Global\s*Rank/i) ||
-                      html.match(/globalRank["\s:]+(\d+)/);
+    // Global rank - appears as large number before "Global Rank" text
+    const rankMatch = html.match(/(\d{4,7})\s*(?:<[^>]*>)*\s*Global\s*Rank/i) ||
+                      html.match(/Global\s*Rank[^0-9]*(\d{4,7})/i) ||
+                      html.match(/globalRank["\s:]+(\d+)/) ||
+                      html.match(/>(\d{5,7})<\/a>\s*\|\s*\d+\s*Country/i);
     const rank = rankMatch ? parseInt(rankMatch[1]) : null;
 
     // Total problems solved
