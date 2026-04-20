@@ -73,6 +73,7 @@ export default function SectionReport() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [xlLoading, setXlLoading] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
   const [totalStudents, setTotalStudents] = useState(0);
   const [myStudents, setMyStudents] = useState([]);
   const [error, setError] = useState('');
@@ -137,6 +138,21 @@ export default function SectionReport() {
     setXlLoading(false);
   };
 
+  const downloadZip = async () => {
+    setZipLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const params = new URLSearchParams();
+      Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
+      selItems.forEach(d => params.append('activityTypes', d));
+      const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Server error');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'certificates.zip'; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { setError('ZIP failed: ' + e.message); }
   const uniqueStudents = results ? [...new Map(results.map(r => [r.regNumber, r])).values()] : [];
 
   return (
@@ -280,8 +296,14 @@ export default function SectionReport() {
           </button>
           {results && (
             <button onClick={downloadExcel} disabled={xlLoading}
-              style={{ width: '100%', background: xlLoading?'#94a3b8':'#1e40af', color: '#fff', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              style={{ width: '100%', background: xlLoading?'#94a3b8':'#1e40af', color: '#fff', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
               {xlLoading ? 'Generating...' : 'Download Excel'}
+            </button>
+          )}
+          {results && (
+            <button onClick={downloadZip} disabled={zipLoading}
+              style={{ width: '100%', background: zipLoading?'#94a3b8':'#7c3aed', color: '#fff', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              {zipLoading ? 'Generating...' : 'Download ZIP'}
             </button>
           )}
         </div>
