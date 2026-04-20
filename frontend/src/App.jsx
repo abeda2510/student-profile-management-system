@@ -7,6 +7,8 @@ import Achievements from './pages/Achievements';
 import Documents from './pages/Documents';
 import FacultyDashboard from './pages/FacultyDashboard';
 import SectionReport from './pages/SectionReport';
+import AchievementReport from './pages/AchievementReport';
+import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
 import Navbar from './components/Navbar';
 
@@ -27,15 +29,19 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/*" element={
           <PrivateRoute>
-            <Navbar />
-            <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}>
-              <Routes>
-                <Route path="/" element={<RoleHome />} />
-                <Route path="/profile" element={<StudentProfile />} />
-                <Route path="/achievements" element={<Achievements />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/section-report" element={<SectionReport />} />
-              </Routes>
+            <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', flexDirection: 'column' }}>
+              <Navbar />
+              <div style={{ flex: 1, maxWidth: 1100, width: '100%', margin: '0 auto', padding: '28px 20px' }}>
+                <Routes>
+                  <Route path="/" element={<RoleHome />} />
+                  <Route path="/profile" element={<StudentProfile />} />
+                  <Route path="/achievements" element={<Achievements />} />
+                  <Route path="/documents" element={<Documents />} />
+                  <Route path="/section-report" element={<SectionReport />} />
+                  <Route path="/achievement-report" element={<AchievementReport />} />
+                  <Route path="/admin" element={<AdminSearch />} />
+                </Routes>
+              </div>
             </div>
           </PrivateRoute>
         } />
