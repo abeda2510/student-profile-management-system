@@ -23,6 +23,8 @@ export default function Dashboard() {
     { label: 'Admission Category', value: profile.admissionCategory },
     { label: 'Admission Year', value: profile.admissionYear },
     { label: 'Section', value: profile.section },
+    { label: 'Address', value: profile.address },
+    { label: 'Overall CGPA', value: (() => { const vals = [1,2,3,4,5,6,7,8].map(i => parseFloat(profile[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0); return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : profile.cgpa || null; })() },
   ] : [];
 
   return (
