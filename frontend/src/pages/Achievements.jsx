@@ -109,7 +109,7 @@ export default function Achievements() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
         {[
-          { label: 'Total Points', value: myPoints.points, bg: 'linear-gradient(135deg,#1e40af,#2563eb)', icon: '🏆' },
+          { label: 'Achievements', value: list.length, bg: 'linear-gradient(135deg,#1e40af,#2563eb)', icon: '🏆' },
           { label: 'Approved', value: myPoints.approved, bg: 'linear-gradient(135deg,#059669,#10b981)', icon: '✅' },
           { label: 'Pending Review', value: list.filter(a => a.status === 'PENDING').length, bg: 'linear-gradient(135deg,#d97706,#f59e0b)', icon: '⏳' },
         ].map(s => (
