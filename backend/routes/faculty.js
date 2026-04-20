@@ -75,18 +75,15 @@ async function fetchLeetCodeStats(username) {
   if (lcCache[username]) return lcCache[username];
   try {
     const axios = require('axios');
+    const clean = username.replace(/^https?:\/\/(www\.)?leetcode\.com\/(u\/)?/i, '').replace(/\/$/, '').trim();
     const { data } = await axios.post('https://leetcode.com/graphql', {
-      query: `query { matchedUser(username: "${username}") { submitStats { acSubmissionNum { difficulty count } } } }`
-    }, { headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' }, timeout: 5000 });
-    const nums = data?.data?.matchedUser?.submitStats?.acSubmissionNum || [];
-    const stats = { total: 0, easy: 0, medium: 0, hard: 0 };
-    nums.forEach(n => {
-      if (n.difficulty === 'All') stats.total = n.count;
-      if (n.difficulty === 'Easy') stats.easy = n.count;
-      if (n.difficulty === 'Medium') stats.medium = n.count;
-      if (n.difficulty === 'Hard') stats.hard = n.count;
-    });
-    lcCache[username] = stats;
+      query: `query($username:String!){ matchedUser(username:$username){ submitStatsGlobal{ acSubmissionNum{ difficulty count } } } }`,
+      variables: { username: clean }
+    }, { headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' }, timeout: 8000 });
+    const nums = data?.data?.matchedUser?.submitStatsGlobal?.acSubmissionNum || [];
+    const get = d => nums.find(n => n.difficulty === d)?.count || 0;
+    const stats = { total: get('All'), easy: get('Easy'), medium: get('Medium'), hard: get('Hard') };
+    lcCache[clean] = stats;
     return stats;
   } catch { return null; }
 }
