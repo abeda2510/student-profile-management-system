@@ -251,13 +251,33 @@ export default function FacultyDashboard() {
             {!selectedStudent && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {myStudents.map(st => (
-                  <div key={st._id} onClick={() => viewStudent(st)}
-                    style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 16px', border: '1px solid #e2e8f0', cursor: 'pointer', borderLeft: '4px solid #059669' }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{st.name}</div>
-                    <div style={{ fontSize: 12, color: '#1e40af', fontWeight: 600 }}>{st.regNumber}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{st.branch} | Sec {st.section} | Yr {st.currentYear}</div>
+                  <div key={st._id}
+                    style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 16px', border: '1px solid #e2e8f0', borderLeft: '4px solid #059669' }}>
+                    <div onClick={() => viewStudent(st)} style={{ cursor: 'pointer', marginBottom: 10 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{st.name}</div>
+                      <div style={{ fontSize: 12, color: '#1e40af', fontWeight: 600 }}>{st.regNumber}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{st.branch} | Sec {st.section} | Yr {st.currentYear}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => viewStudent(st)}
+                        style={{ flex: 1, background: '#059669', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+                        View Profile
+                      </button>
+                      <button onClick={async () => {
+                        setLoading(true);
+                        try {
+                          const params = new URLSearchParams();
+                          params.append('branch', st.branch); params.append('section', st.section);
+                          selItems.forEach(d => params.append('docType', d));
+                          const { data } = await api.get(`/faculty/section-report?${params}`);
+                          setResults(data.filter(r => r.regNumber === st.regNumber));
+                        } catch { alert('Failed to fetch report'); }
+                        setLoading(false);
+                      }}
+                        style={{ flex: 1, background: '#1e40af', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+                        Fetch Report
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

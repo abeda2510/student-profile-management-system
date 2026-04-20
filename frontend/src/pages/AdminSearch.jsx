@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api';
 
 const s = {
@@ -29,6 +29,17 @@ export default function AdminSearch() {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [showCounsellor, setShowCounsellor] = useState(false);
+
+  // Faculty assignment state
+  const [facultyList, setFacultyList] = useState([]);
+  const [selFaculty, setSelFaculty] = useState('');
+  const [assignRegs, setAssignRegs] = useState('');
+  const [assignResult, setAssignResult] = useState('');
+  const [showAssign, setShowAssign] = useState(false);
+
+  useEffect(() => {
+    api.get('/faculty/all-faculty').then(r => setFacultyList(r.data)).catch(() => {});
+  }, []);
 
   const search = async (e) => {
     e.preventDefault();
@@ -75,6 +86,56 @@ export default function AdminSearch() {
   return (
     <div>
       <h2 style={{ color: '#1e40af', marginBottom: 20 }}>Admin Panel</h2>
+
+      {/* Assign Counsellees to Faculty */}
+      <div style={s.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showAssign ? 16 : 0 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#7c3aed' }}>👥 Assign Counsellees to Faculty</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Select a faculty and enter student reg numbers to assign</div>
+          </div>
+          <button onClick={() => setShowAssign(!showAssign)}
+            style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', padding: '6px 14px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+            {showAssign ? 'Hide' : 'Assign'}
+          </button>
+        </div>
+        {showAssign && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 }}>Select Faculty</label>
+                <select value={selFaculty} onChange={e => setSelFaculty(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}>
+                  <option value="">-- Select Faculty --</option>
+                  {facultyList.map(f => <option key={f._id} value={f.name}>{f.name} ({f.department})</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 }}>Student Reg Numbers (comma separated)</label>
+                <input value={assignRegs} onChange={e => setAssignRegs(e.target.value)}
+                  placeholder="e.g. 231FA04001, 231FA04002, 231FA04003"
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              </div>
+            </div>
+            <button onClick={async () => {
+              if (!selFaculty || !assignRegs.trim()) return setAssignResult('Select faculty and enter reg numbers');
+              const regs = assignRegs.split(',').map(r => r.trim()).filter(Boolean);
+              try {
+                const { data } = await api.post('/faculty/assign-counsellees', { facultyName: selFaculty, regNumbers: regs });
+                setAssignResult(data.message);
+                setAssignRegs('');
+              } catch (err) { setAssignResult('Failed: ' + (err.response?.data?.message || err.message)); }
+            }} style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '10px 22px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              Assign Students
+            </button>
+            {assignResult && (
+              <div style={{ marginTop: 10, padding: '8px 14px', borderRadius: 7, background: assignResult.includes('Failed') ? '#fee2e2' : '#d1fae5', color: assignResult.includes('Failed') ? '#991b1b' : '#065f46', fontSize: 13, fontWeight: 600 }}>
+                {assignResult}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Counsellor Assignment */}
       <div style={s.card}>

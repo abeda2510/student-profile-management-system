@@ -13,6 +13,24 @@ const facultyOnly = (req, res, next) => {
   next();
 };
 
+// Admin: get all faculty list
+router.get('/all-faculty', protect, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+  const faculty = await Faculty.find().select('-password').sort({ name: 1 });
+  res.json(faculty);
+});
+
+// Admin: assign students to a faculty counsellor
+router.post('/assign-counsellees', protect, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+  try {
+    const { facultyName, regNumbers } = req.body;
+    if (!facultyName || !regNumbers?.length) return res.status(400).json({ message: 'facultyName and regNumbers required' });
+    const result = await Student.updateMany({ regNumber: { $in: regNumbers } }, { $set: { counsellor: facultyName } });
+    res.json({ message: `Assigned ${result.modifiedCount} students to ${facultyName}` });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // Get counsellor's assigned students
 router.get('/my-students', protect, facultyOnly, async (req, res) => {
   try {
