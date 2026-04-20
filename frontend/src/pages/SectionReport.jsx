@@ -16,14 +16,14 @@ const YEARS = ['2021', '2022', '2023', '2024', '2025'];
 
 // 19 departments with their sections
 const DEPT_SECTIONS = {
-  'CSE':   ['A','B','C','D','E','F','G'],
-  'ECE':   ['A','B','C','D','E'],
-  'EEE':   ['A','B','C'],
-  'MECH':  ['A','B','C','D'],
-  'CIVIL': ['A','B'],
-  'IT':    ['A','B','C','D'],
-  'AIML':  ['A','B','C','D'],
-  'CSBS':  ['A','B'],
+  'CSE':   ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19'],
+  'ECE':   ['1','2','3','4','5','6','7','8'],
+  'EEE':   ['1','2','3','4'],
+  'MECH':  ['1','2','3','4','5'],
+  'CIVIL': ['1','2','3'],
+  'IT':    ['1','2','3','4','5','6'],
+  'AIML':  ['1','2','3','4','5','6'],
+  'CSBS':  ['1','2','3'],
 };
 
 const ALL_DEPTS = Object.keys(DEPT_SECTIONS);
@@ -216,7 +216,7 @@ export default function SectionReport() {
                     items={DEPT_SECTIONS[dept]}
                     selected={selSections[dept] || []}
                     onChange={(secs) => setSectionsForDept(dept, secs)}
-                    renderLabel={(sec) => `Section ${sec}`}
+                    renderLabel={(sec) => sec}
                   />
                 </div>
               )}
