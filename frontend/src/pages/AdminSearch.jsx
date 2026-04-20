@@ -37,9 +37,29 @@ export default function AdminSearch() {
   const [assignResult, setAssignResult] = useState('');
   const [showAssign, setShowAssign] = useState(false);
 
-  useEffect(() => {
-    api.get('/faculty/all-faculty').then(r => setFacultyList(r.data)).catch(() => {});
-  }, []);
+  // Create faculty state
+  const [showCreateFaculty, setShowCreateFaculty] = useState(false);
+  const [newFaculty, setNewFaculty] = useState({ facultyId: '', name: '', password: '', email: '', department: '', designation: '' });
+  const [createResult, setCreateResult] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const refreshFaculty = () => api.get('/faculty/all-faculty').then(r => setFacultyList(r.data)).catch(() => {});
+
+  useEffect(() => { refreshFaculty(); }, []);
+
+  const createFaculty = async (e) => {
+    e.preventDefault();
+    setCreating(true); setCreateResult('');
+    try {
+      const { data } = await api.post('/faculty/create-faculty', newFaculty);
+      setCreateResult({ success: true, message: data.message });
+      setNewFaculty({ facultyId: '', name: '', password: '', email: '', department: '', designation: '' });
+      refreshFaculty();
+    } catch (err) {
+      setCreateResult({ success: false, message: err.response?.data?.message || 'Failed' });
+    }
+    setCreating(false);
+  };
 
   const search = async (e) => {
     e.preventDefault();
@@ -86,6 +106,53 @@ export default function AdminSearch() {
   return (
     <div>
       <h2 style={{ color: '#1e40af', marginBottom: 20 }}>Admin Panel</h2>
+
+      {/* Create Faculty */}
+      <div style={s.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showCreateFaculty ? 16 : 0 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#059669' }}>➕ Create Faculty Account</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Add a new faculty member who can log in</div>
+          </div>
+          <button onClick={() => setShowCreateFaculty(v => !v)} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#059669', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+            {showCreateFaculty ? 'Hide' : 'Add Faculty'}
+          </button>
+        </div>
+        {showCreateFaculty && (
+          <form onSubmit={createFaculty}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              {[
+                ['facultyId', 'Faculty ID *', 'e.g. FAC001'],
+                ['name', 'Full Name *', 'e.g. Dr. John Smith'],
+                ['password', 'Password *', 'min 6 characters'],
+                ['email', 'Email', 'faculty@university.edu'],
+                ['department', 'Department', 'e.g. CSE'],
+                ['designation', 'Designation', 'e.g. Assistant Professor'],
+              ].map(([key, label, ph]) => (
+                <div key={key}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>{label}</div>
+                  <input
+                    type={key === 'password' ? 'password' : 'text'}
+                    placeholder={ph}
+                    value={newFaculty[key]}
+                    onChange={e => setNewFaculty(p => ({ ...p, [key]: e.target.value }))}
+                    required={['facultyId','name','password'].includes(key)}
+                    style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <button type="submit" disabled={creating} style={{ background: creating ? '#94a3b8' : '#059669', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              {creating ? 'Creating...' : 'Create Faculty'}
+            </button>
+            {createResult && (
+              <div style={{ marginTop: 10, padding: '8px 14px', borderRadius: 8, background: createResult.success ? '#d1fae5' : '#fee2e2', color: createResult.success ? '#065f46' : '#991b1b', fontSize: 13, fontWeight: 600 }}>
+                {createResult.message}
+              </div>
+            )}
+          </form>
+        )}
+      </div>
 
       {/* Assign Counsellees to Faculty */}
       <div style={s.card}>

@@ -13,6 +13,19 @@ const facultyOnly = (req, res, next) => {
   next();
 };
 
+// Admin: create a new faculty member
+router.post('/create-faculty', protect, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+  try {
+    const { facultyId, name, password, email, department, designation } = req.body;
+    if (!facultyId || !name || !password) return res.status(400).json({ message: 'facultyId, name and password are required' });
+    const exists = await Faculty.findOne({ facultyId });
+    if (exists) return res.status(400).json({ message: 'Faculty ID already exists' });
+    const faculty = await Faculty.create({ facultyId, name, password, email, department, designation, role: 'faculty' });
+    res.status(201).json({ message: 'Faculty created', facultyId: faculty.facultyId, name: faculty.name });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // Admin: get all faculty list
 router.get('/all-faculty', protect, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
