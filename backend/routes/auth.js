@@ -53,6 +53,35 @@ function sendOTPEmail(to, otp, userName) {
   });
 }
 
+// One-time admin setup route
+router.post('/setup-admin', async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== 'vignan-setup-2026') return res.status(403).json({ message: 'Forbidden' });
+
+    // Remove old admin from students
+    await Student.deleteOne({ regNumber: '231FA04040' });
+
+    // Remove existing admin12
+    await Faculty.deleteOne({ facultyId: 'admin12' });
+
+    // Create new admin in Faculty
+    const hashed = await bcrypt.hash('admin12', 10);
+    await Faculty.create({
+      facultyId: 'admin12',
+      password: hashed,
+      name: 'Admin',
+      role: 'admin',
+      email: 'admin@vignan.ac.in',
+      department: 'Admin Office',
+      designation: 'Administrator'
+    });
+    res.json({ message: 'Admin setup complete. Login with facultyId: admin12, password: admin12' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/student/register', async (req, res) => {
   try {
     const student = await Student.create(req.body);
@@ -67,6 +96,8 @@ router.post('/student/login', async (req, res) => {
   const student = await Student.findOne({ regNumber });
   if (!student || !(await student.matchPassword(password)))
     return res.status(401).json({ message: 'Invalid credentials' });
+  if (student.role === 'admin' || student.role === 'faculty')
+    return res.status(403).json({ message: 'Please use Faculty login' });
   res.json({ token: signToken(student, student.role), role: student.role, regNumber: student.regNumber, name: student.name });
 });
 
@@ -74,11 +105,8 @@ router.post('/faculty/login', async (req, res) => {
   const { facultyId, password } = req.body;
   const faculty = await Faculty.findOne({ facultyId });
   if (faculty && (await faculty.matchPassword(password))) {
-    return res.json({ token: signToken(faculty, 'faculty'), role: 'faculty', facultyId: faculty.facultyId, name: faculty.name });
-  }
-  const student = await Student.findOne({ regNumber: facultyId, role: { $in: ['faculty', 'admin'] } });
-  if (student && (await student.matchPassword(password))) {
-    return res.json({ token: signToken(student, 'faculty'), role: 'faculty', regNumber: student.regNumber, facultyId: student.regNumber, name: student.name });
+    const role = faculty.role || 'faculty';
+    return res.json({ token: signToken(faculty, 'faculty'), role, facultyId: faculty.facultyId, name: faculty.name });
   }
   return res.status(401).json({ message: 'Invalid credentials' });
 });
