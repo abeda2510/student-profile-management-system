@@ -254,7 +254,7 @@ function buildFilter(query) {
 }
 
 // Section report — fetch students + their data
-router.get('/section-report', protect, facultyOnly, async (req, res) => {
+router.get('/section-report', protect, async (req, res) => {
   const docTypes = [].concat(req.query.docType || []).filter(Boolean);
   if (!docTypes.length) return res.status(400).json({ message: 'Select at least one document type' });
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
@@ -335,7 +335,7 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
 });
 
 // Generate Excel for section report
-router.get('/section-report/excel', protect, facultyOnly, async (req, res) => {
+router.get('/section-report/excel', protect, async (req, res) => {
   const DOC_LABELS = {
     ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
