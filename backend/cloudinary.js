@@ -10,9 +10,9 @@ cloudinary.config({
 
 const docStorage = new CloudinaryStorage({
   cloudinary,
-  params: (req) => ({
+  params: async (req, file) => ({
     folder: `student-management/documents/${req.user.regNumber || req.user.id}`,
-    resource_type: 'auto',
+    resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
     public_id: `${Date.now()}`,
   }),
@@ -20,9 +20,9 @@ const docStorage = new CloudinaryStorage({
 
 const achievementStorage = new CloudinaryStorage({
   cloudinary,
-  params: (req) => ({
+  params: async (req, file) => ({
     folder: `student-management/achievements/${req.user.regNumber || req.user.id}`,
-    resource_type: 'auto',
+    resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
     public_id: `${Date.now()}`,
   }),
