@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { viewUrl } from '../api';
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
@@ -187,7 +187,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     {(a.certificateUrl || a.certificatePath) && (
-                      <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                      <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
                         style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none', flexShrink: 0, marginLeft: 10 }}>📎 View</a>
                     )}
                   </div>

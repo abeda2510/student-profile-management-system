@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import api from '../api';
+import api, { viewUrl } from '../api';
 
 const CATEGORIES = [
   { key: 'TECHNICAL', label: 'Technical', icon: '💻', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
@@ -245,7 +245,7 @@ export default function FacultyAchievements() {
                       <td style={{ padding: '9px 14px' }}>{a.position || '-'}</td>
                       <td style={{ padding: '9px 14px' }}>
                         {(a.certificateUrl || a.certificatePath) ? (
-                          <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                          <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
                             style={{ background: '#dbeafe', color: '#1e40af', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>View</a>
                         ) : <span style={{ color: '#94a3b8' }}>-</span>}
                       </td>

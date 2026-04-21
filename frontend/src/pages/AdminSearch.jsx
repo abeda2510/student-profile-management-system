@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api, { viewUrl } from '../api';
 
 const s = {
   card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: 16 },
@@ -311,7 +311,7 @@ export default function AdminSearch() {
                     {a.position && <span>Position: {a.position}</span>}
                   </div>
                   {(a.certificateUrl || a.certificatePath) && (
-                    <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                    <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
                       style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>View Certificate</a>
                   )}
                 </div>

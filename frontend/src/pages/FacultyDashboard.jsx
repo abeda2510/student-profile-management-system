@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api';
+import api, { viewUrl } from '../api';
 
 const DOC_GROUPS = [
   { key: 'coding', label: 'Coding Profiles', color: '#1e40af', bg: '#eff6ff',
@@ -291,7 +291,7 @@ export default function FacultyDashboard() {
                       </div>
                     </div>
                     {(a.certificateUrl || a.certificatePath) && (
-                      <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                      <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
                         style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 10, textDecoration: 'none' }}>
                         📎 View
                       </a>

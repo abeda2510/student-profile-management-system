@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../api';
+import api, { viewUrl } from '../api';
 
 const CATEGORIES = [
   {
@@ -268,7 +268,7 @@ export default function Achievements() {
                         {a.date && <span>📅 {a.date}</span>}
                       </div>
                       {(a.certificateUrl || a.certificatePath) && (
-                        <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                        <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
                           style={{ display: 'inline-block', marginTop: 6, background: '#dbeafe', color: '#1e40af', padding: '3px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
                           📎 View Certificate
                         </a>
