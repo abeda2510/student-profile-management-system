@@ -227,6 +227,31 @@ async function getStudentDocData(st, docType) {
   if (docType === 'GENDER') return { ...base, data: st.gender || '—' };
   if (docType === 'BLOOD_GROUP') return { ...base, data: st.bloodGroup || '—' };
   if (docType === 'NATIONALITY') return { ...base, data: st.nationality || '—' };
+  if (docType === 'TENTH_SCHOOL') return { ...base, data: st.tenthSchool || '—' };
+  if (docType === 'TENTH_BOARD') return { ...base, data: st.tenthBoard || '—' };
+  if (docType === 'TENTH_YEAR') return { ...base, data: st.tenthYear != null ? String(st.tenthYear) : '—' };
+  if (docType === 'TENTH_PERCENT') return { ...base, data: st.tenthPercent != null ? String(st.tenthPercent) + '%' : '—' };
+  if (docType === 'INTER_COLLEGE') return { ...base, data: st.interCollege || '—' };
+  if (docType === 'INTER_BOARD') return { ...base, data: st.interBoard || '—' };
+  if (docType === 'INTER_YEAR') return { ...base, data: st.interYear != null ? String(st.interYear) : '—' };
+  if (docType === 'INTER_PERCENT') return { ...base, data: st.interPercent != null ? String(st.interPercent) + '%' : '—' };
+  if (docType === 'INTER_GROUP') return { ...base, data: st.interGroup || '—' };
+  if (docType === 'SEM1_SGPA') return { ...base, data: st.sem1Sgpa != null ? String(st.sem1Sgpa) : '—' };
+  if (docType === 'SEM2_SGPA') return { ...base, data: st.sem2Sgpa != null ? String(st.sem2Sgpa) : '—' };
+  if (docType === 'SEM3_SGPA') return { ...base, data: st.sem3Sgpa != null ? String(st.sem3Sgpa) : '—' };
+  if (docType === 'SEM4_SGPA') return { ...base, data: st.sem4Sgpa != null ? String(st.sem4Sgpa) : '—' };
+  if (docType === 'SEM5_SGPA') return { ...base, data: st.sem5Sgpa != null ? String(st.sem5Sgpa) : '—' };
+  if (docType === 'SEM6_SGPA') return { ...base, data: st.sem6Sgpa != null ? String(st.sem6Sgpa) : '—' };
+  if (docType === 'SEM7_SGPA') return { ...base, data: st.sem7Sgpa != null ? String(st.sem7Sgpa) : '—' };
+  if (docType === 'SEM8_SGPA') return { ...base, data: st.sem8Sgpa != null ? String(st.sem8Sgpa) : '—' };
+  if (docType === 'AADHAAR_DOC') {
+    const docs = await Document.find({ regNumber: st.regNumber, docType: 'AADHAAR' });
+    return { ...base, data: docs.length ? 'Uploaded' : '—' };
+  }
+  if (docType === 'PAN_DOC') {
+    const docs = await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
+    return { ...base, data: docs.length ? 'Uploaded' : '—' };
+  }
   if (docType === 'INTERNSHIP') {
     const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
