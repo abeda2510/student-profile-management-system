@@ -39,8 +39,7 @@ const DOC_GROUPS = [
   },
   { key: 'ids', label: 'IDs', color: '#7c3aed', bg: '#f5f3ff',
     items: [
-      { value: 'ABC_ID', label: 'ABC ID' },
-      { value: 'APAAR_ID', label: 'APAAR ID' },
+      { value: 'APAAR_ID', label: 'ABC / APAAR ID' },
     ]
   },
 ];
