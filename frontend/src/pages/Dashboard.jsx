@@ -142,8 +142,19 @@ export default function Dashboard() {
                         style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>View</a>
                     )}
                     {fileUrl && (
-                      <a href={fileUrl} download
-                        style={{ background: '#f0fdf4', color: '#059669', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>⬇ Download</a>
+                      <button onClick={async () => {
+                        try {
+                          const res = await fetch(fileUrl);
+                          const blob = await res.blob();
+                          const ext = fileUrl.split('?')[0].split('.').pop() || 'pdf';
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${d.docType || 'document'}_${d.label || d.filename || 'file'}.${ext}`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch { alert('Download failed'); }
+                      }} style={{ background: '#f0fdf4', color: '#059669', border: 'none', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>⬇ Download</button>
                     )}
                     <button onClick={async () => {
                       if (!confirm('Delete this document?')) return;
