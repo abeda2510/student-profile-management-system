@@ -14,7 +14,7 @@ const docStorage = new CloudinaryStorage({
     folder: `student-management/documents/${req.user.regNumber || req.user.id}`,
     resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
-    public_id: `${Date.now()}`,
+    public_id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
   }),
 });
 
@@ -24,7 +24,7 @@ const achievementStorage = new CloudinaryStorage({
     folder: `student-management/achievements/${req.user.regNumber || req.user.id}`,
     resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
-    public_id: `${Date.now()}`,
+    public_id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
   }),
 });
 
