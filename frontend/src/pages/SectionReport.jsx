@@ -32,6 +32,9 @@ const DOC_GROUPS = [
       { value: 'LINKEDIN', label: 'LinkedIn' },
       { value: 'LEETCODE', label: 'LeetCode Username' },
       { value: 'LEETCODE_SOLVED', label: 'LeetCode Solved' },
+      { value: 'LEETCODE_EASY', label: 'LeetCode Easy' },
+      { value: 'LEETCODE_MEDIUM', label: 'LeetCode Medium' },
+      { value: 'LEETCODE_HARD', label: 'LeetCode Hard' },
       { value: 'CODECHEF', label: 'CodeChef Username' },
       { value: 'CODECHEF_RATING', label: 'CodeChef Rating' },
     ]
