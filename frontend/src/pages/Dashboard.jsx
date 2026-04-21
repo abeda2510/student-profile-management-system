@@ -128,18 +128,32 @@ export default function Dashboard() {
         {tab === 'docs' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {docs.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 24 }}>No documents uploaded yet.</div>}
-            {docs.map(d => (
-              <div key={d._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0' }}>
-                <div>
-                  <span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, marginRight: 10 }}>{d.docType}</span>
-                  <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{d.label || d.filename || '—'}</span>
+            {docs.map(d => {
+              const fileUrl = d.fileUrl || d.filepath || '';
+              return (
+                <div key={d._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, marginRight: 10 }}>{d.docType}</span>
+                    <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{d.label || d.filename || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {fileUrl && (
+                      <a href={fileUrl} target="_blank" rel="noreferrer"
+                        style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>View</a>
+                    )}
+                    {fileUrl && (
+                      <a href={fileUrl} download
+                        style={{ background: '#f0fdf4', color: '#059669', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>⬇ Download</a>
+                    )}
+                    <button onClick={async () => {
+                      if (!confirm('Delete this document?')) return;
+                      await api.delete(`/documents/${d._id}`);
+                      setDocs(prev => prev.filter(x => x._id !== d._id));
+                    }} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                  </div>
                 </div>
-                {(d.fileUrl || d.filepath) && (
-                  <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer"
-                    style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>View</a>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
