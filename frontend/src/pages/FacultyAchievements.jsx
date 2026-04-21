@@ -112,16 +112,21 @@ export default function FacultyAchievements() {
 
       {/* 4 Category Cards */}
       {!selectedCat && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
           {CATEGORIES.map(cat => (
-            <div key={cat.key} onClick={() => setSelectedCat(cat)}
-              style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 16, padding: '28px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${cat.color}22`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>{cat.icon}</div>
-              <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 6 }}>{cat.label}</div>
-              <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5, marginBottom: 14 }}>{cat.desc}</div>
-              <div style={{ background: cat.color, color: '#fff', borderRadius: 8, padding: '7px 0', fontSize: 12, fontWeight: 700 }}>+ Add {cat.label}</div>
+            <div key={cat.key}
+              style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 20, padding: '28px 20px 20px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${cat.color}22`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; }}>
+              <div style={{ fontSize: 52, marginBottom: 12, lineHeight: 1 }}>{cat.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 8 }}>{cat.label}</div>
+              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 18, minHeight: 36 }}>{cat.desc}</div>
+              <button onClick={() => setSelectedCat(cat)}
+                style={{ background: cat.color, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                + Fetch {cat.label}
+              </button>
             </div>
           ))}
         </div>
