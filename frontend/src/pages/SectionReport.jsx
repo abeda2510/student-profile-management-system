@@ -264,7 +264,11 @@ export default function SectionReport() {
             <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
               style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, marginBottom: 12, outline: 'none', fontFamily: 'inherit' }}>
               <option value="">All Years</option>
-              {['2021','2022','2023','2024','2025'].map(y => <option key={y} value={y}>{y}</option>)}
+              {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
+                const y = 2019 + i;
+                const label = `${y}-${String(y+1).slice(2)}`;
+                return <option key={label} value={label}>{label}</option>;
+              })}
             </select>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Year of Study</div>
             <select value={yearOfStudy} onChange={e => setYearOfStudy(e.target.value)}
