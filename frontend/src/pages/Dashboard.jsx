@@ -35,6 +35,7 @@ export default function Dashboard() {
     { label: 'Section', value: profile.section },
     { label: 'Address', value: profile.address },
     { label: 'Overall CGPA', value: (() => { const vals = [1,2,3,4,5,6,7,8].map(i => parseFloat(profile[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0); return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : profile.cgpa || null; })() },
+    { label: 'Achievements', value: achCount || null, isLink: true },
   ] : [];
 
   return (
@@ -63,34 +64,15 @@ export default function Dashboard() {
 
         {/* Profile Complete card */}
         <div onClick={() => navigate('/profile')}
-          style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)', border: `1px solid ${profileComplete ? '#bbf7d0' : '#e8edf3'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+          style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)', border: `1px solid ${profileComplete ? '#bbf7d0' : '#e8edf3'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
           onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'none'; }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>👤</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Profile Status</div>
-              <div style={{ fontSize: 12, color: profileComplete ? '#059669' : '#ef4444', fontWeight: 600 }}>
-                {profileComplete ? '✓ Complete' : '✗ Incomplete'}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px' }}>
-            {[
-              { label: 'Personal', key: 'personal' },
-              { label: 'Contact', key: 'contact' },
-              { label: 'Academic', key: 'academic' },
-              { label: '10th Details', key: 'tenth' },
-              { label: 'Intermediate', key: 'inter' },
-              { label: 'Aadhaar', key: 'aadhaar' },
-            ].map(({ label, key }) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <span style={{ fontSize: 14, color: checks[key] ? '#059669' : '#d1d5db', fontWeight: 800 }}>
-                  {checks[key] ? '✓' : '○'}
-                </span>
-                <span style={{ color: checks[key] ? '#0f172a' : '#94a3b8', fontWeight: checks[key] ? 600 : 400 }}>{label}</span>
-              </div>
-            ))}
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>👤</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {profileComplete
+              ? <span style={{ fontSize: 28, color: '#059669', fontWeight: 800 }}>✓</span>
+              : <span style={{ fontSize: 28, color: '#ef4444', fontWeight: 800 }}>✗</span>}
+            <div style={{ fontSize: 14, color: '#64748b' }}>Profile {profileComplete ? 'Complete' : 'Incomplete'}</div>
           </div>
         </div>
       </div>
@@ -102,10 +84,12 @@ export default function Dashboard() {
           <span style={{ fontWeight: 700, fontSize: 16, color: '#0f172a' }}>Quick Profile Info</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-          {quickInfo.map(({ label, value }) => (
+          {quickInfo.map(({ label, value, isLink }) => (
             <div key={label} style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #f8fafc', gap: 16 }}>
               <span style={{ color: '#64748b', fontSize: 14, minWidth: 160, fontWeight: 500 }}>{label}</span>
-              <span style={{ color: '#0f172a', fontSize: 14, fontWeight: 600 }}>{value || '—'}</span>
+              {isLink
+                ? <span onClick={() => navigate('/achievements')} style={{ color: '#1e40af', fontSize: 14, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>{value} →</span>
+                : <span style={{ color: '#0f172a', fontSize: 14, fontWeight: 600 }}>{value || '—'}</span>}
             </div>
           ))}
         </div>

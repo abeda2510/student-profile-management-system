@@ -230,7 +230,6 @@ export default function Achievements() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{a.title}</span>
                     <span style={{ ...statusStyle, padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>{a.status}</span>
-                    {a.status === 'APPROVED' && <span style={{ background: '#1e40af', color: '#fff', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>🏆 {a.points} pts</span>}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                     {a.activityType && <span style={{ background: cat?.bg || '#eff6ff', color: cat?.color || '#1e40af', border: `1px solid ${cat?.border || '#bfdbfe'}`, padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>{a.activityType.replace(/_/g, ' ')}</span>}
@@ -249,9 +248,7 @@ export default function Achievements() {
                     </a>
                   )}
                 </div>
-                {a.status === 'PENDING' && (
-                  <button onClick={() => del(a._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Delete</button>
-                )}
+                <button onClick={() => del(a._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Delete</button>
               </div>
             </div>
           );
