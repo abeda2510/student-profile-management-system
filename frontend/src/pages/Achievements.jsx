@@ -67,8 +67,9 @@ export default function Achievements() {
   };
 
   const selectType = (type) => {
+    const autoTitle = type === 'OTHER' ? '' : type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     setSelectedType(type);
-    setForm(f => ({ ...f, activityType: type === 'OTHER' ? customType : type, mainCategory: selectedCat.key }));
+    setForm(f => ({ ...f, activityType: type === 'OTHER' ? customType : type, mainCategory: selectedCat.key, title: autoTitle }));
     setShowForm(true);
   };
 
