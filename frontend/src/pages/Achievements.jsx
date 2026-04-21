@@ -189,19 +189,19 @@ export default function Achievements() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px', marginBottom: 12 }}>
               <input placeholder="Title *" value={form.title} onChange={e => set('title', e.target.value)} required
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
-              <input placeholder="Issuing Organization" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)}
+              <input placeholder="Issuing Organization *" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)} required
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
-              <select value={form.position} onChange={e => set('position', e.target.value)}
+              <select value={form.position} onChange={e => set('position', e.target.value)} required
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff', color: form.position ? '#0f172a' : '#94a3b8' }}>
-                <option value="">Position / Award</option>
+                <option value="">Position / Award *</option>
                 {['1st Place','2nd Place','3rd Place','Participation'].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
-              <input placeholder="Academic Year (e.g. 2024-25)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)}
+              <input placeholder="Academic Year * (e.g. 2024-25)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)} required
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <div style={{ gridColumn: '1 / span 2' }}>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} required
                   style={{ padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
               </div>
             </div>

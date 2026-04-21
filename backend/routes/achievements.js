@@ -20,17 +20,23 @@ const POINTS_MAP = {
 
 // ── Student: add achievement ─────────────────────────────
 router.post('/', protect, uploadAchievement.single('certificate'), async (req, res) => {
-  const student = await Student.findById(req.user.id);
-  const points = POINTS_MAP[req.body.activityType] || 0;
-  const data = { ...req.body, student: req.user.id, regNumber: student.regNumber, status: 'APPROVED', points };
-  if (req.file) {
-    data.certificateFile = req.file.originalname;
-    data.certificatePath = req.file.path;
-    data.cloudinaryId = req.file.filename;
+  try {
+    const student = await Student.findById(req.user.id);
+    const points = POINTS_MAP[req.body.activityType] || 0;
+    const data = { ...req.body, student: req.user.id, regNumber: student?.regNumber, status: 'APPROVED', points };
+    if (req.file) {
+      data.certificateFile = req.file.originalname;
+      data.certificatePath = req.file.path;
+      data.certificateUrl = req.file.path;
+      data.cloudinaryId = req.file.filename;
+    }
+    const achievement = new Achievement(data);
+    await achievement.save();
+    res.status(201).json(achievement);
+  } catch (err) {
+    console.error('Achievement POST error:', err.message);
+    res.status(500).json({ message: err.message });
   }
-  const achievement = new Achievement(data);
-  await achievement.save();
-  res.status(201).json(achievement);
 });
 
 // ── Student: get own achievements ───────────────────────

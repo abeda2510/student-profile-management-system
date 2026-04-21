@@ -11,18 +11,20 @@ cloudinary.config({
 const docStorage = new CloudinaryStorage({
   cloudinary,
   params: (req) => ({
-    folder: `student-management/documents/${req.user.regNumber}`,
+    folder: `student-management/documents/${req.user.regNumber || req.user.id}`,
     resource_type: 'auto',
-    public_id: `${Date.now()}-${req.file?.originalname?.replace(/\s+/g, '_') || 'file'}`,
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
+    public_id: `${Date.now()}`,
   }),
 });
 
 const achievementStorage = new CloudinaryStorage({
   cloudinary,
   params: (req) => ({
-    folder: `student-management/achievements/${req.user.regNumber}`,
+    folder: `student-management/achievements/${req.user.regNumber || req.user.id}`,
     resource_type: 'auto',
-    public_id: `${Date.now()}-${req.file?.originalname?.replace(/\s+/g, '_') || 'file'}`,
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
+    public_id: `${Date.now()}`,
   }),
 });
 
