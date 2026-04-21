@@ -68,9 +68,8 @@ export default function Achievements() {
   };
 
   const selectType = (type) => {
-    const autoTitle = type === 'OTHER' ? '' : type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     setSelectedType(type);
-    setForm(f => ({ ...f, activityType: type === 'OTHER' ? customType : type, mainCategory: selectedCat.key, title: autoTitle }));
+    setForm(f => ({ ...f, activityType: type === 'OTHER' ? customType : type, mainCategory: selectedCat.key, title: '' }));
     setShowForm(true);
   };
 
@@ -168,8 +167,7 @@ export default function Achievements() {
               <input value={customType} onChange={e => setCustomType(e.target.value)} placeholder="Enter activity type..."
                 style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <button onClick={() => { if (customType.trim()) { 
-                const autoTitle = customType.trim().replace(/\b\w/g, c => c.toUpperCase());
-                setForm(f => ({ ...f, activityType: customType, mainCategory: selectedCat.key, title: autoTitle })); 
+                setForm(f => ({ ...f, activityType: customType, mainCategory: selectedCat.key, title: '' })); 
                 setShowForm(true); 
               } }}
                 style={{ background: selectedCat.color, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
@@ -206,8 +204,8 @@ export default function Achievements() {
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <div style={{ gridColumn: '1 / span 2' }}>
-                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>⚠️ Only JPG, JPEG, PNG files are allowed</div>
-                <input type="file" accept=".jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} required
+                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>Upload Certificate (JPG, JPEG, PNG, PDF)</div>
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => set('certificate', e.target.files[0])} required
                   style={{ padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
               </div>
             </div>
