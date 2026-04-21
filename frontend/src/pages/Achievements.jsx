@@ -50,6 +50,7 @@ export default function Achievements() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
+  const [listTab, setListTab] = useState('TECHNICAL');
 
   const load = () => {
     api.get('/achievements/me').then(r => setList(r.data));
@@ -219,47 +220,74 @@ export default function Achievements() {
         </div>
       )}
 
-      {/* Achievement List */}
+      {/* Achievement List — grouped by category with tabs */}
+      {!selectedCat && list.length > 0 && (() => {
+        const tabs = [
+          { key: 'TECHNICAL', label: 'Technical', color: '#1e40af' },
+          { key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706' },
+          { key: 'NPTEL', label: 'NPTEL', color: '#7c3aed' },
+          { key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669' },
+          { key: 'OTHER', label: 'Other', color: '#64748b' },
+        ];
+        const grouped = {};
+        list.forEach(a => {
+          const cat = CATEGORIES.find(c => c.key === a.mainCategory) || CATEGORIES.find(c => c.types?.includes(a.activityType));
+          const key = cat?.key || 'OTHER';
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(a);
+        });
+        const activeTabs = tabs.filter(t => grouped[t.key]?.length > 0);
+        const currentTab = activeTabs.find(t => t.key === listTab) ? listTab : activeTabs[0]?.key;
+        const currentColor = tabs.find(t => t.key === currentTab)?.color || '#1e40af';
+
+        return (
+          <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {activeTabs.map(t => (
+                <button key={t.key} onClick={() => setListTab(t.key)}
+                  style={{ padding: '7px 18px', borderRadius: 99, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                    background: currentTab === t.key ? t.color : '#f1f5f9',
+                    color: currentTab === t.key ? '#fff' : '#374151' }}>
+                  {t.label} ({grouped[t.key]?.length || 0})
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {(grouped[currentTab] || []).map(a => (
+                <div key={a._id} style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', borderLeft: `4px solid ${currentColor}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', marginBottom: 6 }}>{a.title}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                        {a.academicYear && <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>{a.academicYear}</span>}
+                        {a.position && <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>{a.position}</span>}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        {a.issuingOrg && <span>🏢 {a.issuingOrg} &nbsp;</span>}
+                        {a.date && <span>📅 {a.date}</span>}
+                      </div>
+                      {(a.certificateUrl || a.certificatePath) && (
+                        <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
+                          style={{ display: 'inline-block', marginTop: 6, background: '#dbeafe', color: '#1e40af', padding: '3px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                          📎 View Certificate
+                        </a>
+                      )}
+                    </div>
+                    <button onClick={() => del(a._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {list.length === 0 && !selectedCat && (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🏆</div>
           <div style={{ fontWeight: 600, fontSize: 15 }}>No achievements found.</div>
         </div>
       )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {list.map(a => {
-          const cat = CATEGORIES.find(c => c.key === a.mainCategory) || CATEGORIES.find(c => c.types?.includes(a.activityType));
-          const statusStyle = STATUS_COLORS[a.status] || STATUS_COLORS.PENDING;
-          return (
-            <div key={a._id} style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', borderLeft: `4px solid ${cat?.color || '#1e40af'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{a.title}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-                    {a.academicYear && <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>{a.academicYear}</span>}
-                    {a.position && <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>{a.position}</span>}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>
-                    {a.issuingOrg && <span>🏢 {a.issuingOrg} &nbsp;</span>}
-                    {a.date && <span>📅 {a.date}</span>}
-                  </div>
-                  {a.reviewNote && <div style={{ fontSize: 12, marginTop: 5, color: a.status === 'REJECTED' ? '#ef4444' : '#059669', fontStyle: 'italic' }}>💬 {a.reviewNote}</div>}
-                  {(a.certificateUrl || a.certificatePath) && (
-                    <a href={a.certificateUrl || a.certificatePath} target="_blank" rel="noreferrer"
-                      style={{ display: 'inline-block', marginTop: 6, background: '#dbeafe', color: '#1e40af', padding: '3px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                      📎 View Certificate
-                    </a>
-                  )}
-                </div>
-                <button onClick={() => del(a._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Delete</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
