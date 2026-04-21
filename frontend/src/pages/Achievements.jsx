@@ -206,7 +206,8 @@ export default function Achievements() {
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <div style={{ gridColumn: '1 / span 2' }}>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} required
+                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>⚠️ Only JPG, JPEG, PNG files are allowed</div>
+                <input type="file" accept=".jpg,.jpeg,.png" onChange={e => set('certificate', e.target.files[0])} required
                   style={{ padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
               </div>
             </div>

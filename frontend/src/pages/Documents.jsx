@@ -55,8 +55,11 @@ export default function Documents() {
             </select>
             <input style={s.input} placeholder="Label (e.g. Semester 1 Mark Memo)"
               value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
-            <input style={s.input} type="file" accept=".pdf,.jpg,.jpeg,.png"
-              onChange={e => setForm(f => ({ ...f, file: e.target.files[0] }))} required />
+            <div>
+              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>⚠️ Only JPG, JPEG, PNG files are allowed</div>
+              <input style={s.input} type="file" accept=".jpg,.jpeg,.png"
+                onChange={e => setForm(f => ({ ...f, file: e.target.files[0] }))} required />
+            </div>
             <button style={s.btn} type="submit">Upload</button>
           </form>
         </div>

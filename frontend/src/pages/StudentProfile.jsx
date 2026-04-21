@@ -68,7 +68,7 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
         </div>
       ))}
       <div className="upload-box" style={{ padding: 12 }}>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFile(e.target.files[0])}
+        <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => setFile(e.target.files[0])}
           style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, boxShadow: 'none' }} />
         {file && (
           <button type="button" onClick={upload} disabled={uploading}
@@ -99,7 +99,7 @@ function SemUpload({ sem, onUploaded }) {
 
   return (
     <div>
-      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png"
+      <input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.pdf"
         onChange={e => setFile(e.target.files[0])} style={{ display: 'none' }} />
       {!file ? (
         <button type="button" onClick={() => inputRef.current.click()}
