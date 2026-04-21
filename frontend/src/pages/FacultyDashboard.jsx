@@ -47,10 +47,14 @@ const DOC_GROUPS = [
 ];
 
 const chipStyle = (sel, color, bg) => ({
-  padding: '4px 12px', borderRadius: 99,
-  border: `1px solid ${sel ? color : '#e2e8f0'}`,
-  background: sel ? bg : '#fff', color: sel ? color : '#374151',
-  fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-block',
+  padding: '5px 14px', borderRadius: 99,
+  border: `1.5px solid ${sel ? color : '#d1d5db'}`,
+  background: sel ? color : '#fff',
+  color: sel ? '#fff' : '#374151',
+  fontSize: 12, fontWeight: sel ? 700 : 500,
+  cursor: 'pointer', display: 'inline-block',
+  transition: 'all 0.15s',
+  boxShadow: sel ? `0 2px 6px ${color}44` : 'none',
 });
 
 const tabBtn = (active) => ({
