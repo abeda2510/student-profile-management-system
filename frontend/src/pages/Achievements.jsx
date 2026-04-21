@@ -187,13 +187,6 @@ export default function Achievements() {
               </select>
               <input placeholder="Academic Year (e.g. 2024-25)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
-              {subTypes.length > 0 && (
-                <select value={form.subType} onChange={e => set('subType', e.target.value)}
-                  style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
-                  <option value="">Participation Level</option>
-                  {subTypes.map(st => <option key={st} value={st}>{st}</option>)}
-                </select>
-              )}
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <div style={{ gridColumn: '1 / span 2' }}>
