@@ -237,7 +237,14 @@ export default function StudentProfile() {
                   style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', marginTop: 6 }} />
               )}
             </div>
-            <Field label="Admission Year" value={form.admissionYear} onChange={v => set('admissionYear', v)} type="number" placeholder="e.g. 2023" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Year</label>
+              <select value={form.admissionYear || ''} onChange={e => set('admissionYear', e.target.value)}
+                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                <option value="">Select...</option>
+                {['2019-20','2020-21','2021-22','2022-23','2023-24','2024-25','2025-26'].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
             <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
             <Field label="Section" value={form.section} onChange={v => set('section', v)} />
             <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
