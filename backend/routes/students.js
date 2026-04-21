@@ -94,7 +94,7 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
 
     const row1col = (label, val) => {
       doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(label, 50, y, { width: 120 });
-      doc.font('Helvetica').fillColor('#0f172a').text(String(val || '—'), 175, y, { width: W - 125 });
+      doc.font('Helvetica').fillColor('#0f172a').text(String(val || '—'), 145, y, { width: W - 95 });
       y += 16;
     };
 
