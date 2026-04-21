@@ -25,7 +25,6 @@ const DOC_GROUPS = [
       { value: 'CURRENT_YEAR', label: 'Current Year' },
       { value: 'CURRENT_SEMESTER', label: 'Current Semester' },
       { value: 'CGPA', label: 'CGPA' },
-      { value: 'APAAR_ID', label: 'APAAR ID' },
     ]
   },
   { key: 'coding', label: 'Coding Profiles', color: '#1e40af', bg: '#eff6ff',
