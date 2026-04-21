@@ -246,11 +246,11 @@ async function getStudentDocData(st, docType) {
   if (docType === 'SEM8_SGPA') return { ...base, data: st.sem8Sgpa != null ? String(st.sem8Sgpa) : '—' };
   if (docType === 'AADHAAR_DOC') {
     const docs = await Document.find({ regNumber: st.regNumber, docType: 'AADHAAR' });
-    return { ...base, data: docs.length ? 'Uploaded' : '—' };
+    return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'PAN_DOC') {
     const docs = await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
-    return { ...base, data: docs.length ? 'Uploaded' : '—' };
+    return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'INTERNSHIP') {
     const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
@@ -466,13 +466,19 @@ router.get('/section-report/excel', protect, async (req, res) => {
       ];
       const row = ws.addRow(rowData);
       row.height = 16;
-      row.eachCell(cell => {
+      row.eachCell((cell, colNumber) => {
         cell.font = { color: { argb: 'FF000000' }, size: 10 };
         cell.alignment = { vertical: 'middle', wrapText: true };
         cell.border = {
           top: { style: 'thin' }, bottom: { style: 'thin' },
           left: { style: 'thin' }, right: { style: 'thin' },
         };
+        // Make URL cells hyperlinks
+        const cellVal = String(cell.value || '');
+        if (colNumber >= 6 && colNumber <= 5 + docTypes.length && cellVal.startsWith('http')) {
+          cell.value = { text: 'View Document', hyperlink: cellVal };
+          cell.font = { color: { argb: 'FF1e40af' }, size: 10, underline: true };
+        }
       });
     });
 
