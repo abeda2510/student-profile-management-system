@@ -118,6 +118,7 @@ export default function FacultyDashboard() {
 
   const fetchReport = async () => {
     if (myStudents.length === 0) return alert('No counsellee students assigned');
+    if (selItems.length === 0) return alert('Please select at least one document type from the list below before fetching the report.');
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -326,7 +327,9 @@ export default function FacultyDashboard() {
                         try {
                           const params = new URLSearchParams();
                           params.append('branch', st.branch); params.append('section', st.section);
-                          selItems.forEach(d => params.append('docType', d));
+                          // use selected items, or fall back to all items
+                          const items = selItems.length > 0 ? selItems : DOC_GROUPS.flatMap(g => g.items.map(i => i.value));
+                          items.forEach(d => params.append('docType', d));
                           const { data } = await api.get(`/faculty/section-report?${params}`);
                           setResults(data.filter(r => r.regNumber === st.regNumber));
                         } catch { alert('Failed to fetch report'); }
