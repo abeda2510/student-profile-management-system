@@ -5,16 +5,26 @@ import api from '../api';
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [achCount, setAchCount] = useState(0);
+  const [docs, setDocs] = useState([]);
   const name = localStorage.getItem('name');
   const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/students/me').then(r => setProfile(r.data)).catch(() => {});
     api.get('/achievements/me').then(r => setAchCount(r.data.length)).catch(() => {});
+    api.get('/documents/me').then(r => setDocs(r.data)).catch(() => {});
   }, []);
 
-  const profileFields = ['name','email','phone','branch','section','dob','gender','bloodGroup','parentName','parentPhone'];
-  const profileComplete = profile ? profileFields.every(f => profile[f]) : false;
+  const checks = profile ? {
+    personal:  ['name','dob','gender','bloodGroup','nationality'].every(f => profile[f]),
+    contact:   ['email','phone','parentName','parentPhone'].every(f => profile[f]),
+    academic:  ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => profile[f]),
+    tenth:     ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => profile[f]),
+    inter:     ['interCollege','interBoard','interYear','interPercent'].every(f => profile[f]),
+    aadhaar:   docs.some(d => d.docType === 'AADHAAR' || d.docType === 'Aadhaar'),
+  } : {};
+
+  const profileComplete = Object.values(checks).length > 0 && Object.values(checks).every(Boolean);
 
   const quickInfo = profile ? [
     { label: 'Reg. Number', value: profile.regNumber },
@@ -53,15 +63,34 @@ export default function Dashboard() {
 
         {/* Profile Complete card */}
         <div onClick={() => navigate('/profile')}
-          style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)', border: '1px solid #e8edf3', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s' }}
+          style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)', border: `1px solid ${profileComplete ? '#bbf7d0' : '#e8edf3'}`, cursor: 'pointer', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
           onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'none'; }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>👤</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {profileComplete
-              ? <span style={{ fontSize: 28, color: '#059669', fontWeight: 800 }}>✓</span>
-              : <span style={{ fontSize: 28, color: '#ef4444', fontWeight: 800 }}>✗</span>}
-            <div style={{ fontSize: 14, color: '#64748b' }}>Profile {profileComplete ? 'Complete' : 'Incomplete'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>👤</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Profile Status</div>
+              <div style={{ fontSize: 12, color: profileComplete ? '#059669' : '#ef4444', fontWeight: 600 }}>
+                {profileComplete ? '✓ Complete' : '✗ Incomplete'}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px' }}>
+            {[
+              { label: 'Personal', key: 'personal' },
+              { label: 'Contact', key: 'contact' },
+              { label: 'Academic', key: 'academic' },
+              { label: '10th Details', key: 'tenth' },
+              { label: 'Intermediate', key: 'inter' },
+              { label: 'Aadhaar', key: 'aadhaar' },
+            ].map(({ label, key }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <span style={{ fontSize: 14, color: checks[key] ? '#059669' : '#d1d5db', fontWeight: 800 }}>
+                  {checks[key] ? '✓' : '○'}
+                </span>
+                <span style={{ color: checks[key] ? '#0f172a' : '#94a3b8', fontWeight: checks[key] ? 600 : 400 }}>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
