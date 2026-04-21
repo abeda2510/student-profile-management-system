@@ -41,35 +41,12 @@ const DOC_GROUPS = [
       { value: 'APAAR_ID', label: 'ABC / APAAR ID' },
     ]
   },
-  { key: 'education', label: 'Education', color: '#0891b2', bg: '#ecfeff',
-    items: [
-      { value: 'TENTH_SCHOOL', label: '10th School' },
-      { value: 'TENTH_BOARD', label: '10th Board' },
-      { value: 'TENTH_YEAR', label: '10th Year' },
-      { value: 'TENTH_PERCENT', label: '10th Percentage' },
-      { value: 'INTER_COLLEGE', label: 'Inter College' },
-      { value: 'INTER_BOARD', label: 'Inter Board' },
-      { value: 'INTER_YEAR', label: 'Inter Year' },
-      { value: 'INTER_PERCENT', label: 'Inter Percentage' },
-      { value: 'INTER_GROUP', label: 'Inter Group' },
-    ]
-  },
-  { key: 'sgpa', label: 'Semester SGPA', color: '#059669', bg: '#f0fdf4',
-    items: [
-      { value: 'SEM1_SGPA', label: 'Sem 1 SGPA' },
-      { value: 'SEM2_SGPA', label: 'Sem 2 SGPA' },
-      { value: 'SEM3_SGPA', label: 'Sem 3 SGPA' },
-      { value: 'SEM4_SGPA', label: 'Sem 4 SGPA' },
-      { value: 'SEM5_SGPA', label: 'Sem 5 SGPA' },
-      { value: 'SEM6_SGPA', label: 'Sem 6 SGPA' },
-      { value: 'SEM7_SGPA', label: 'Sem 7 SGPA' },
-      { value: 'SEM8_SGPA', label: 'Sem 8 SGPA' },
-    ]
-  },
   { key: 'documents', label: 'Documents', color: '#dc2626', bg: '#fef2f2',
     items: [
       { value: 'AADHAAR_DOC', label: 'Aadhaar Card' },
       { value: 'PAN_DOC', label: 'PAN Card' },
+      { value: 'TENTH_MEMO', label: '10th Mark Memo' },
+      { value: 'INTER_MEMO', label: 'Inter Mark Memo' },
     ]
   },
 ];

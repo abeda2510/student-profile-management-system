@@ -252,6 +252,14 @@ async function getStudentDocData(st, docType) {
     const docs = await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
+  if (docType === 'TENTH_MEMO') {
+    const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /10th|SSC/i });
+    return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
+  }
+  if (docType === 'INTER_MEMO') {
+    const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
+    return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
+  }
   if (docType === 'INTERNSHIP') {
     const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
