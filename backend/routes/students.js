@@ -121,7 +121,7 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
     row2col('Date of Birth', student.dob, 'Gender', student.gender);
     row2col('Blood Group', student.bloodGroup, 'Nationality', student.nationality);
     row2col('Religion', student.religion, 'Caste / Category', student.caste);
-    row1col('Address', student.address);
+    row1col('Address', student.address ? student.address.trim() : null);
     row2col('Parent Name', student.parentName, 'Parent Phone', student.parentPhone);
     y += 4;
 
@@ -195,10 +195,15 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
         checkPage(30);
         doc.fontSize(8).font('Helvetica-Bold').fillColor(blue).text(type.replace(/_/g, ' '), 50, y); y += 14;
         items.forEach(a => {
-          checkPage(20);
-          doc.fontSize(8).font('Helvetica').fillColor('#0f172a')
-            .text(`• ${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`, 58, y, { width: W - 8 });
-          y += 13;
+          checkPage(24);
+          const certUrl = a.certificateUrl || a.certificatePath || '';
+          const label = `• ${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`;
+          doc.fontSize(8).font('Helvetica').fillColor('#0f172a').text(label, 58, y, { width: W - 80 });
+          if (certUrl && certUrl.startsWith('http')) {
+            doc.fontSize(7.5).font('Helvetica').fillColor('#1e40af')
+              .text('View Certificate', 400, y, { width: 90, link: certUrl, underline: true });
+          }
+          y += 14;
         });
         y += 4;
       }
@@ -210,8 +215,13 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
       sectionTitle('Uploaded Documents');
       documents.forEach(d => {
         checkPage(16);
+        const fileUrl = d.fileUrl || d.filepath || '';
         doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(d.docType || '', 50, y, { width: 130 });
-        doc.font('Helvetica').fillColor('#0f172a').text(d.label || d.filename || '—', 185, y, { width: W - 135 });
+        doc.font('Helvetica').fillColor('#0f172a').text(d.label || d.filename || '—', 185, y, { width: W - 235 });
+        if (fileUrl && fileUrl.startsWith('http')) {
+          doc.fontSize(7.5).font('Helvetica').fillColor('#1e40af')
+            .text('Open', 420, y, { width: 60, link: fileUrl, underline: true });
+        }
         y += 14;
       });
       y += 4;
@@ -221,14 +231,23 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
     if (student.linkedIn || student.leetCode || student.codeChef) {
       checkPage(60);
       sectionTitle('Coding & Professional Profiles');
-      if (student.linkedIn) row1col('LinkedIn', student.linkedIn);
+
+      const linkRow = (label, displayText, url) => {
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(label, 50, y, { width: 120 });
+        doc.font('Helvetica').fillColor('#1e40af').text(displayText, 175, y, { width: W - 125, link: url, underline: true });
+        y += 16;
+      };
+
+      if (student.linkedIn) linkRow('LinkedIn', student.linkedIn, student.linkedIn.startsWith('http') ? student.linkedIn : 'https://' + student.linkedIn);
       if (student.leetCode) {
-        const lc = `leetcode.com/${student.leetCode}` + (student.leetCodeSolved != null ? `  |  Solved: ${student.leetCodeSolved}` : '');
-        row1col('LeetCode', lc);
+        const url = `https://leetcode.com/${student.leetCode}`;
+        const display = url + (student.leetCodeSolved != null ? `  |  Solved: ${student.leetCodeSolved}` : '');
+        linkRow('LeetCode', display, url);
       }
       if (student.codeChef) {
-        const cc = `codechef.com/users/${student.codeChef}` + (student.codeChefRating != null ? `  |  Rating: ${student.codeChefRating}` : '');
-        row1col('CodeChef', cc);
+        const url = `https://www.codechef.com/users/${student.codeChef}`;
+        const display = url + (student.codeChefRating != null ? `  |  Rating: ${student.codeChefRating}` : '');
+        linkRow('CodeChef', display, url);
       }
     }
 
