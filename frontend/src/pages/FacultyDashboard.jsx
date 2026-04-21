@@ -322,22 +322,6 @@ export default function FacultyDashboard() {
                         style={{ flex: 1, background: '#059669', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
                         View Profile
                       </button>
-                      <button onClick={async () => {
-                        setLoading(true);
-                        try {
-                          const params = new URLSearchParams();
-                          params.append('branch', st.branch); params.append('section', st.section);
-                          // use selected items, or fall back to all items
-                          const items = selItems.length > 0 ? selItems : DOC_GROUPS.flatMap(g => g.items.map(i => i.value));
-                          items.forEach(d => params.append('docType', d));
-                          const { data } = await api.get(`/faculty/section-report?${params}`);
-                          setResults(data.filter(r => r.regNumber === st.regNumber));
-                        } catch { alert('Failed to fetch report'); }
-                        setLoading(false);
-                      }}
-                        style={{ flex: 1, background: '#1e40af', color: '#fff', border: 'none', padding: '6px 0', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
-                        Fetch Report
-                      </button>
                     </div>
                   </div>
                 ))}
