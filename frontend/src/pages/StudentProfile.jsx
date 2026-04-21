@@ -242,7 +242,10 @@ export default function StudentProfile() {
               <select value={form.admissionYear || ''} onChange={e => set('admissionYear', e.target.value)}
                 style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
                 <option value="">Select...</option>
-                {['2019-20','2020-21','2021-22','2022-23','2023-24','2024-25','2025-26'].map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
+                  const y = 2019 + i;
+                  return <option key={y} value={`${y}-${String(y+1).slice(2)}`}>{y}-{String(y+1).slice(2)}</option>;
+                })}
               </select>
             </div>
             <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
