@@ -277,7 +277,7 @@ export default function StudentProfile() {
         </SectionCard>
 
         {/* Semester CGPA */}
-        <SectionCard icon="📊" title="Semester-wise CGPA & SGPA" bg="#eff6ff">
+        <SectionCard icon="📊" title="Semester-wise SGPA" bg="#eff6ff">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px', marginBottom: 20 }}>
             {[1,2,3,4,5,6,7,8].map(sem => {
               const semDocs = docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`));
@@ -285,11 +285,6 @@ export default function StudentProfile() {
                 <div key={sem} style={{ background: '#f8fafc', borderRadius: 12, padding: '14px', border: '1px solid #e2e8f0' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>Semester {sem}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
-                    <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CGPA</label>
-                      <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
-                        style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #d1d5db', borderRadius: 7, fontSize: 13, background: '#fff', outline: 'none', marginTop: 3 }} />
-                    </div>
                     <div>
                       <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SGPA</label>
                       <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
