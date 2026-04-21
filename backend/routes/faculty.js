@@ -226,6 +226,7 @@ async function getStudentDocData(st, docType) {
   if (docType === 'DOB') return { ...base, data: st.dob || '—' };
   if (docType === 'GENDER') return { ...base, data: st.gender || '—' };
   if (docType === 'BLOOD_GROUP') return { ...base, data: st.bloodGroup || '—' };
+  if (docType === 'NATIONALITY') return { ...base, data: st.nationality || '—' };
   if (docType === 'INTERNSHIP') {
     const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };

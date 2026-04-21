@@ -2,40 +2,45 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 
 const DOC_GROUPS = [
-  { key: 'coding', label: 'Coding Profiles', color: '#1e40af', bg: '#eff6ff',
+  { key: 'personal', label: 'Personal', color: '#dc2626', bg: '#fef2f2',
     items: [
-      { value: 'LEETCODE', label: 'LeetCode Username' },
-      { value: 'LEETCODE_SOLVED', label: 'LeetCode Total Solved' },
-      { value: 'LEETCODE_EASY', label: 'LeetCode Easy' },
-      { value: 'LEETCODE_MEDIUM', label: 'LeetCode Medium' },
-      { value: 'LEETCODE_HARD', label: 'LeetCode Hard' },
-      { value: 'CODECHEF', label: 'CodeChef Username' },
-      { value: 'CODECHEF_RATING', label: 'CodeChef Rating' },
-      { value: 'CODECHEF_STARS', label: 'CodeChef Stars' },
-      { value: 'CODECHEF_RANK', label: 'CodeChef Global Rank' },
-      { value: 'LINKEDIN', label: 'LinkedIn Profile' },
+      { value: 'DOB', label: 'Date of Birth' },
+      { value: 'GENDER', label: 'Gender' },
+      { value: 'BLOOD_GROUP', label: 'Blood Group' },
+      { value: 'NATIONALITY', label: 'Nationality' },
     ]
-  },
-  { key: 'ids', label: 'IDs', color: '#7c3aed', bg: '#f5f3ff',
-    items: [{ value: 'ABC_ID', label: 'ABC ID' }, { value: 'APAAR_ID', label: 'APAAR ID' }]
   },
   { key: 'contact', label: 'Contact', color: '#0891b2', bg: '#ecfeff',
     items: [
-      { value: 'EMAIL', label: 'Email' }, { value: 'PHONE', label: 'Phone' },
-      { value: 'PARENT_NAME', label: 'Parent Name' }, { value: 'PARENT_PHONE', label: 'Parent Phone' },
+      { value: 'EMAIL', label: 'Email' },
+      { value: 'PHONE', label: 'Phone' },
       { value: 'ADDRESS', label: 'Address' },
+      { value: 'PARENT_NAME', label: 'Parent Name' },
+      { value: 'PARENT_PHONE', label: 'Parent Phone' },
     ]
   },
   { key: 'academic', label: 'Academic', color: '#d97706', bg: '#fffbeb',
     items: [
-      { value: 'CGPA', label: 'CGPA' }, { value: 'ADMISSION_CATEGORY', label: 'Admission Category' },
-      { value: 'CURRENT_YEAR', label: 'Current Year' }, { value: 'CURRENT_SEMESTER', label: 'Current Semester' },
+      { value: 'ADMISSION_CATEGORY', label: 'Admission Category' },
+      { value: 'CURRENT_YEAR', label: 'Current Year' },
+      { value: 'CURRENT_SEMESTER', label: 'Current Semester' },
+      { value: 'CGPA', label: 'CGPA' },
+      { value: 'APAAR_ID', label: 'APAAR ID' },
     ]
   },
-  { key: 'personal', label: 'Personal', color: '#dc2626', bg: '#fef2f2',
+  { key: 'coding', label: 'Coding Profiles', color: '#1e40af', bg: '#eff6ff',
     items: [
-      { value: 'DOB', label: 'Date of Birth' }, { value: 'GENDER', label: 'Gender' },
-      { value: 'BLOOD_GROUP', label: 'Blood Group' },
+      { value: 'LINKEDIN', label: 'LinkedIn' },
+      { value: 'LEETCODE', label: 'LeetCode Username' },
+      { value: 'LEETCODE_SOLVED', label: 'LeetCode Solved' },
+      { value: 'CODECHEF', label: 'CodeChef Username' },
+      { value: 'CODECHEF_RATING', label: 'CodeChef Rating' },
+    ]
+  },
+  { key: 'ids', label: 'IDs', color: '#7c3aed', bg: '#f5f3ff',
+    items: [
+      { value: 'ABC_ID', label: 'ABC ID' },
+      { value: 'APAAR_ID', label: 'APAAR ID' },
     ]
   },
 ];
