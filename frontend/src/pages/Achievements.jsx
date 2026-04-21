@@ -166,7 +166,11 @@ export default function Achievements() {
             <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
               <input value={customType} onChange={e => setCustomType(e.target.value)} placeholder="Enter activity type..."
                 style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
-              <button onClick={() => { if (customType.trim()) { setForm(f => ({ ...f, activityType: customType, mainCategory: selectedCat.key })); setShowForm(true); } }}
+              <button onClick={() => { if (customType.trim()) { 
+                const autoTitle = customType.trim().replace(/\b\w/g, c => c.toUpperCase());
+                setForm(f => ({ ...f, activityType: customType, mainCategory: selectedCat.key, title: autoTitle })); 
+                setShowForm(true); 
+              } }}
                 style={{ background: selectedCat.color, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                 Continue →
               </button>
