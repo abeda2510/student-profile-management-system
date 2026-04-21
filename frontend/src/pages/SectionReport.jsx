@@ -79,7 +79,7 @@ export default function SectionReport() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/students').then(r => setTotalStudents(r.data.length)).catch(() => {});
+    api.get('/students/count').then(r => setTotalStudents(r.data.count)).catch(() => {});
     api.get('/faculty/my-students').then(r => setMyStudents(r.data)).catch(() => {});
   }, []);
 

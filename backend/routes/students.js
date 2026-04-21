@@ -272,6 +272,12 @@ router.get('/search/:regNumber', protect, adminOnly, async (req, res) => {
   res.json(student);
 });
 
+// Faculty/Admin: get total student count
+router.get('/count', protect, async (req, res) => {
+  const count = await Student.countDocuments({ role: 'student' });
+  res.json({ count });
+});
+
 // Admin: list all students
 router.get('/', protect, adminOnly, async (req, res) => {
   const students = await Student.find().select('-password').sort({ createdAt: -1 });
