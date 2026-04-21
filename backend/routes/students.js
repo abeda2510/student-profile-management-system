@@ -131,7 +131,7 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
     row2col('Admission Category', student.admissionCategory, 'Admission Year', student.admissionYear);
     row2col('Branch', student.branch, 'Current Year', student.currentYear);
     row2col('Current Semester', student.currentSemester, 'CGPA', student.cgpa);
-    row2col('APAAR ID', student.apaarId, 'ABC ID', student.abcId);
+    row1col('APAAR ID', student.apaarId);
     y += 4;
 
     // ── EDUCATION ────────────────────────────────────────────
