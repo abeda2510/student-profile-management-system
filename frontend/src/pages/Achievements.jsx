@@ -4,22 +4,26 @@ import api from '../api';
 const CATEGORIES = [
   {
     key: 'TECHNICAL', label: 'Technical', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
-    icon: '💻', desc: 'Hackathons, Competitions, Workshops, Research',
+    img: '🖥️', desc: 'Hackathons, Competitions, Workshops, Research',
+    btnColor: '#1e40af',
     types: ['HACKATHON', 'IDEATHON', 'TECHNICAL_COMPETITION', 'RESEARCH_PUBLICATION', 'INTERNSHIP', 'WORKSHOP', 'SEMINAR', 'PROJECT']
   },
   {
     key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706', bg: '#fffbeb', border: '#fde68a',
-    icon: '🎭', desc: 'Cultural, Sports, Social Activities',
+    img: '🎭', desc: 'Cultural, Sports, Social Activities',
+    btnColor: '#d97706',
     types: ['SPORTS', 'CULTURAL', 'DANCE', 'MUSIC', 'ART', 'VOLUNTEERING', 'NSS', 'NCC']
   },
   {
     key: 'NPTEL', label: 'NPTEL', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe',
-    icon: '🎓', desc: 'NPTEL Course Certifications',
+    img: '🎓', desc: 'NPTEL Course Certifications',
+    btnColor: '#7c3aed',
     types: ['NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE']
   },
   {
     key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0',
-    icon: '📜', desc: 'Professional Certifications & Courses',
+    img: '📜', desc: 'Professional Certifications & Courses',
+    btnColor: '#059669',
     types: ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING']
   },
 ];
@@ -107,16 +111,22 @@ export default function Achievements() {
       {/* 4 Category Cards */}
       {!selectedCat && (
         <>
-          <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 16 }}>Choose a category to add achievement</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+          <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 20 }}>Choose a category to add achievement</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
             {CATEGORIES.map(cat => (
-              <div key={cat.key} onClick={() => selectCat(cat)}
-                style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 16, padding: '24px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 20px ${cat.color}22`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-                <div style={{ fontSize: 38, marginBottom: 10 }}>{cat.icon}</div>
-                <div style={{ fontWeight: 800, fontSize: 14, color: cat.color, marginBottom: 5 }}>{cat.label}</div>
-                <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>{cat.desc}</div>
+              <div key={cat.key}
+                style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 20, padding: '28px 20px 20px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${cat.color}22`; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; }}>
+                <div style={{ fontSize: 52, marginBottom: 12, lineHeight: 1 }}>{cat.img}</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 8 }}>{cat.label}</div>
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 18, minHeight: 36 }}>{cat.desc}</div>
+                <button onClick={() => selectCat(cat)}
+                  style={{ background: cat.btnColor, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                  + Add {cat.label}
+                </button>
               </div>
             ))}
           </div>
