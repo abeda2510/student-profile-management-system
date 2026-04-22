@@ -235,7 +235,7 @@ router.get('/faculty-report', protect, async (req, res) => {
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
-    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes) };
+    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };
 
     if (branch || section || currentYear) {
       const studentFilter = { role: 'student' };
@@ -283,7 +283,7 @@ router.get('/faculty-report/excel', protect, async (req, res) => {
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
-    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes) };
+    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };
     const studentFilter = { role: 'student' };
     if (branch) studentFilter.branch = branch;
     if (section) studentFilter.section = section;
@@ -342,7 +342,7 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
-    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes) };
+    if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };
     const studentFilter = { role: 'student' };
     if (branch) studentFilter.branch = branch;
     if (section) studentFilter.section = section;
