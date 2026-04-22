@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 
 const CATEGORIES = [
@@ -40,8 +40,14 @@ export default function FacultyAchievements() {
   const [xlLoading, setXlLoading] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [counselleesOnly, setCounselleesOnly] = useState(false);
+  const [myStudentRegs, setMyStudentRegs] = useState([]);
 
   const toggleType = (type) => setSelectedTypes(s => s.includes(type) ? s.filter(x => x !== type) : [...s, type]);
+
+  useEffect(() => {
+    api.get('/faculty/my-students').then(r => setMyStudentRegs(r.data.map(s => s.regNumber))).catch(() => {});
+  }, []);
 
   const fetchAchievements = async () => {
     setLoading(true);
@@ -54,7 +60,8 @@ export default function FacultyAchievements() {
       if (showOther && customType.trim()) typesToFetch.push(customType.trim());
       typesToFetch.forEach(t => params.append('activityTypes', t));
       const { data } = await api.get(`/achievements/faculty-report?${params}`);
-      setAchievements(data);
+      const filtered = counselleesOnly ? data.filter(a => myStudentRegs.includes(a.regNumber)) : data;
+      setAchievements(filtered);
       setFetched(true);
     } catch (e) { alert('Failed: ' + (e.response?.data?.message || e.message)); }
     setLoading(false);
@@ -208,6 +215,13 @@ export default function FacultyAchievements() {
                 {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151' }}>
+              <input type="checkbox" checked={counselleesOnly} onChange={e => setCounselleesOnly(e.target.checked)} style={{ accentColor: selectedCat.color, width: 15, height: 15 }} />
+              My Counsellees Only
+            </label>
           </div>
 
           <button onClick={fetchAchievements} disabled={loading}

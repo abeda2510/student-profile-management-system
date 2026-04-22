@@ -307,6 +307,12 @@ router.get('/faculty-report/excel', protect, async (req, res) => {
     ws.getCell('A1').value = "Vignan's Foundation for Science, Technology & Research";
     ws.getCell('A1').font = { bold: true, size: 12 };
     ws.getCell('A1').alignment = { horizontal: 'center' };
+    // Row 2: subtitle with fetched types
+    ws.mergeCells('A2:H2');
+    const typesList = [].concat(activityTypes || activityType || []).filter(Boolean).join(', ') || 'All';
+    ws.getCell('A2').value = `Activity Type: ${typesList}${academicYear ? '  |  Academic Year: ' + academicYear : ''}${branch ? '  |  Branch: ' + branch : ''}`;
+    ws.getCell('A2').font = { bold: true, size: 11, color: { argb: 'FF1e40af' } };
+    ws.getCell('A2').alignment = { horizontal: 'center' };
     ws.addRow([]);
     const hRow = ws.addRow(['S.No','Reg No','Name','Branch','Title','Academic Year','Points','Certificate URL']);
     hRow.eachCell(cell => {
