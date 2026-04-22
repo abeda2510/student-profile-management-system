@@ -253,6 +253,44 @@ export default function StudentProfile() {
             <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
             <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
           </div>
+
+          {/* Semester CGPA & SGPA inline */}
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semester-wise CGPA & SGPA</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {[1,2,3,4,5,6,7,8].map(sem => {
+                const completedSems = (parseInt(form.currentYear) || 0) * 2;
+                const isCompleted = sem <= completedSems;
+                return (
+                  <div key={sem} style={{ background: isCompleted ? '#f8fafc' : '#f1f5f9', borderRadius: 10, padding: '10px 12px', border: `1px solid ${isCompleted ? '#e2e8f0' : '#e8edf3'}`, opacity: isCompleted ? 1 : 0.45 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>Sem {sem}</div>
+                    {isCompleted ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div>
+                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CGPA</label>
+                          <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
+                            style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>SGPA</label>
+                          <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
+                            style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '4px 0' }}>Not yet</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {overallCgpa && (
+              <div style={{ marginTop: 12, background: 'linear-gradient(135deg,#1e40af,#0369a1)', borderRadius: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Overall CGPA</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{overallCgpa}</div>
+              </div>
+            )}
+          </div>
         </SectionCard>
 
         {/* 10th Details */}
@@ -316,45 +354,6 @@ export default function StudentProfile() {
             <InlineUpload docType="MARK_MEMO" label="Inter Mark Memo / Certificate"
               docs={docs.filter(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th')))}
               onUploaded={loadDocs} onDelete={deleteDoc} />
-          </div>
-        </SectionCard>
-
-        {/* Semester CGPA */}
-        <SectionCard icon="📊" title="Semester-wise SGPA" bg="#eff6ff">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px', marginBottom: 20 }}>
-            {[1,2,3,4,5,6,7,8].map(sem => {
-              const semDocs = docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`));
-              return (
-                <div key={sem} style={{ background: '#f8fafc', borderRadius: 12, padding: '14px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>Semester {sem}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
-                    <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SGPA</label>
-                      <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
-                        style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #d1d5db', borderRadius: 7, fontSize: 13, background: '#fff', outline: 'none', marginTop: 3 }} />
-                    </div>
-                  </div>
-                  {/* Mark memo */}
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 5 }}>Mark Memo</div>
-                  {semDocs.map(d => (
-                    <div key={d._id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                      {(d.fileUrl || d.filepath) && <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>✓ View</a>}
-                      <button type="button" onClick={() => deleteDoc(d._id)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
-                    </div>
-                  ))}
-                  <SemUpload sem={sem} onUploaded={loadDocs} />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Overall CGPA - auto calculated, read only */}
-          <div style={{ background: 'linear-gradient(135deg, #1e40af, #0369a1)', borderRadius: 14, padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Overall CGPA (Auto-calculated)</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{overallCgpa || '—'}</div>
-            </div>
-            <div style={{ fontSize: 52, opacity: 0.2 }}>⭐</div>
           </div>
         </SectionCard>
 
