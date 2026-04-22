@@ -125,7 +125,7 @@ export default function FacultyAchievements() {
                 style={{ background: cat.color, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                + Fetch {cat.label}
+                Fetch {cat.label}
               </button>
             </div>
           ))}
@@ -145,8 +145,16 @@ export default function FacultyAchievements() {
 
           {/* Sub-type chips */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Select specific types (leave all unchecked to fetch all):
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Select specific types (leave all unchecked to fetch all):
+              </div>
+              <button onClick={() => {
+                const allSelected = selectedCat.types.every(t => selectedTypes.includes(t));
+                setSelectedTypes(allSelected ? [] : [...selectedCat.types]);
+              }} style={{ fontSize: 12, color: selectedCat.color, background: 'none', border: `1px solid ${selectedCat.color}`, padding: '4px 12px', borderRadius: 7, cursor: 'pointer', fontWeight: 700 }}>
+                {selectedCat.types.every(t => selectedTypes.includes(t)) ? 'Deselect All' : 'Select All'}
+              </button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {selectedCat.types.map(type => (
