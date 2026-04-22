@@ -276,6 +276,16 @@ export default function StudentProfile() {
                           <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
                             style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
                         </div>
+                        <div style={{ marginTop: 4 }}>
+                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Mark Memo</label>
+                          {docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`)).map(d => (
+                            <div key={d._id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
+                              {(d.fileUrl || d.filepath) && <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>✓ View</a>}
+                              <button type="button" onClick={() => deleteDoc(d._id)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
+                            </div>
+                          ))}
+                          <SemUpload sem={sem} onUploaded={loadDocs} />
+                        </div>
                       </div>
                     ) : (
                       <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '4px 0' }}>Not yet</div>
