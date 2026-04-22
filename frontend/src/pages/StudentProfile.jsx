@@ -259,7 +259,23 @@ export default function StudentProfile() {
         <SectionCard icon="📚" title="10th / SSC Details" bg="#fff7ed">
           <div style={grid2}>
             <Field label="School Name" value={form.tenthSchool} onChange={v => set('tenthSchool', v)} />
-            <Field label="Board" value={form.tenthBoard} onChange={v => set('tenthBoard', v)} placeholder="e.g. CBSE, SSC" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
+              <select value={['SSC','CBSE','ICSE','OTHER'].includes(form.tenthBoard) ? form.tenthBoard : (form.tenthBoard ? 'OTHER' : '')}
+                onChange={e => set('tenthBoard', e.target.value)}
+                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                <option value="">Select...</option>
+                <option value="SSC">SSC</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="OTHER">Other</option>
+              </select>
+              {(form.tenthBoard === 'OTHER' || (form.tenthBoard && !['SSC','CBSE','ICSE','OTHER',''].includes(form.tenthBoard))) && (
+                <input placeholder="Enter board name" value={form.tenthBoard === 'OTHER' ? '' : form.tenthBoard}
+                  onChange={e => set('tenthBoard', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+              )}
+            </div>
             <Field label="Year of Passing" value={form.tenthYear} onChange={v => set('tenthYear', v)} type="number" placeholder="e.g. 2021" />
             <Field label="Percentage / GPA" value={form.tenthPercent} onChange={v => set('tenthPercent', v)} type="number" placeholder="e.g. 92.5" />
           </div>
@@ -274,7 +290,24 @@ export default function StudentProfile() {
         <SectionCard icon="🏫" title="Intermediate / 12th Details" bg="#f0fdf4">
           <div style={grid2}>
             <Field label="College Name" value={form.interCollege} onChange={v => set('interCollege', v)} />
-            <Field label="Board" value={form.interBoard} onChange={v => set('interBoard', v)} placeholder="e.g. TSBIE, CBSE" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
+              <select value={['TSBIE','APBIE','CBSE','ICSE','OTHER'].includes(form.interBoard) ? form.interBoard : (form.interBoard ? 'OTHER' : '')}
+                onChange={e => set('interBoard', e.target.value)}
+                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                <option value="">Select...</option>
+                <option value="TSBIE">TSBIE</option>
+                <option value="APBIE">APBIE</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="OTHER">Other</option>
+              </select>
+              {(form.interBoard === 'OTHER' || (form.interBoard && !['TSBIE','APBIE','CBSE','ICSE','OTHER',''].includes(form.interBoard))) && (
+                <input placeholder="Enter board name" value={form.interBoard === 'OTHER' ? '' : form.interBoard}
+                  onChange={e => set('interBoard', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+              )}
+            </div>
             <Field label="Year of Passing" value={form.interYear} onChange={v => set('interYear', v)} type="number" placeholder="e.g. 2023" />
             <Field label="Percentage / GPA" value={form.interPercent} onChange={v => set('interPercent', v)} type="number" placeholder="e.g. 95.0" />
             <Field label="Group / Stream" value={form.interGroup} onChange={v => set('interGroup', v)} placeholder="e.g. MPC, BiPC" />
