@@ -122,12 +122,14 @@ export default function Achievements() {
                 <div style={{ fontSize: 52, marginBottom: 12, lineHeight: 1 }}>{cat.img}</div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 8 }}>{cat.label}</div>
                 <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 18, minHeight: 36 }}>{cat.desc}</div>
-                <button onClick={() => selectCat(cat)}
-                  style={{ background: cat.btnColor, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                  + Add {cat.label}
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                  <button onClick={() => selectCat(cat)}
+                    style={{ flex: 1, background: cat.btnColor, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, transition: 'opacity 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                    + Add {cat.label}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -146,6 +148,18 @@ export default function Achievements() {
               </div>
             </div>
             <button onClick={closeAll} style={{ background: '#f1f5f9', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, color: '#64748b', fontWeight: 600 }}>← Back</button>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: '#64748b' }}>Select one or click Select All</div>
+            <button onClick={() => {
+              // Select all types — set selectedType to first, but store all in form
+              const allTypes = selectedCat.types.join(',');
+              setSelectedType('ALL');
+              setForm(f => ({ ...f, activityType: allTypes, mainCategory: selectedCat.key, title: selectedCat.label }));
+              setShowForm(true);
+            }} style={{ background: selectedCat.color, color: '#fff', border: 'none', padding: '6px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+              Select All
+            </button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {selectedCat.types.map(type => (
