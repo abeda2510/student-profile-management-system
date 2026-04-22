@@ -46,14 +46,14 @@ export default function FacultyAchievements() {
   const fetchAchievements = async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (academicYear) params.academicYear = academicYear;
-      if (branch) params.branch = branch;
-      if (currentYear) params.currentYear = currentYear;
+      const params = new URLSearchParams();
+      if (academicYear) params.append('academicYear', academicYear);
+      if (branch) params.append('branch', branch);
+      if (currentYear) params.append('currentYear', currentYear);
       const typesToFetch = selectedTypes.length > 0 ? [...selectedTypes] : [...(selectedCat?.types || [])];
       if (showOther && customType.trim()) typesToFetch.push(customType.trim());
-      if (typesToFetch.length > 0) params.activityTypes = typesToFetch.join(',');
-      const { data } = await api.get('/achievements/faculty-report', { params });
+      typesToFetch.forEach(t => params.append('activityTypes', t));
+      const { data } = await api.get(`/achievements/faculty-report?${params}`);
       setAchievements(data);
       setFetched(true);
     } catch (e) { alert('Failed: ' + (e.response?.data?.message || e.message)); }
