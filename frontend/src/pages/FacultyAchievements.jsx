@@ -51,7 +51,11 @@ export default function FacultyAchievements() {
       if (branch) params.append('branch', branch);
       if (currentYear) params.append('currentYear', currentYear);
       const typesToFetch = selectedTypes.length > 0 ? [...selectedTypes] : [...(selectedCat?.types || [])];
-      if (showOther && customType.trim()) typesToFetch.push(customType.trim());
+      if (showOther && customType.trim()) {
+        // If Other is filled, only fetch that custom type (ignore other chips)
+        typesToFetch.length = 0;
+        typesToFetch.push(customType.trim());
+      }
       typesToFetch.forEach(t => params.append('activityTypes', t));
       const { data } = await api.get(`/achievements/faculty-report?${params}`);
       setAchievements(data);
@@ -66,7 +70,10 @@ export default function FacultyAchievements() {
     if (branch) params.append('branch', branch);
     if (currentYear) params.append('currentYear', currentYear);
     const typesToFetch = selectedTypes.length > 0 ? [...selectedTypes] : [...(selectedCat?.types || [])];
-    if (showOther && customType.trim()) typesToFetch.push(customType.trim());
+    if (showOther && customType.trim()) {
+      typesToFetch.length = 0;
+      typesToFetch.push(customType.trim());
+    }
     typesToFetch.forEach(t => params.append('activityTypes', t));
     return params;
   };
