@@ -182,7 +182,11 @@ export default function FacultyAchievements() {
               <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
                 style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}>
                 <option value="">All Years</option>
-                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
+                  const y = 2019 + i;
+                  const label = `${y}-${String(y+1).slice(2)}`;
+                  return <option key={label} value={label}>{label}</option>;
+                })}
               </select>
             </div>
             <div>

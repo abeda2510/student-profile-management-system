@@ -199,8 +199,17 @@ export default function Achievements() {
                 <option value="">Position / Award *</option>
                 {['1st Place','2nd Place','3rd Place','Participation'].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
-              <input placeholder="Academic Year * (e.g. 2024-25)" value={form.academicYear} onChange={e => set('academicYear', e.target.value)} required
-                style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <select value={form.academicYear} onChange={e => set('academicYear', e.target.value)} required
+                  style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff', color: form.academicYear ? '#0f172a' : '#94a3b8' }}>
+                  <option value="">Academic Year *</option>
+                  {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
+                    const y = 2019 + i;
+                    const label = `${y}-${String(y+1).slice(2)}`;
+                    return <option key={label} value={label}>{label}</option>;
+                  })}
+                </select>
+              </div>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <div style={{ gridColumn: '1 / span 2' }}>
