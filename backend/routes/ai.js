@@ -92,11 +92,16 @@ Achievements:${achievements.map(a=>`${a.title}(${a.status})`).join(', ')||'None'
 Documents:${docs.map(d=>d.docType).join(', ')||'None'}`;
       } else {
         // General query — compact summary of counsellees only
-        const counsellees = await Student.find({ counsellor: { $regex: facultyName, $options: 'i' } }).select('name regNumber branch section currentYear cgpa sem1Cgpa sem2Cgpa sem3Cgpa sem4Cgpa sem5Cgpa sem6Cgpa sem7Cgpa sem8Cgpa leetCodeSolved codeChefRating email phone');
+        const counsellees = await Student.find({ counsellor: { $regex: facultyName, $options: 'i' } }).select('-password');
+        const achMap = {};
+        const allAch = await Achievement.find({ student: { $in: counsellees.map(s=>s._id) } }).select('student title status');
+        allAch.forEach(a => { const k = a.student?.toString(); if(!achMap[k]) achMap[k]=[]; achMap[k].push(a.title); });
         const summarize = (s) => {
           const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
           const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : (s.cgpa||'N/A');
-          return `${s.regNumber}|${s.name}|${s.branch}|${s.section}|Yr${s.currentYear}|CGPA:${overallCgpa}|LC:${s.leetCodeSolved||0}|CC:${s.codeChefRating||0}|Email:${s.email||'N/A'}|Phone:${s.phone||'N/A'}`;
+          const semCgpa = [1,2,3,4,5,6,7,8].map(i => s[`sem${i}Cgpa`] ? `S${i}:${s[`sem${i}Cgpa`]}` : null).filter(Boolean).join(',');
+          const ach = achMap[s._id.toString()]?.join(',') || 'None';
+          return `Reg:${s.regNumber}|Name:${s.name}|Branch:${s.branch||'N/A'}|Sec:${s.section||'N/A'}|Yr:${s.currentYear||'N/A'}|Sem:${s.currentSemester||'N/A'}|CGPA:${overallCgpa}|SemCGPA:${semCgpa||'N/A'}|Email:${s.email||'N/A'}|Phone:${s.phone||'N/A'}|Gender:${s.gender||'N/A'}|DOB:${s.dob||'N/A'}|Blood:${s.bloodGroup||'N/A'}|Parent:${s.parentName||'N/A'}|ParentPhone:${s.parentPhone||'N/A'}|Address:${s.address||'N/A'}|AdmCat:${s.admissionCategory||'N/A'}|AdmYr:${s.admissionYear||'N/A'}|LeetCode:${s.leetCode||'N/A'}|LCSolved:${s.leetCodeSolved||0}|LCEasy:${s.leetCodeEasy||0}|LCMed:${s.leetCodeMedium||0}|LCHard:${s.leetCodeHard||0}|CodeChef:${s.codeChef||'N/A'}|CCRating:${s.codeChefRating||0}|CCStars:${s.codeChefStars||0}|LinkedIn:${s.linkedIn||'N/A'}|10th:${s.tenthSchool||'N/A'} ${s.tenthPercent||''}%|Inter:${s.interCollege||'N/A'} ${s.interPercent||''}%|Achievements:${ach}`;
         };
         context = `Faculty:${facultyName} | Counsellees(${counsellees.length}):\n${counsellees.map(summarize).join('\n')||'No counsellees found'}`;
       }
