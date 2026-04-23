@@ -5,7 +5,7 @@ const Student = require('../models/Student');
 const Achievement = require('../models/Achievement');
 const Document = require('../models/Document');
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 async function callGemini(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
