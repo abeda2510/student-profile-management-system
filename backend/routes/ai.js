@@ -19,6 +19,24 @@ async function callGemini(prompt) {
   return data.choices?.[0]?.message?.content || 'No response';
 }
 
+async function fetchLeetCodeStats(username) {
+  try {
+    const query = `{"query":"{ matchedUser(username: \\"${username}\\") { submitStats { acSubmissionNum { difficulty count } } } }"}`;
+    const { data } = await axios.post('https://leetcode.com/graphql', JSON.parse(query), {
+      headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' },
+      timeout: 8000
+    });
+    const stats = data?.data?.matchedUser?.submitStats?.acSubmissionNum || [];
+    const all = stats.find(s => s.difficulty === 'All')?.count || 0;
+    const easy = stats.find(s => s.difficulty === 'Easy')?.count || 0;
+    const medium = stats.find(s => s.difficulty === 'Medium')?.count || 0;
+    const hard = stats.find(s => s.difficulty === 'Hard')?.count || 0;
+    return { total: all, easy, medium, hard };
+  } catch {
+    return null;
+  }
+}
+
 // ── Chatbot ──────────────────────────────────────────────
 router.post('/chat', protect, async (req, res) => {
   try {
@@ -76,6 +94,14 @@ router.post('/chat', protect, async (req, res) => {
         const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
         const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : (s.cgpa || 'N/A');
         const semCgpa = [1,2,3,4,5,6,7,8].map(i => s[`sem${i}Cgpa`] ? `Sem${i}:${s[`sem${i}Cgpa`]}` : null).filter(Boolean).join(', ');
+
+        // Fetch live LeetCode if asked
+        let lcInfo = `LeetCode:${s.leetCode||'N/A'} | Solved:${s.leetCodeSolved||0} | Easy:${s.leetCodeEasy||0} | Medium:${s.leetCodeMedium||0} | Hard:${s.leetCodeHard||0}`;
+        if (msgLower.includes('leetcode') && s.leetCode) {
+          const live = await fetchLeetCodeStats(s.leetCode);
+          if (live) lcInfo = `LeetCode:${s.leetCode} | Solved:${live.total} | Easy:${live.easy} | Medium:${live.medium} | Hard:${live.hard} (live data)`;
+        }
+
         context = `Student Full Profile:
 Name:${s.name} | Reg:${s.regNumber} | Branch:${s.branch} | Section:${s.section} | Year:${s.currentYear} | Sem:${s.currentSemester}
 CGPA:${overallCgpa} | Sem CGPAs: ${semCgpa || 'N/A'}
@@ -83,7 +109,7 @@ Email:${s.email||'N/A'} | Phone:${s.phone||'N/A'} | Gender:${s.gender||'N/A'} | 
 Blood:${s.bloodGroup||'N/A'} | Nationality:${s.nationality||'N/A'} | Address:${s.address||'N/A'}
 Parent:${s.parentName||'N/A'} | Parent Phone:${s.parentPhone||'N/A'}
 Admission:${s.admissionCategory||'N/A'} | Year:${s.admissionYear||'N/A'} | Counsellor:${s.counsellor||'N/A'}
-LeetCode:${s.leetCode||'N/A'} | Solved:${s.leetCodeSolved||0} | Easy:${s.leetCodeEasy||0} | Medium:${s.leetCodeMedium||0} | Hard:${s.leetCodeHard||0}
+${lcInfo}
 CodeChef:${s.codeChef||'N/A'} | Rating:${s.codeChefRating||0} | Stars:${s.codeChefStars||0}
 LinkedIn:${s.linkedIn||'N/A'}
 10th:${s.tenthSchool||'N/A'} ${s.tenthBoard||''} ${s.tenthYear||''} ${s.tenthPercent||''}%
@@ -96,12 +122,24 @@ Documents:${docs.map(d=>d.docType).join(', ')||'None'}`;
         const achMap = {};
         const allAch = await Achievement.find({ student: { $in: counsellees.map(s=>s._id) } }).select('student title status');
         allAch.forEach(a => { const k = a.student?.toString(); if(!achMap[k]) achMap[k]=[]; achMap[k].push(a.title); });
+
+        // Fetch live LeetCode for all counsellees if asked
+        let lcLiveMap = {};
+        if (msgLower.includes('leetcode')) {
+          await Promise.all(counsellees.filter(s=>s.leetCode).map(async s => {
+            const live = await fetchLeetCodeStats(s.leetCode);
+            if (live) lcLiveMap[s._id.toString()] = live;
+          }));
+        }
+
         const summarize = (s) => {
           const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
           const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : (s.cgpa||'N/A');
           const semCgpa = [1,2,3,4,5,6,7,8].map(i => s[`sem${i}Cgpa`] ? `S${i}:${s[`sem${i}Cgpa`]}` : null).filter(Boolean).join(',');
           const ach = achMap[s._id.toString()]?.join(',') || 'None';
-          return `Reg:${s.regNumber}|Name:${s.name}|Branch:${s.branch||'N/A'}|Sec:${s.section||'N/A'}|Yr:${s.currentYear||'N/A'}|Sem:${s.currentSemester||'N/A'}|CGPA:${overallCgpa}|SemCGPA:${semCgpa||'N/A'}|Email:${s.email||'N/A'}|Phone:${s.phone||'N/A'}|Gender:${s.gender||'N/A'}|DOB:${s.dob||'N/A'}|Blood:${s.bloodGroup||'N/A'}|Parent:${s.parentName||'N/A'}|ParentPhone:${s.parentPhone||'N/A'}|Address:${s.address||'N/A'}|AdmCat:${s.admissionCategory||'N/A'}|AdmYr:${s.admissionYear||'N/A'}|LeetCode:${s.leetCode||'N/A'}|LCSolved:${s.leetCodeSolved||0}|LCEasy:${s.leetCodeEasy||0}|LCMed:${s.leetCodeMedium||0}|LCHard:${s.leetCodeHard||0}|CodeChef:${s.codeChef||'N/A'}|CCRating:${s.codeChefRating||0}|CCStars:${s.codeChefStars||0}|LinkedIn:${s.linkedIn||'N/A'}|10th:${s.tenthSchool||'N/A'} ${s.tenthPercent||''}%|Inter:${s.interCollege||'N/A'} ${s.interPercent||''}%|Achievements:${ach}`;
+          const lc = lcLiveMap[s._id.toString()];
+          const lcStr = lc ? `LeetCode:${s.leetCode}|LCSolved:${lc.total}|LCEasy:${lc.easy}|LCMed:${lc.medium}|LCHard:${lc.hard}(live)` : `LeetCode:${s.leetCode||'N/A'}|LCSolved:${s.leetCodeSolved||0}|LCEasy:${s.leetCodeEasy||0}|LCMed:${s.leetCodeMedium||0}|LCHard:${s.leetCodeHard||0}`;
+          return `Reg:${s.regNumber}|Name:${s.name}|Branch:${s.branch||'N/A'}|Sec:${s.section||'N/A'}|Yr:${s.currentYear||'N/A'}|Sem:${s.currentSemester||'N/A'}|CGPA:${overallCgpa}|SemCGPA:${semCgpa||'N/A'}|Email:${s.email||'N/A'}|Phone:${s.phone||'N/A'}|Gender:${s.gender||'N/A'}|DOB:${s.dob||'N/A'}|Blood:${s.bloodGroup||'N/A'}|Parent:${s.parentName||'N/A'}|ParentPhone:${s.parentPhone||'N/A'}|Address:${s.address||'N/A'}|AdmCat:${s.admissionCategory||'N/A'}|AdmYr:${s.admissionYear||'N/A'}|${lcStr}|CodeChef:${s.codeChef||'N/A'}|CCRating:${s.codeChefRating||0}|CCStars:${s.codeChefStars||0}|LinkedIn:${s.linkedIn||'N/A'}|10th:${s.tenthSchool||'N/A'} ${s.tenthPercent||''}%|Inter:${s.interCollege||'N/A'} ${s.interPercent||''}%|Achievements:${ach}`;
         };
         context = `Faculty:${facultyName} | Counsellees(${counsellees.length}):\n${counsellees.map(summarize).join('\n')||'No counsellees found'}`;
       }
