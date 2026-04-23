@@ -37,7 +37,7 @@ Student Profile:
       context = `You are an AI assistant for the Student Management System at Vignan's Foundation for Science, Technology & Research. You help faculty and admin users with student data, reports, and achievements.`;
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `You are an AI assistant for a Student Management System at Vignan's University. 
 ${context}
 
@@ -65,7 +65,7 @@ router.post('/generate-resume', protect, async (req, res) => {
     const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(student[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
     const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : student.cgpa;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `Generate a professional resume summary and skills section for this student. Return JSON with keys: "summary" (2-3 sentences professional summary), "skills" (array of technical skills based on their profile), "objective" (1 sentence career objective).
 
 Student Details:
