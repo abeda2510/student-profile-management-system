@@ -186,8 +186,28 @@ Student data:
 - Inter: ${student.interCollege || ''} ${student.interBoard || ''} ${student.interYear || ''} ${student.interPercent || ''}%
 - Achievements: ${achievements.map(a => a.title).join(', ') || 'None'}
 
-Return this exact JSON structure:
-{"objective":"1 sentence career objective with keywords for ATS","summary":"2-3 sentence professional summary with technical keywords","skills":["skill1","skill2","skill3","skill4","skill5","skill6","skill7","skill8"],"technicalSkills":["tech1","tech2","tech3"],"education":[{"degree":"B.Tech in ${student.branch}","institution":"Vignan's University","year":"${student.admissionYear || ''} - Present","cgpa":"${overallCgpa}"},{"degree":"Intermediate","institution":"${student.interCollege || 'N/A'}","year":"${student.interYear || ''}","percentage":"${student.interPercent || ''}%"},{"degree":"SSC","institution":"${student.tenthSchool || 'N/A'}","year":"${student.tenthYear || ''}","percentage":"${student.tenthPercent || ''}%"}],"achievements":${JSON.stringify(achievements.map(a=>a.title))},"codingProfiles":{"leetcode":"${student.leetCode || ''}","leetcodeSolved":${lcSolved},"codechef":"${student.codeChef || ''}","codechefRating":${student.codeChefRating || 0}}}`;
+Return this exact JSON structure (no markdown, pure JSON):
+{
+  "summary": "2-3 sentence professional summary with ATS keywords based on branch",
+  "technicalSkillGroups": [
+    {"category": "Programming Languages", "items": "list relevant languages for ${student.branch}"},
+    {"category": "Web Technologies", "items": "relevant web tech"},
+    {"category": "Database Management", "items": "relevant databases"},
+    {"category": "Tools & Platforms", "items": "Git, VS Code and relevant tools"}
+  ],
+  "education": [
+    {"degree": "Bachelor of Technology in ${student.branch}", "institution": "Vignan's University", "year": "${student.admissionYear || '2022'} - Present", "cgpa": "${overallCgpa}"},
+    {"degree": "Intermediate (${student.interGroup || 'MPC'})", "institution": "${student.interCollege || 'N/A'}", "year": "${student.interYear || ''}", "percentage": "${student.interPercent || ''}%"},
+    {"degree": "SSC", "institution": "${student.tenthSchool || 'N/A'}", "year": "${student.tenthYear || ''}", "percentage": "${student.tenthPercent || ''}%"}
+  ],
+  "projects": [
+    {"name": "Project name relevant to ${student.branch}", "duration": "MM/YYYY - MM/YYYY", "points": ["Technologies Used: relevant tech stack", "Developed feature using technology to achieve objective", "Implemented functionality resulting in outcome"]}
+  ],
+  "certifications": ${achievements.length > 0 ? JSON.stringify(achievements.filter(a=>a.title.toLowerCase().includes('certif') || a.title.toLowerCase().includes('course')).map(a=>a.title)) : '["Add relevant certifications here"]'},
+  "achievements": ${JSON.stringify(achievements.map(a=>a.title))},
+  "codingProfiles": {"leetcode": "${student.leetCode || ''}", "leetcodeSolved": ${lcSolved}, "codechef": "${student.codeChef || ''}", "codechefRating": ${student.codeChefRating || 0}},
+  "skills": ["skill1","skill2","skill3","skill4","skill5","skill6"]
+}`;
 
     let text = await callGemini(prompt);
     // Strip any markdown code blocks

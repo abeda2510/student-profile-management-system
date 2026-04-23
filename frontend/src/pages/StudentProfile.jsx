@@ -200,77 +200,79 @@ export default function StudentProfile() {
               const data = await res.json();
               if (!res.ok) { alert('AI error: ' + data.message); return; }
 
-              // Build ATS-optimized one-page resume HTML
+              // Build ATS-optimized one-page resume HTML matching the template
               const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Arial', sans-serif; font-size: 10.5pt; color: #1a1a1a; background: #fff; }
-  .page { width: 210mm; min-height: 297mm; padding: 12mm 14mm; }
-  h1 { font-size: 20pt; font-weight: 700; color: #1a1a1a; letter-spacing: 0.5px; }
-  .contact { font-size: 9pt; color: #444; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .contact span { display: flex; align-items: center; gap: 3px; }
-  .divider { border: none; border-top: 2px solid #1a1a1a; margin: 8px 0 6px; }
-  .section-title { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 8px 0 5px; }
-  .objective { font-size: 10pt; color: #333; line-height: 1.4; }
-  .edu-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
-  .edu-inst { font-weight: 700; font-size: 10pt; }
-  .edu-deg { font-size: 9.5pt; color: #333; }
-  .edu-score { font-size: 9.5pt; font-weight: 700; color: #1a1a1a; white-space: nowrap; }
-  .edu-year { font-size: 9pt; color: #666; white-space: nowrap; }
-  .skills-grid { display: flex; flex-wrap: wrap; gap: 5px; }
-  .skill-tag { background: #f0f0f0; border: 1px solid #ddd; padding: 2px 9px; border-radius: 3px; font-size: 9.5pt; }
-  .ach-item { font-size: 9.5pt; margin-bottom: 2px; padding-left: 12px; position: relative; }
-  .ach-item::before { content: "•"; position: absolute; left: 0; }
-  .coding-row { display: flex; gap: 20px; font-size: 9.5pt; }
-  .coding-item { display: flex; flex-direction: column; }
-  .coding-label { font-size: 8.5pt; color: #666; }
-  .coding-val { font-weight: 700; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+  body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #000; background: #fff; }
+  .page { width: 210mm; min-height: 297mm; padding: 15mm 18mm; }
+  .name { text-align: center; font-size: 16pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .contact-line { text-align: center; font-size: 9.5pt; color: #222; margin-top: 3px; }
+  .section-title { font-size: 10.5pt; font-weight: 700; border-bottom: 1.5px solid #000; padding-bottom: 1px; margin: 10px 0 5px; text-transform: none; }
+  .body-text { font-size: 10pt; line-height: 1.45; color: #111; }
+  .skill-row { margin-bottom: 2px; font-size: 10pt; }
+  .skill-row b { font-weight: 700; }
+  .edu-header { display: flex; justify-content: space-between; align-items: baseline; }
+  .edu-title { font-weight: 700; font-size: 10.5pt; }
+  .edu-date { font-size: 10pt; font-weight: 700; }
+  .edu-sub { font-size: 10pt; color: #111; }
+  ul { padding-left: 18px; margin: 3px 0; }
+  ul li { font-size: 10pt; margin-bottom: 2px; line-height: 1.4; }
+  .proj-title { font-weight: 700; font-size: 10.5pt; }
+  .intern-title { font-weight: 700; font-size: 10.5pt; }
+  .intern-company { font-style: italic; font-size: 10pt; }
 </style>
 </head><body><div class="page">
-  <h1>${form.name || ''}</h1>
-  <div class="contact">
-    ${form.email ? `<span>✉ ${form.email}</span>` : ''}
-    ${form.phone ? `<span>📞 ${form.phone}</span>` : ''}
-    ${form.linkedIn ? `<span>🔗 ${form.linkedIn}</span>` : ''}
-    ${data.codingProfiles?.leetcode ? `<span>💻 LeetCode: ${data.codingProfiles.leetcode}</span>` : ''}
-    ${data.codingProfiles?.codechef ? `<span>🍴 CodeChef: ${data.codingProfiles.codechef}</span>` : ''}
-  </div>
-  <hr class="divider"/>
 
-  <div class="section-title">Objective</div>
-  <div class="objective">${data.objective || ''}</div>
+  <div class="name">${form.name || 'STUDENT NAME'}</div>
+  <div class="contact-line">
+    ${[form.phone, form.email, form.address ? form.address.split(',').slice(-2).join(',').trim() : '', form.linkedIn, data.codingProfiles?.leetcode ? 'LeetCode: ' + data.codingProfiles.leetcode : '', data.codingProfiles?.codechef ? 'CodeChef: ' + data.codingProfiles.codechef : ''].filter(Boolean).join(' | ')}
+  </div>
+
+  <div class="section-title">Professional Summary</div>
+  <div class="body-text">${data.summary || ''}</div>
+
+  <div class="section-title">Technical Skills</div>
+  ${(data.technicalSkillGroups || []).map(g => `<div class="skill-row"><b>${g.category}:</b> ${g.items}</div>`).join('')}
+  ${(!data.technicalSkillGroups && data.skills) ? `
+  <div class="skill-row"><b>Programming Languages:</b> ${(data.skills || []).slice(0,3).join(', ')}</div>
+  <div class="skill-row"><b>Web Technologies:</b> ${(data.skills || []).slice(3,6).join(', ')}</div>
+  <div class="skill-row"><b>Tools & Platforms:</b> ${(data.skills || []).slice(6).join(', ')}</div>` : ''}
 
   <div class="section-title">Education</div>
   ${(data.education || []).map(e => `
-  <div class="edu-row">
-    <div>
-      <div class="edu-inst">${e.institution}</div>
-      <div class="edu-deg">${e.degree}</div>
-    </div>
-    <div style="text-align:right">
-      <div class="edu-score">${e.cgpa ? 'CGPA: ' + e.cgpa : (e.percentage || '')}</div>
-      <div class="edu-year">${e.year || ''}</div>
-    </div>
-  </div>`).join('')}
-
-  <div class="section-title">Technical Skills</div>
-  <div class="skills-grid">
-    ${(data.skills || []).map(s => `<span class="skill-tag">${s}</span>`).join('')}
+  <div class="edu-header">
+    <div class="edu-title">${e.degree}</div>
+    <div class="edu-date">${e.year || ''}</div>
   </div>
+  <div class="edu-sub">${e.institution}${e.cgpa ? ' &nbsp; CGPA: ' + e.cgpa + '/10.0' : (e.percentage ? ' &nbsp; ' + e.percentage : '')}</div>`).join('<br style="margin:3px"/>')}
+
+  ${(data.projects && data.projects.length > 0) ? `
+  <div class="section-title">Projects</div>
+  ${data.projects.map(p => `
+  <div class="edu-header">
+    <div class="proj-title">${p.name}</div>
+    <div class="edu-date">${p.duration || ''}</div>
+  </div>
+  <ul>${p.points.map(pt => `<li>${pt}</li>`).join('')}</ul>`).join('')}` : ''}
+
+  ${(data.internship) ? `
+  <div class="section-title">Internship Experience</div>
+  <div class="edu-header">
+    <div class="intern-title">${data.internship.role}</div>
+    <div class="edu-date">${data.internship.duration || ''}</div>
+  </div>
+  <div class="intern-company">${data.internship.company}</div>
+  <ul>${(data.internship.points || []).map(pt => `<li>${pt}</li>`).join('')}</ul>` : ''}
+
+  ${(data.certifications && data.certifications.length > 0) ? `
+  <div class="section-title">Certifications</div>
+  <ul>${data.certifications.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
 
   ${(data.achievements && data.achievements.length > 0) ? `
-  <div class="section-title">Achievements & Certifications</div>
-  ${data.achievements.map(a => `<div class="ach-item">${a}</div>`).join('')}` : ''}
+  <div class="section-title">Academic Achievements & Activities</div>
+  <ul>${data.achievements.map(a => `<li>${a}</li>`).join('')}</ul>` : ''}
 
-  <div class="section-title">Coding Profiles</div>
-  <div class="coding-row">
-    ${data.codingProfiles?.leetcode ? `<div class="coding-item"><span class="coding-label">LeetCode</span><span class="coding-val">${data.codingProfiles.leetcode} — ${data.codingProfiles.leetcodeSolved} problems solved</span></div>` : ''}
-    ${data.codingProfiles?.codechef ? `<div class="coding-item"><span class="coding-label">CodeChef</span><span class="coding-val">${data.codingProfiles.codechef} — Rating: ${data.codingProfiles.codechefRating}</span></div>` : ''}
-  </div>
-
-  <div class="section-title">Summary</div>
-  <div class="objective">${data.summary || ''}</div>
 </div></body></html>`;
 
               const win = window.open('', '_blank');
