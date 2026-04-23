@@ -55,17 +55,29 @@ router.post('/chat', protect, async (req, res) => {
 - Achievements (${achievements.length}): ${achievements.map(a => `${a.title} (${a.status})`).join(', ') || 'None'}
 - Documents: ${docs.map(d => d.docType).join(', ') || 'None'}`;
     } else {
-      // Faculty/Admin: load all students with full data
+      // Faculty/Admin: load all students with compact data
+      const Faculty = require('../models/Faculty');
+      const faculty = await Faculty.findById(req.user.id).select('name');
+      const facultyName = faculty?.name || '';
       const students = await Student.find({}).select('-password');
-      const allAchievements = await Achievement.find({});
-      context = `You are assisting a faculty/admin at Vignan's University. You have access to all ${students.length} students' data.\n\n`;
-      context += students.map(s => {
+      const allAchievements = await Achievement.find({}).select('student title');
+
+      // Counsellees of this faculty
+      const counsellees = students.filter(s => s.counsellor && s.counsellor.toLowerCase().includes(facultyName.toLowerCase()));
+
+      const summarize = (s) => {
         const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
-        const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : s.cgpa;
-        const semCgpa = [1,2,3,4,5,6,7,8].map(i => s[`sem${i}Cgpa`] ? `Sem${i}:${s[`sem${i}Cgpa`]}` : null).filter(Boolean).join(',');
-        const stuAchievements = allAchievements.filter(a => a.student?.toString() === s._id.toString());
-        return `[${s.regNumber}] ${s.name} | Branch:${s.branch} Sec:${s.section} Year:${s.currentYear} | CGPA:${overallCgpa || 'N/A'} (${semCgpa}) | Counsellor:${s.counsellor || 'N/A'} | LeetCode:${s.leetCodeSolved || 0} solved | CodeChef:${s.codeChefRating || 0} rating | Achievements:${stuAchievements.map(a=>a.title).join(',') || 'None'}`;
-      }).join('\n');
+        const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : (s.cgpa || 'N/A');
+        const stuAch = allAchievements.filter(a => a.student?.toString() === s._id.toString());
+        return `${s.regNumber}|${s.name}|${s.branch}|${s.section}|Yr${s.currentYear}|CGPA:${overallCgpa}|LC:${s.leetCodeSolved||0}|CC:${s.codeChefRating||0}|Ach:${stuAch.length}`;
+      };
+
+      context = `Faculty: ${facultyName}
+Total students in system: ${students.length}
+Your counsellees (${counsellees.length}): ${counsellees.map(s => `${s.regNumber} ${s.name} (${s.branch}, CGPA:${(() => { const v=[1,2,3,4,5,6,7,8].map(i=>parseFloat(s[`sem${i}Cgpa`])).filter(v=>!isNaN(v)&&v>0); return v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):(s.cgpa||'N/A'); })()})`).join(', ') || 'None'}
+
+All students summary (reg|name|branch|sec|year|cgpa|leetcode|codechef|achievements):
+${students.map(summarize).join('\n')}`;
     }
 
     const prompt = `You are an AI assistant for Vignan's University Student Management System. Answer ONLY using the data provided below. Do NOT guess, fabricate, or say "fetching" — if data is not in the context, say "I don't have that information".\n\nData:\n${context}\n\nUser question: ${message}\n\nAnswer directly and concisely using only the above data.`;
