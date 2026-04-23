@@ -5,16 +5,18 @@ const Student = require('../models/Student');
 const Achievement = require('../models/Achievement');
 const Document = require('../models/Document');
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
 async function callGemini(prompt) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   const { data } = await axios.post(
-    `${GEMINI_URL}?key=${apiKey}`,
-    { contents: [{ parts: [{ text: prompt }] }] },
-    { headers: { 'Content-Type': 'application/json' }, timeout: 30000 }
+    'https://api.groq.com/openai/v1/chat/completions',
+    {
+      model: 'llama3-8b-8192',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1024
+    },
+    { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 30000 }
   );
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+  return data.choices?.[0]?.message?.content || 'No response';
 }
 
 // ── Chatbot ──────────────────────────────────────────────
