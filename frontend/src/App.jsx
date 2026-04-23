@@ -11,6 +11,7 @@ import AchievementDashboard from './pages/AchievementDashboard';
 import FacultyAchievements from './pages/FacultyAchievements';
 import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
+import Chatbot from './components/Chatbot';
 
 const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
 
@@ -115,6 +116,7 @@ export default function App() {
                   <Route path="/admin" element={<AdminSearch />} />
                 </Routes>
               </div>
+              <Chatbot />
             </div>
           </PrivateRoute>
         } />

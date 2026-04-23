@@ -37,13 +37,6 @@ const DOC_GROUPS = [
       { value: 'BLOOD_GROUP', label: 'Blood Group' },
     ]
   },
-  { key: 'achievements', label: 'Achievements', color: '#059669', bg: '#f0fdf4',
-    items: [
-      { value: 'INTERNSHIP', label: 'Internship Certificates' },
-      { value: 'HACKATHON', label: 'Hackathon Certificates' },
-      { value: 'MARK_MEMO', label: 'Mark Memos' },
-    ]
-  },
 ];
 
 const chipStyle = (sel, color, bg) => ({

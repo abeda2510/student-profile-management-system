@@ -192,6 +192,18 @@ export default function StudentProfile() {
           }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1e40af', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
             📄 Download PDF
           </button>
+          <button type="button" onClick={async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const baseUrl = import.meta.env.VITE_API_URL || '/api';
+              const res = await fetch(`${baseUrl}/ai/generate-resume`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
+              const data = await res.json();
+              if (!res.ok) { alert('AI error: ' + data.message); return; }
+              alert(`✅ AI Resume Generated!\n\nObjective:\n${data.objective}\n\nSummary:\n${data.summary}\n\nSkills:\n${data.skills?.join(', ')}\n\n(Download PDF to see full resume)`);
+            } catch { alert('AI service unavailable'); }
+          }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#7c3aed,#1e40af)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+            🤖 AI Resume
+          </button>
         </div>
       </div>
 

@@ -15,6 +15,7 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/faculty', require('./routes/faculty'));
 app.use('/api/leetcode', require('./routes/leetcode'));
+app.use('/api/ai', require('./routes/ai'));
 
 // Auto-create admin on startup
 async function ensureAdmin() {
