@@ -163,11 +163,39 @@ router.post('/generate-resume', protect, async (req, res) => {
     const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(student[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
     const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : student.cgpa;
 
-    const prompt = `Generate a professional resume for this student. Return JSON with: "summary" (2-3 sentences), "skills" (array of strings), "objective" (1 sentence). Student: Name=${student.name}, Branch=${student.branch}, CGPA=${overallCgpa}, LeetCode solved=${student.leetCodeSolved || 0}, CodeChef rating=${student.codeChefRating || 0}, Achievements=${achievements.map(a => a.title).join(', ') || 'None'}. Return only valid JSON, no markdown.`;
-    
+    // Fetch live LeetCode stats if username exists
+    let lcSolved = student.leetCodeSolved || 0;
+    let lcEasy = student.leetCodeEasy || 0, lcMedium = student.leetCodeMedium || 0, lcHard = student.leetCodeHard || 0;
+    if (student.leetCode) {
+      const live = await fetchLeetCodeStats(student.leetCode);
+      if (live) { lcSolved = live.total; lcEasy = live.easy; lcMedium = live.medium; lcHard = live.hard; }
+    }
+
+    const prompt = `Generate an ATS-optimized resume JSON for a student. Return ONLY valid JSON, no markdown, no extra text.
+
+Student data:
+- Name: ${student.name}
+- Branch: ${student.branch}, Section: ${student.section}
+- Year: ${student.currentYear}, Semester: ${student.currentSemester}
+- CGPA: ${overallCgpa}
+- Email: ${student.email || ''}, Phone: ${student.phone || ''}
+- LinkedIn: ${student.linkedIn || ''}
+- LeetCode: ${student.leetCode || ''} (Solved: ${lcSolved}, Easy: ${lcEasy}, Medium: ${lcMedium}, Hard: ${lcHard})
+- CodeChef: ${student.codeChef || ''} (Rating: ${student.codeChefRating || 0}, Stars: ${student.codeChefStars || 0})
+- 10th: ${student.tenthSchool || ''} ${student.tenthBoard || ''} ${student.tenthYear || ''} ${student.tenthPercent || ''}%
+- Inter: ${student.interCollege || ''} ${student.interBoard || ''} ${student.interYear || ''} ${student.interPercent || ''}%
+- Achievements: ${achievements.map(a => a.title).join(', ') || 'None'}
+
+Return this exact JSON structure:
+{"objective":"1 sentence career objective with keywords for ATS","summary":"2-3 sentence professional summary with technical keywords","skills":["skill1","skill2","skill3","skill4","skill5","skill6","skill7","skill8"],"technicalSkills":["tech1","tech2","tech3"],"education":[{"degree":"B.Tech in ${student.branch}","institution":"Vignan's University","year":"${student.admissionYear || ''} - Present","cgpa":"${overallCgpa}"},{"degree":"Intermediate","institution":"${student.interCollege || 'N/A'}","year":"${student.interYear || ''}","percentage":"${student.interPercent || ''}%"},{"degree":"SSC","institution":"${student.tenthSchool || 'N/A'}","year":"${student.tenthYear || ''}","percentage":"${student.tenthPercent || ''}%"}],"achievements":${JSON.stringify(achievements.map(a=>a.title))},"codingProfiles":{"leetcode":"${student.leetCode || ''}","leetcodeSolved":${lcSolved},"codechef":"${student.codeChef || ''}","codechefRating":${student.codeChefRating || 0}}}`;
+
     let text = await callGemini(prompt);
-    text = text.replace(/^```json\n?/, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
-    const aiData = JSON.parse(text);
+    // Strip any markdown code blocks
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+    // Extract JSON object if there's extra text
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in AI response');
+    const aiData = JSON.parse(jsonMatch[0]);
     res.json(aiData);
   } catch (err) {
     console.error('AI resume error:', err.response?.data || err.message);
