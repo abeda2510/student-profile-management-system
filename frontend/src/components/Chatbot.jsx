@@ -24,8 +24,8 @@ export default function Chatbot() {
     try {
       const { data } = await api.post('/ai/chat', { message: userMsg });
       setMessages(m => [...m, { role: 'bot', text: data.reply }]);
-    } catch {
-      setMessages(m => [...m, { role: 'bot', text: 'Sorry, AI service is unavailable right now.' }]);
+    } catch (err) {
+      setMessages(m => [...m, { role: 'bot', text: 'Error: ' + (err.response?.data?.message || err.message || 'AI service unavailable') }]);
     }
     setLoading(false);
   };
