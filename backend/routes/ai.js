@@ -12,7 +12,7 @@ async function callGemini(prompt) {
     {
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1024
+      max_tokens: 2048
     },
     { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 30000 }
   );
@@ -32,12 +32,43 @@ router.post('/chat', protect, async (req, res) => {
       const docs = await Document.find({ student: req.user.id });
       const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(student?.[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
       const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : student?.cgpa;
-      context = `Student: ${student?.name}, Reg: ${student?.regNumber}, Branch: ${student?.branch}, Year: ${student?.currentYear}, Sem: ${student?.currentSemester}, CGPA: ${overallCgpa || 'N/A'}, Email: ${student?.email}, LeetCode: ${student?.leetCode || 'N/A'} (Solved: ${student?.leetCodeSolved || 0}), CodeChef: ${student?.codeChef || 'N/A'} (Rating: ${student?.codeChefRating || 0}), Achievements: ${achievements.map(a => a.title).join(', ') || 'None'}, Documents: ${docs.map(d => d.docType).join(', ') || 'None'}`;
+      const semCgpa = [1,2,3,4,5,6,7,8].map(i => student?.[`sem${i}Cgpa`] ? `Sem${i}: ${student[`sem${i}Cgpa`]}` : null).filter(Boolean).join(', ');
+      context = `Student Profile:
+- Name: ${student?.name}
+- Reg Number: ${student?.regNumber}
+- Branch: ${student?.branch}, Section: ${student?.section}
+- Year: ${student?.currentYear}, Semester: ${student?.currentSemester}
+- Overall CGPA: ${overallCgpa || 'N/A'}
+- Semester CGPAs: ${semCgpa || 'N/A'}
+- Email: ${student?.email}, Phone: ${student?.phone}
+- Gender: ${student?.gender}, DOB: ${student?.dob}
+- Blood Group: ${student?.bloodGroup}, Nationality: ${student?.nationality}
+- Address: ${student?.address}
+- Parent Name: ${student?.parentName}, Parent Phone: ${student?.parentPhone}
+- Admission Category: ${student?.admissionCategory}, Admission Year: ${student?.admissionYear}
+- Counsellor: ${student?.counsellor || 'N/A'}
+- LeetCode: ${student?.leetCode || 'N/A'} (Solved: ${student?.leetCodeSolved || 0}, Easy: ${student?.leetCodeEasy || 0}, Medium: ${student?.leetCodeMedium || 0}, Hard: ${student?.leetCodeHard || 0})
+- CodeChef: ${student?.codeChef || 'N/A'} (Rating: ${student?.codeChefRating || 0}, Stars: ${student?.codeChefStars || 0})
+- LinkedIn: ${student?.linkedIn || 'N/A'}
+- 10th: ${student?.tenthSchool || 'N/A'}, ${student?.tenthBoard || ''}, ${student?.tenthYear || ''}, ${student?.tenthPercent || ''}%
+- Inter: ${student?.interCollege || 'N/A'}, ${student?.interBoard || ''}, ${student?.interYear || ''}, ${student?.interPercent || ''}%
+- Achievements (${achievements.length}): ${achievements.map(a => `${a.title} (${a.status})`).join(', ') || 'None'}
+- Documents: ${docs.map(d => d.docType).join(', ') || 'None'}`;
     } else {
-      context = `Faculty/Admin user at Vignan's University Student Management System.`;
+      // Faculty/Admin: load all students with full data
+      const students = await Student.find({}).select('-password');
+      const allAchievements = await Achievement.find({});
+      context = `You are assisting a faculty/admin at Vignan's University. You have access to all ${students.length} students' data.\n\n`;
+      context += students.map(s => {
+        const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
+        const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : s.cgpa;
+        const semCgpa = [1,2,3,4,5,6,7,8].map(i => s[`sem${i}Cgpa`] ? `Sem${i}:${s[`sem${i}Cgpa`]}` : null).filter(Boolean).join(',');
+        const stuAchievements = allAchievements.filter(a => a.student?.toString() === s._id.toString());
+        return `[${s.regNumber}] ${s.name} | Branch:${s.branch} Sec:${s.section} Year:${s.currentYear} | CGPA:${overallCgpa || 'N/A'} (${semCgpa}) | Counsellor:${s.counsellor || 'N/A'} | LeetCode:${s.leetCodeSolved || 0} solved | CodeChef:${s.codeChefRating || 0} rating | Achievements:${stuAchievements.map(a=>a.title).join(',') || 'None'}`;
+      }).join('\n');
     }
 
-    const prompt = `You are an AI assistant for Vignan's University Student Management System. Answer ONLY using the data provided below. Do NOT guess, fabricate, or say "fetching" — if data is not in the context, say "I don't have that information".\n\nStudent data: ${context}\n\nUser question: ${message}\n\nAnswer directly and concisely using only the above data.`;
+    const prompt = `You are an AI assistant for Vignan's University Student Management System. Answer ONLY using the data provided below. Do NOT guess, fabricate, or say "fetching" — if data is not in the context, say "I don't have that information".\n\nData:\n${context}\n\nUser question: ${message}\n\nAnswer directly and concisely using only the above data.`;
     const reply = await callGemini(prompt);
     res.json({ reply });
   } catch (err) {
