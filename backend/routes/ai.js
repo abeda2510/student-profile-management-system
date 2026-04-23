@@ -55,29 +55,47 @@ router.post('/chat', protect, async (req, res) => {
 - Achievements (${achievements.length}): ${achievements.map(a => `${a.title} (${a.status})`).join(', ') || 'None'}
 - Documents: ${docs.map(d => d.docType).join(', ') || 'None'}`;
     } else {
-      // Faculty/Admin: load all students with compact data
+      // Faculty/Admin: smart query based on message keywords
       const Faculty = require('../models/Faculty');
       const faculty = await Faculty.findById(req.user.id).select('name');
       const facultyName = faculty?.name || '';
-      const students = await Student.find({}).select('-password');
-      const allAchievements = await Achievement.find({}).select('student title');
+      const msgLower = message.toLowerCase();
 
-      // Counsellees of this faculty
-      const counsellees = students.filter(s => s.counsellor && s.counsellor.toLowerCase().includes(facultyName.toLowerCase()));
+      let students = [];
+      let queryDesc = '';
+
+      if (msgLower.includes('counsellee') || msgLower.includes('my student')) {
+        students = await Student.find({ counsellor: { $regex: facultyName, $options: 'i' } }).select('-password');
+        queryDesc = `counsellees of ${facultyName}`;
+      } else if (msgLower.includes('branch') || msgLower.includes('cse') || msgLower.includes('ece') || msgLower.includes('mech') || msgLower.includes('civil') || msgLower.includes('eee')) {
+        const branchMatch = msgLower.match(/\b(cse|ece|mech|civil|eee|it|aids|aiml)\b/);
+        const branch = branchMatch ? branchMatch[1].toUpperCase() : null;
+        students = branch ? await Student.find({ branch: { $regex: branch, $options: 'i' } }).select('-password') : await Student.find({}).select('-password');
+        queryDesc = branch ? `${branch} students` : 'all students';
+      } else if (msgLower.includes('cgpa') || msgLower.includes('topper') || msgLower.includes('rank')) {
+        students = await Student.find({}).select('name regNumber branch section currentYear cgpa sem1Cgpa sem2Cgpa sem3Cgpa sem4Cgpa sem5Cgpa sem6Cgpa sem7Cgpa sem8Cgpa counsellor');
+        queryDesc = 'all students CGPA data';
+      } else if (msgLower.includes('leetcode') || msgLower.includes('codechef') || msgLower.includes('coding')) {
+        students = await Student.find({}).select('name regNumber branch leetCodeSolved codeChefRating counsellor');
+        queryDesc = 'all students coding data';
+      } else if (msgLower.includes('achievement')) {
+        students = await Student.find({ counsellor: { $regex: facultyName, $options: 'i' } }).select('name regNumber branch');
+        queryDesc = `counsellees achievements`;
+      } else {
+        students = await Student.find({ counsellor: { $regex: facultyName, $options: 'i' } }).select('-password');
+        queryDesc = `counsellees of ${facultyName}`;
+      }
+
+      const allAchievements = msgLower.includes('achievement') ? await Achievement.find({}).select('student title status') : [];
 
       const summarize = (s) => {
         const cgpaVals = [1,2,3,4,5,6,7,8].map(i => parseFloat(s[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
         const overallCgpa = cgpaVals.length ? (cgpaVals.reduce((a,b)=>a+b,0)/cgpaVals.length).toFixed(2) : (s.cgpa || 'N/A');
         const stuAch = allAchievements.filter(a => a.student?.toString() === s._id.toString());
-        return `${s.regNumber}|${s.name}|${s.branch}|${s.section}|Yr${s.currentYear}|CGPA:${overallCgpa}|LC:${s.leetCodeSolved||0}|CC:${s.codeChefRating||0}|Ach:${stuAch.length}`;
+        return `${s.regNumber}|${s.name}|${s.branch||''}|${s.section||''}|Yr${s.currentYear||''}|CGPA:${overallCgpa}${s.leetCodeSolved !== undefined ? `|LC:${s.leetCodeSolved}` : ''}${s.codeChefRating !== undefined ? `|CC:${s.codeChefRating}` : ''}${stuAch.length ? `|Ach:${stuAch.map(a=>a.title).join(',')}` : ''}`;
       };
 
-      context = `Faculty: ${facultyName}
-Total students in system: ${students.length}
-Your counsellees (${counsellees.length}): ${counsellees.map(s => `${s.regNumber} ${s.name} (${s.branch}, CGPA:${(() => { const v=[1,2,3,4,5,6,7,8].map(i=>parseFloat(s[`sem${i}Cgpa`])).filter(v=>!isNaN(v)&&v>0); return v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):(s.cgpa||'N/A'); })()})`).join(', ') || 'None'}
-
-All students summary (reg|name|branch|sec|year|cgpa|leetcode|codechef|achievements):
-${students.map(summarize).join('\n')}`;
+      context = `Faculty: ${facultyName} | Query: ${queryDesc} | Count: ${students.length}\n${students.map(summarize).join('\n')}`;
     }
 
     const prompt = `You are an AI assistant for Vignan's University Student Management System. Answer ONLY using the data provided below. Do NOT guess, fabricate, or say "fetching" — if data is not in the context, say "I don't have that information".\n\nData:\n${context}\n\nUser question: ${message}\n\nAnswer directly and concisely using only the above data.`;
