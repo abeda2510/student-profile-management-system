@@ -37,7 +37,7 @@ router.post('/chat', protect, async (req, res) => {
       context = `Faculty/Admin user at Vignan's University Student Management System.`;
     }
 
-    const prompt = `You are an AI assistant for Vignan's University Student Management System.\nStudent context: ${context}\nUser question: ${message}\nAnswer helpfully and concisely.`;
+    const prompt = `You are an AI assistant for Vignan's University Student Management System. Answer ONLY using the data provided below. Do NOT guess, fabricate, or say "fetching" — if data is not in the context, say "I don't have that information".\n\nStudent data: ${context}\n\nUser question: ${message}\n\nAnswer directly and concisely using only the above data.`;
     const reply = await callGemini(prompt);
     res.json({ reply });
   } catch (err) {
