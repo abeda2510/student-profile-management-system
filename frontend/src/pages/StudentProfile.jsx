@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api';
+import ResumeBuilder from '../components/ResumeBuilder';
 
 const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
 const CATEGORIES = ['VSAT', 'EAMCET', 'JEE', 'INTER_MERIT', 'MANAGEMENT', 'OTHER'];
@@ -125,6 +126,7 @@ export default function StudentProfile() {
   const [form, setForm] = useState({});
   const [saved, setSaved] = useState(false);
   const [docs, setDocs] = useState([]);
+  const [showResumeBuilder, setShowResumeBuilder] = useState(false);
 
   const loadDocs = () => api.get('/documents/me').then(r => setDocs(r.data)).catch(() => {});
 
@@ -191,97 +193,6 @@ export default function StudentProfile() {
             URL.revokeObjectURL(url);
           }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#1e40af', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
             📄 Download PDF
-          </button>
-          <button type="button" onClick={async () => {
-            try {
-              const token = localStorage.getItem('token');
-              const baseUrl = import.meta.env.VITE_API_URL || '/api';
-              const res = await fetch(`${baseUrl}/ai/generate-resume`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
-              const data = await res.json();
-              if (!res.ok) { alert('AI error: ' + data.message); return; }
-
-              // Build ATS-optimized one-page resume HTML matching the template
-              const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #000; background: #fff; }
-  .page { width: 210mm; min-height: 297mm; padding: 15mm 18mm; }
-  .name { text-align: center; font-size: 16pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-  .contact-line { text-align: center; font-size: 9.5pt; color: #222; margin-top: 3px; }
-  .section-title { font-size: 10.5pt; font-weight: 700; border-bottom: 1.5px solid #000; padding-bottom: 1px; margin: 10px 0 5px; text-transform: none; }
-  .body-text { font-size: 10pt; line-height: 1.45; color: #111; }
-  .skill-row { margin-bottom: 2px; font-size: 10pt; }
-  .skill-row b { font-weight: 700; }
-  .edu-header { display: flex; justify-content: space-between; align-items: baseline; }
-  .edu-title { font-weight: 700; font-size: 10.5pt; }
-  .edu-date { font-size: 10pt; font-weight: 700; }
-  .edu-sub { font-size: 10pt; color: #111; }
-  ul { padding-left: 18px; margin: 3px 0; }
-  ul li { font-size: 10pt; margin-bottom: 2px; line-height: 1.4; }
-  .proj-title { font-weight: 700; font-size: 10.5pt; }
-  .intern-title { font-weight: 700; font-size: 10.5pt; }
-  .intern-company { font-style: italic; font-size: 10pt; }
-</style>
-</head><body><div class="page">
-
-  <div class="name">${form.name || 'STUDENT NAME'}</div>
-  <div class="contact-line">
-    ${[form.phone, form.email, form.address ? form.address.split(',').slice(-2).join(',').trim() : '', form.linkedIn, data.codingProfiles?.leetcode ? 'LeetCode: ' + data.codingProfiles.leetcode : '', data.codingProfiles?.codechef ? 'CodeChef: ' + data.codingProfiles.codechef : ''].filter(Boolean).join(' | ')}
-  </div>
-
-  <div class="section-title">Professional Summary</div>
-  <div class="body-text">${data.summary || ''}</div>
-
-  <div class="section-title">Technical Skills</div>
-  ${(data.technicalSkillGroups || []).map(g => `<div class="skill-row"><b>${g.category}:</b> ${g.items}</div>`).join('')}
-  ${(!data.technicalSkillGroups && data.skills) ? `
-  <div class="skill-row"><b>Programming Languages:</b> ${(data.skills || []).slice(0,3).join(', ')}</div>
-  <div class="skill-row"><b>Web Technologies:</b> ${(data.skills || []).slice(3,6).join(', ')}</div>
-  <div class="skill-row"><b>Tools & Platforms:</b> ${(data.skills || []).slice(6).join(', ')}</div>` : ''}
-
-  <div class="section-title">Education</div>
-  ${(data.education || []).map(e => `
-  <div class="edu-header">
-    <div class="edu-title">${e.degree}</div>
-    <div class="edu-date">${e.year || ''}</div>
-  </div>
-  <div class="edu-sub">${e.institution}${e.cgpa ? ' &nbsp; CGPA: ' + e.cgpa + '/10.0' : (e.percentage ? ' &nbsp; ' + e.percentage : '')}</div>`).join('<br style="margin:3px"/>')}
-
-  ${(data.projects && data.projects.length > 0) ? `
-  <div class="section-title">Projects</div>
-  ${data.projects.map(p => `
-  <div class="edu-header">
-    <div class="proj-title">${p.name}</div>
-    <div class="edu-date">${p.duration || ''}</div>
-  </div>
-  <ul>${p.points.map(pt => `<li>${pt}</li>`).join('')}</ul>`).join('')}` : ''}
-
-  ${(data.internship) ? `
-  <div class="section-title">Internship Experience</div>
-  <div class="edu-header">
-    <div class="intern-title">${data.internship.role}</div>
-    <div class="edu-date">${data.internship.duration || ''}</div>
-  </div>
-  <div class="intern-company">${data.internship.company}</div>
-  <ul>${(data.internship.points || []).map(pt => `<li>${pt}</li>`).join('')}</ul>` : ''}
-
-  ${(data.certifications && data.certifications.length > 0) ? `
-  <div class="section-title">Certifications</div>
-  <ul>${data.certifications.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
-
-  ${(data.achievements && data.achievements.length > 0) ? `
-  <div class="section-title">Academic Achievements & Activities</div>
-  <ul>${data.achievements.map(a => `<li>${a}</li>`).join('')}</ul>` : ''}
-
-</div></body></html>`;
-
-              const win = window.open('', '_blank');
-              win.document.write(html);
-              win.document.close();
-              setTimeout(() => win.print(), 800);
-            } catch { alert('AI service unavailable'); }
-          }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#7c3aed,#1e40af)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-            🤖 AI Resume
           </button>
         </div>
       </div>
