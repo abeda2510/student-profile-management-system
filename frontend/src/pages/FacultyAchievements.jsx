@@ -40,7 +40,7 @@ export default function FacultyAchievements() {
   const [xlLoading, setXlLoading] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [counselleesOnly, setCounselleesOnly] = useState(false);
+  const [counselleesOnly, setCounselleesOnly] = useState(true);
   const [myStudentRegs, setMyStudentRegs] = useState([]);
 
   const toggleType = (type) => setSelectedTypes(s => s.includes(type) ? s.filter(x => x !== type) : [...s, type]);
