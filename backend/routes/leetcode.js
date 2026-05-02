@@ -1,6 +1,5 @@
 ﻿const router = require('express').Router();
 const axios = require('axios');
-const PDFDocument = require('pdfkit');
 const Student = require('../models/Student');
 const { protect } = require('../middleware/auth');
 
@@ -87,6 +86,7 @@ router.get('/report/multi', protect, facultyOnly, async (req, res) => {
 
 // GET /api/leetcode/report/pdf?branch=CSE&section=A&minCgpa=8&minLeetcode=10
 router.get('/report/pdf', protect, facultyOnly, async (req, res) => {
+  const PDFDocument = require('pdfkit');
   const { branch = 'All', section = 'All', minCgpa, minLeetcode } = req.query;
   const minC = minCgpa    ? parseFloat(minCgpa)    : null;
   const minL = minLeetcode ? parseInt(minLeetcode)  : null;

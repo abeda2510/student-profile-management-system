@@ -4,8 +4,6 @@ const Student = require('../models/Student');
 const Achievement = require('../models/Achievement');
 const Document = require('../models/Document');
 const { protect } = require('../middleware/auth');
-const PDFDocument = require('pdfkit');
-const ExcelJS = require('exceljs');
 
 const facultyOnly = (req, res, next) => {
   if (req.user.role !== 'faculty' && req.user.role !== 'admin')
@@ -298,6 +296,7 @@ router.get('/section-report', protect, async (req, res) => {
 
 // Generate PDF for section report
 router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
+  const PDFDocument = require('pdfkit');
   const DOC_LABELS = {
     ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
@@ -369,6 +368,7 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
 
 // Generate Excel for section report
 router.get('/section-report/excel', protect, async (req, res) => {
+  const ExcelJS = require('exceljs');
   const DOC_LABELS = {
     ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
