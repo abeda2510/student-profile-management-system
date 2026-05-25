@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../api';
 import ResumeBuilder from '../components/ResumeBuilder';
@@ -36,9 +37,31 @@ const SelectF = ({ label, value, onChange, options }) => (
   </div>
 );
 
+function FilePreviewModal({ url, onClose }) {
+  if (!url) return null;
+  const isPdf = url.toLowerCase().includes('.pdf') || url.includes('/raw/');
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', maxWidth: 800, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Document Preview</span>
+          <button onClick={onClose} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 7, padding: '4px 12px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>✕ Close</button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', minHeight: 300 }}>
+          {isPdf
+            ? <iframe src={url} style={{ width: '100%', height: '75vh', border: 'none' }} title="Document" />
+            : <img src={url} alt="Document" style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block' }} />
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const existing = docs.filter(d => d.docType === docType);
 
   const upload = async () => {
@@ -54,6 +77,7 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
 
   return (
     <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+      <FilePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
       <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
         📎 {label}
       </div>
@@ -61,8 +85,8 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
         <div key={d._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, padding: '6px 10px', background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <span style={{ fontSize: 12, color: '#059669', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✓ {d.label || d.filename}</span>
           {(d.fileUrl || d.filepath) && (
-            <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer"
-              style={{ background: '#dbeafe', color: '#1e40af', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>View</a>
+            <button type="button" onClick={() => setPreviewUrl(d.fileUrl || d.filepath)}
+              style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>View</button>
           )}
           <button type="button" onClick={() => onDelete(d._id)}
             style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '3px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}>✕</button>
@@ -78,6 +102,18 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function SemMemoView({ doc, onDelete }) {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const url = doc.fileUrl || doc.filepath;
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
+      <FilePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+      {url && <button type="button" onClick={() => setPreviewUrl(url)} style={{ background: 'none', border: 'none', fontSize: 10, color: '#059669', fontWeight: 700, cursor: 'pointer', padding: 0 }}>✓ View</button>}
+      <button type="button" onClick={onDelete} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
     </div>
   );
 }
@@ -122,11 +158,38 @@ function SemUpload({ sem, onUploaded }) {
   );
 }
 
+function CopyButton({ value }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+  return (
+    <button type="button" onClick={copy}
+      style={{ padding: '6px 12px', borderRadius: 7, border: '1.5px solid #d1d5db', background: copied ? '#d1fae5' : '#f8fafc', color: copied ? '#065f46' : '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+      {copied ? '✓ Copied' : '📋 Copy'}
+    </button>
+  );
+}
+
 export default function StudentProfile() {
   const [form, setForm] = useState({});
   const [saved, setSaved] = useState(false);
   const [docs, setDocs] = useState([]);
   const [showResumeBuilder, setShowResumeBuilder] = useState(false);
+
+  // Disable copy-paste on the entire page
+  useEffect(() => {
+    const prevent = (e) => e.preventDefault();
+    document.addEventListener('copy', prevent);
+    document.addEventListener('cut', prevent);
+    document.addEventListener('paste', prevent);
+    return () => {
+      document.removeEventListener('copy', prevent);
+      document.removeEventListener('cut', prevent);
+      document.removeEventListener('paste', prevent);
+    };
+  }, []);
 
   const loadDocs = () => api.get('/documents/me').then(r => setDocs(r.data)).catch(() => {});
 
@@ -197,7 +260,7 @@ export default function StudentProfile() {
         </div>
       </div>
 
-      <form onSubmit={save}>
+      <form onSubmit={save} onCopy={e => e.preventDefault()} onCut={e => e.preventDefault()} onPaste={e => e.preventDefault()}>
 
         {/* Personal Details */}
         <SectionCard icon="👤" title="Personal Details" bg="#eff6ff">
@@ -281,10 +344,7 @@ export default function StudentProfile() {
                         <div style={{ marginTop: 4 }}>
                           <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Mark Memo</label>
                           {docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`)).map(d => (
-                            <div key={d._id} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
-                              {(d.fileUrl || d.filepath) && <a href={d.fileUrl || d.filepath} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>✓ View</a>}
-                              <button type="button" onClick={() => deleteDoc(d._id)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 10, cursor: 'pointer' }}>✕</button>
-                            </div>
+                            <SemMemoView key={d._id} doc={d} onDelete={() => deleteDoc(d._id)} />
                           ))}
                           <SemUpload sem={sem} onUploaded={loadDocs} />
                         </div>
@@ -376,8 +436,15 @@ export default function StudentProfile() {
             {/* APAAR / ABC ID */}
             <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🎓 APAAR / ABC ID</div>
-              <div style={grid2}>
-                <Field label="APAAR / ABC ID Number" value={form.apaarId} onChange={v => { set('apaarId', v); set('abcId', v); }} placeholder="Enter ID number" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>APAAR / ABC ID Number</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input value={form.apaarId || ''} onChange={e => { set('apaarId', e.target.value); set('abcId', e.target.value); }} placeholder="Enter ID number"
+                    style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
+                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                  <CopyButton value={form.apaarId} />
+                </div>
               </div>
               <div style={{ marginTop: 12 }}>
                 <InlineUpload docType="APAAR_ABC" label="Upload APAAR / ABC ID Document"
@@ -388,7 +455,16 @@ export default function StudentProfile() {
             {/* Aadhaar */}
             <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🪪 Aadhaar Card</div>
-              <Field label="Aadhaar Number" value={form.aadhaarNumber} onChange={v => set('aadhaarNumber', v)} placeholder="XXXX XXXX XXXX" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Aadhaar Number</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input value={form.aadhaarNumber || ''} onChange={e => set('aadhaarNumber', e.target.value)} placeholder="XXXX XXXX XXXX"
+                    style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
+                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                  <CopyButton value={form.aadhaarNumber} />
+                </div>
+              </div>
               <div style={{ marginTop: 12 }}>
                 <InlineUpload docType="AADHAAR" label="Upload Aadhaar Card"
                   docs={docs.filter(d => d.docType === 'AADHAAR')} onUploaded={loadDocs} onDelete={deleteDoc} />
