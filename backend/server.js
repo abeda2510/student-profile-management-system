@@ -1,10 +1,18 @@
   const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 require('./db');
 
 const app = express();
+
+// Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow Cloudinary images/PDFs
+  contentSecurityPolicy: false, // disable CSP to avoid blocking Cloudinary/Groq/LeetCode
+}));
+
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -14,6 +22,7 @@ app.use('/api/students', require('./routes/students'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/faculty', require('./routes/faculty'));
+app.use('/api/faculty-achievements', require('./routes/facultyAchievements'));
 app.use('/api/leetcode', require('./routes/leetcode'));
 app.use('/api/ai', require('./routes/ai'));
 
