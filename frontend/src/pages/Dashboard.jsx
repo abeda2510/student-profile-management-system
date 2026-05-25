@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { viewUrl } from '../api';
+import { ViewButton } from '../components/PreviewModal';
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
@@ -137,10 +138,7 @@ export default function Dashboard() {
                     <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{d.label || d.filename || '—'}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {fileUrl && (
-                      <a href={fileUrl} target="_blank" rel="noreferrer"
-                        style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>View</a>
-                    )}
+                    {fileUrl && <ViewButton url={fileUrl} label="View" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700 }} />}
                     {fileUrl && (
                       <button onClick={async () => {
                         try {
@@ -186,10 +184,7 @@ export default function Dashboard() {
                         <span style={{ ...sc, borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{a.status}</span>
                       </div>
                     </div>
-                    {(a.certificateUrl || a.certificatePath) && (
-                      <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
-                        style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, textDecoration: 'none', flexShrink: 0, marginLeft: 10 }}>📎 View</a>
-                    )}
+                    <ViewButton url={viewUrl(a.certificateUrl || a.certificatePath)} label="📎 View" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 10 }} />
                   </div>
                 </div>
               );

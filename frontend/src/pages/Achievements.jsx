@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api, { viewUrl } from '../api';
+import { ViewButton } from '../components/PreviewModal';
 
 const CATEGORIES = [
   {
@@ -274,12 +275,7 @@ export default function Achievements() {
                         {a.issuingOrg && <span>🏢 {a.issuingOrg} &nbsp;</span>}
                         {a.date && <span>📅 {a.date}</span>}
                       </div>
-                      {(a.certificateUrl || a.certificatePath) && (
-                        <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
-                          style={{ display: 'inline-block', marginTop: 6, background: '#dbeafe', color: '#1e40af', padding: '3px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                          📎 View Certificate
-                        </a>
-                      )}
+                      <ViewButton url={viewUrl(a.certificateUrl || a.certificatePath)} label="📎 View Certificate" style={{ marginTop: 6, padding: '3px 12px', fontSize: 12, fontWeight: 600 }} />
                     </div>
                     <button onClick={() => del(a._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '5px 12px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Delete</button>
                   </div>

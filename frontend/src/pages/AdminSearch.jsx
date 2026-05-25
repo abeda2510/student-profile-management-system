@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
+import { ViewButton } from '../components/PreviewModal';
 
 const s = {
   card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: 16 },
@@ -290,8 +291,7 @@ export default function AdminSearch() {
                       <span style={{ fontWeight: 600 }}>{d.label || d.filename}</span>
                       <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{new Date(d.uploadedAt).toLocaleDateString()}</div>
                     </div>
-                    <a href={d.fileUrl || d.filepath || '#'} target="_blank" rel="noreferrer"
-                      style={{ background: '#dbeafe', color: '#1e40af', padding: '5px 12px', borderRadius: 6, fontSize: 12 }}>View</a>
+                    <ViewButton url={d.fileUrl || d.filepath} label="View" style={{ padding: '5px 12px', fontSize: 12 }} />
                   </div>
                 </div>
               ))}
@@ -310,10 +310,7 @@ export default function AdminSearch() {
                     {a.issuingOrg && <span>Org: {a.issuingOrg} &nbsp;|&nbsp; </span>}
                     {a.position && <span>Position: {a.position}</span>}
                   </div>
-                  {(a.certificateUrl || a.certificatePath) && (
-                    <a href={viewUrl(a.certificateUrl || a.certificatePath)} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 12, color: '#1e40af', marginTop: 6, display: 'inline-block' }}>View Certificate</a>
-                  )}
+                  <ViewButton url={viewUrl(a.certificateUrl || a.certificatePath)} label="View Certificate" style={{ marginTop: 6, fontSize: 12, padding: '3px 10px' }} />
                 </div>
               ))}
             </div>

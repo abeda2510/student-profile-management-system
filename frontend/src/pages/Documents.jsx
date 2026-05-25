@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api';
+import { ViewButton } from '../components/PreviewModal';
 
 const DOC_TYPES = ['MARK_MEMO','AADHAAR','PAN','VOTER_ID','APAAR_ABC','OTHER'];
 
@@ -77,11 +78,7 @@ export default function Documents() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <a href={d.fileUrl || d.filepath}
-                target="_blank" rel="noreferrer"
-                style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
-                View
-              </a>
+              <ViewButton url={d.fileUrl || d.filepath} label="View" style={{ padding: '5px 12px', fontSize: 12 }} />
               <button style={s.del} onClick={() => del(d._id)}>Delete</button>
             </div>
           </div>
