@@ -2,6 +2,7 @@
 const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 require('./db');
 
@@ -9,12 +10,32 @@ const app = express();
 
 // Security headers
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow Cloudinary images/PDFs
-  contentSecurityPolicy: false, // disable CSP to avoid blocking Cloudinary/Groq/LeetCode
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
 }));
 
 app.use(cors());
-app.use(express.json());
+
+// Rate limiting — 100 requests per 15 minutes per IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' },
+});
+app.use('/api/', limiter);
+
+// Stricter limit on auth routes — 10 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many login attempts, please try again later.' },
+});
+app.use('/api/auth/', authLimiter);
+
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', require('./routes/auth'));
@@ -25,6 +46,14 @@ app.use('/api/faculty', require('./routes/faculty'));
 app.use('/api/faculty-achievements', require('./routes/facultyAchievements'));
 app.use('/api/leetcode', require('./routes/leetcode'));
 app.use('/api/ai', require('./routes/ai'));
+
+// Multer file size error handler
+app.use((err, req, res, next) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ message: 'File too large. Maximum allowed size is 2MB.' });
+  }
+  next(err);
+});
 
 // Auto-create admin on startup
 async function ensureAdmin() {

@@ -28,7 +28,7 @@ const achievementStorage = new CloudinaryStorage({
   }),
 });
 
-const uploadDoc = multer({ storage: docStorage, limits: { fileSize: 10 * 1024 * 1024 } });
-const uploadAchievement = multer({ storage: achievementStorage, limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadDoc = multer({ storage: docStorage, limits: { fileSize: 2 * 1024 * 1024 } });
+const uploadAchievement = multer({ storage: achievementStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 module.exports = { cloudinary, uploadDoc, uploadAchievement };
