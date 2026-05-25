@@ -6,6 +6,7 @@ const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
 
 export default function Login() {
   const [role, setRole] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [studentForm, setStudentForm] = useState({ regNumber: '', password: '' });
   const [facultyForm, setFacultyForm] = useState({ facultyId: '', password: '' });
   const [error, setError] = useState('');
@@ -75,66 +76,46 @@ export default function Login() {
         <img src={LOGO} alt="Vignan University Logo" style={{ height: 180, display: 'flowi' }} />
       </div>
 
-      {/* Tagline */}
+      {/* Tagline + Role Dropdown */}
       {!role && (
         <>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', marginBottom: 10, textAlign: 'center' }}>
             Welcome Back
           </div>
-          <div style={{ fontSize: 15, color: '#475569', marginBottom: 36, textAlign: 'center', maxWidth: 420 }}>
-            Sign in to access your profile, achievements, and documents. Choose your role to continue.
+          <div style={{ fontSize: 15, color: '#475569', marginBottom: 32, textAlign: 'center', maxWidth: 420 }}>
+            Sign in to access your profile, achievements, and documents.
           </div>
 
-          {/* Role Cards */}
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {/* Student Card */}
-            <div onClick={() => { setRole('student'); setError(''); }}
-              style={{
-                background: '#fff',
-                border: '2px solid #bfdbfe',
-                borderRadius: 16,
-                padding: '32px 28px',
-                width: 200,
-                textAlign: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 4px 18px rgba(30,64,175,0.10)',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 32px rgba(30,64,175,0.22)'}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 18px rgba(30,64,175,0.10)'}
-            >
-              <div style={{ fontSize: 52, marginBottom: 12 }}>👨‍🎓</div>
-              <div style={{ fontWeight: 800, fontSize: 17, color: '#1e40af', marginBottom: 6 }}>Student</div>
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>Access your profile &amp; achievements</div>
-              <div style={{
-                background: '#1e40af', color: '#fff', borderRadius: 8,
-                padding: '8px 0', fontWeight: 700, fontSize: 13,
-              }}>Student Login →</div>
-            </div>
-
-            {/* Faculty Card */}
-            <div onClick={() => { setRole('faculty'); setError(''); }}
-              style={{
-                background: '#fff',
-                border: '2px solid #bfdbfe',
-                borderRadius: 16,
-                padding: '32px 28px',
-                width: 200,
-                textAlign: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 4px 18px rgba(30,64,175,0.10)',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 32px rgba(30,64,175,0.22)'}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 18px rgba(30,64,175,0.10)'}
-            >
-              <div style={{ fontSize: 52, marginBottom: 12 }}>👨‍🏫</div>
-              <div style={{ fontWeight: 800, fontSize: 17, color: '#1e40af', marginBottom: 6 }}>Faculty</div>
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>Manage &amp; review students</div>
-              <div style={{
-                background: '#1e40af', color: '#fff', borderRadius: 8,
-                padding: '8px 0', fontWeight: 700, fontSize: 13,
-              }}>Faculty Login →</div>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', width: '100%', maxWidth: 380, boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Select your role</div>
+            <select
+              onChange={e => { if (e.target.value) { setRole(e.target.value); setError(''); } }}
+              defaultValue=""
+              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 15, fontFamily: 'inherit', color: '#0f172a', background: '#fff', outline: 'none', cursor: 'pointer', marginBottom: 0 }}>
+              <option value="" disabled>-- Choose Role --</option>
+              <option value="student">👨‍🎓 Student</option>
+              <option value="faculty">👨‍🏫 Faculty</option>
+              <option value="faculty" style={{ display: 'none' }}>🔐 Admin</option>
+            </select>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+              {[
+                { val: 'student', label: '👨‍🎓 Student', desc: 'Access your profile & achievements' },
+                { val: 'faculty', label: '👨‍🏫 Faculty', desc: 'Manage & review students' },
+                { val: 'admin',   label: '🔐 Admin',   desc: 'Full system access' },
+              ].map(r => (
+                <div key={r.val} onClick={() => { setRole(r.val === 'admin' ? 'faculty' : r.val); setError(''); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#1e40af'; e.currentTarget.style.background = '#eff6ff'; }}
+                  onClick={() => { setRole(r.val === 'admin' ? 'faculty' : r.val); setIsAdmin(r.val === 'admin'); setError(''); }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}>
+                  <span style={{ fontSize: 28 }}>{r.label.split(' ')[0]}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>{r.label.split(' ').slice(1).join(' ')}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{r.desc}</div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: 16 }}>→</span>
+                </div>
+              ))}
             </div>
           </div>
         </>
@@ -152,16 +133,16 @@ export default function Login() {
         }}>
           {/* Form header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-            <button onClick={() => { setRole(null); setError(''); }}
+            <button onClick={() => { setRole(null); setIsAdmin(false); setError(''); }}
               style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#64748b', padding: 0 }}>
               ←
             </button>
             <div>
               <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>
-                {role === 'student' ? '👨‍🎓 Student Login' : '👨‍🏫 Faculty Login'}
+                {role === 'student' ? '👨‍🎓 Student Login' : isAdmin ? '🔐 Admin Login' : '👨‍🏫 Faculty Login'}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                {role === 'student' ? 'Enter your registration number & password' : 'Enter your faculty ID & password'}
+                {role === 'student' ? 'Enter your registration number & password' : isAdmin ? 'Enter admin ID & password' : 'Enter your faculty ID & password'}
               </div>
             </div>
           </div>
@@ -233,7 +214,7 @@ export default function Login() {
           {/* Switch role link */}
           <div style={{ textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' }}>
             Wrong role?{' '}
-            <span onClick={() => { setRole(null); setError(''); }}
+            <span onClick={() => { setRole(null); setIsAdmin(false); setError(''); }}
               style={{ color: role === 'student' ? '#1e40af' : '#1e40af', fontWeight: 600, cursor: 'pointer' }}>
               Choose again
             </span>
