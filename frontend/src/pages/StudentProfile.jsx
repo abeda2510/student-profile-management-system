@@ -93,7 +93,15 @@ function InlineUpload({ docType, label, docs, onUploaded, onDelete }) {
         </div>
       ))}
       <div className="upload-box" style={{ padding: 12 }}>
-        <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => setFile(e.target.files[0])}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, color: '#64748b' }}>JPG, PNG, PDF</span>
+          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>Max 2MB</span>
+        </div>
+        <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => {
+          const f = e.target.files[0];
+          if (f && f.size > 2 * 1024 * 1024) { alert('File too large. Maximum allowed size is 2MB.'); e.target.value = ''; return; }
+          setFile(f);
+        }}
           style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, boxShadow: 'none' }} />
         {file && (
           <button type="button" onClick={upload} disabled={uploading}

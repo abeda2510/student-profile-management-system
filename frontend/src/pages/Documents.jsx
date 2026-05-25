@@ -57,9 +57,16 @@ export default function Documents() {
             <input style={s.input} placeholder="Label (e.g. Semester 1 Mark Memo)"
               value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
             <div>
-              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>⚠️ Only JPG, JPEG, PNG files are allowed</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                <span>⚠️ Only JPG, JPEG, PNG files are allowed</span>
+                <span style={{ color: '#94a3b8' }}>Max 2MB</span>
+              </div>
               <input style={s.input} type="file" accept=".jpg,.jpeg,.png"
-                onChange={e => setForm(f => ({ ...f, file: e.target.files[0] }))} required />
+                onChange={e => {
+                  const f = e.target.files[0];
+                  if (f && f.size > 2 * 1024 * 1024) { alert('File too large. Maximum allowed size is 2MB.'); e.target.value = ''; return; }
+                  setForm(f => ({ ...f, file: e.target.files[0] }));
+                }} required />
             </div>
             <button style={s.btn} type="submit">Upload</button>
           </form>
