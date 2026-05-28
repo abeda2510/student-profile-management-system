@@ -48,6 +48,23 @@ app.use('/api/dept-events', require('./routes/deptEvents'));
 app.use('/api/leetcode', require('./routes/leetcode'));
 app.use('/api/ai', require('./routes/ai'));
 
+// PDF proxy — fetches Cloudinary PDF server-side and streams it inline
+app.get('/api/proxy-pdf', async (req, res) => {
+  const axios = require('axios');
+  const { url } = req.query;
+  if (!url || !url.startsWith('https://res.cloudinary.com'))
+    return res.status(400).json({ message: 'Invalid URL' });
+  try {
+    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(Buffer.from(response.data));
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch PDF' });
+  }
+});
+
 // Multer file size error handler
 app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
