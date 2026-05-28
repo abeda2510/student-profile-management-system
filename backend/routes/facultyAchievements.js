@@ -39,7 +39,8 @@ router.get('/my', protect, facultyOnly, async (req, res) => {
 });
 
 // POST add achievement
-router.post('/my', protect, facultyOnly, uploadAchievement.single('certificate'), async (req, res) => {  try {
+router.post('/my', protect, facultyOnly, uploadAchievement.single('certificate'), async (req, res) => {
+  try {
     const Faculty = require('../models/Faculty');
     const faculty = await Faculty.findById(req.user.id).select('name facultyId department');
     const data = {
@@ -50,18 +51,17 @@ router.post('/my', protect, facultyOnly, uploadAchievement.single('certificate')
       department: faculty?.department,
     };
     if (req.file) {
-      // For PDFs stored as raw, insert fl_inline so they can be viewed in browser
-      let fileUrl = req.file.path;
-      if (req.file.mimetype === 'application/pdf' && fileUrl.includes('/raw/upload/') && !fileUrl.includes('fl_inline')) {
-        fileUrl = fileUrl.replace('/raw/upload/', '/raw/upload/fl_inline/');
-      }
-      data.certificatePath = fileUrl;
-      data.certificateUrl = fileUrl;
+      console.log('Uploaded file path:', req.file.path, '| mimetype:', req.file.mimetype);
+      data.certificatePath = req.file.path;
+      data.certificateUrl = req.file.path;
       data.cloudinaryId = req.file.filename;
     }
     const achievement = await FacultyAchievement.create(data);
     res.status(201).json(achievement);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('Faculty achievement POST error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // DELETE own achievement
