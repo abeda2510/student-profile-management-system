@@ -26,9 +26,10 @@ const DOC_FIELDS = [
 
 async function uploadToCloudinary(buffer, mimetype, folder, filename) {
   return new Promise((resolve, reject) => {
-    const resourceType = mimetype === 'application/pdf' ? 'raw' : 'image';
+    // Always upload as image — Cloudinary converts PDF first page to JPG
+    // This avoids CORS issues with raw files
     const stream = cloudinaryPkg.uploader.upload_stream(
-      { folder, resource_type: resourceType, public_id: filename },
+      { folder, resource_type: 'image', public_id: filename, format: mimetype === 'application/pdf' ? 'jpg' : undefined },
       (err, result) => { if (err) reject(err); else resolve(result); }
     );
     stream.end(buffer);
