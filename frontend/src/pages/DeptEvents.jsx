@@ -12,7 +12,6 @@ const DOC_FIELDS = [
   { key: 'sampleCertificate',label: '📜 Sample Certificate', accept: '.jpg,.jpeg,.png,.pdf' },
   { key: 'budgetReport',     label: '💰 Budget Report',      accept: '.jpg,.jpeg,.png,.pdf' },
 ];
-
 const empty = { employeeId: '', coordinatorName: '', eventName: '', eventType: '', year: '', date: '', venue: '', description: '', outcome: '', budget: '' };
 
 export default function DeptEvents() {
