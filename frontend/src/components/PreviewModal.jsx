@@ -38,10 +38,6 @@ export function PreviewModal({ url, onClose }) {
               style={{ background: '#d1fae5', color: '#065f46', border: 'none', borderRadius: 7, padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: 13, textDecoration: 'none' }}>
               ⬇ Download
             </a>
-            <a href={viewUrl} target="_blank" rel="noreferrer"
-              style={{ background: '#eff6ff', color: '#1e40af', border: 'none', borderRadius: 7, padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: 13, textDecoration: 'none' }}>
-              ↗ Open
-            </a>
             <button onClick={onClose}
               style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 7, padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
               ✕ Close
