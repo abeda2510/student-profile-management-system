@@ -19,18 +19,24 @@ app.use(cors());
 // PDF proxy at /proxy-pdf (outside /api/ to avoid rate limiter)
 app.get('/proxy-pdf', async (req, res) => {
   const axios = require('axios');
-  const { url } = req.query;
+  let { url } = req.query;
   if (!url || !url.startsWith('https://res.cloudinary.com'))
     return res.status(400).send('Invalid URL');
+  // Strip fl_inline — not needed for server-side fetch, causes 400 from Cloudinary
+  url = url.replace('/fl_inline/', '/');
   try {
-    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 20000 });
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 20000,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(Buffer.from(response.data));
   } catch (err) {
-    console.error('proxy-pdf error:', err.message);
-    res.status(500).send('Failed');
+    console.error('proxy-pdf error:', err.response?.status, err.message);
+    res.status(500).send('Failed: ' + err.message);
   }
 });
 

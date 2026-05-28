@@ -55,8 +55,7 @@ router.post('/my', protect, facultyOnly, uploadAchievement.single('certificate')
       data.certificatePath = req.file.path;
       data.certificateUrl = req.file.path;
       data.cloudinaryId = req.file.filename;
-    }
-    const achievement = await FacultyAchievement.create(data);
+    }    const achievement = await FacultyAchievement.create(data);
     res.status(201).json(achievement);
   } catch (err) {
     console.error('Faculty achievement POST error:', err.message);
