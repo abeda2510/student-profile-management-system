@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+import api from '../api';
 
 function isPdfUrl(url) {
   if (!url) return false;
@@ -17,11 +16,10 @@ function PdfViewer({ url }) {
     let objUrl = null;
     setLoading(true); setError(false); setBlobUrl(null);
 
-    // Fetch via backend proxy to bypass Cloudinary CORS
-    const proxyUrl = `${API_BASE}/api/proxy-pdf?url=${encodeURIComponent(url)}`;
-    fetch(proxyUrl)
-      .then(r => { if (!r.ok) throw new Error('proxy failed'); return r.blob(); })
-      .then(blob => {
+    // Use axios api instance (has auth token) with responseType arraybuffer
+    api.get(`/proxy-pdf?url=${encodeURIComponent(url)}`, { responseType: 'arraybuffer' })
+      .then(res => {
+        const blob = new Blob([res.data], { type: 'application/pdf' });
         objUrl = URL.createObjectURL(blob);
         setBlobUrl(objUrl);
         setLoading(false);

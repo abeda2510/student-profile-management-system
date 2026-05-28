@@ -48,7 +48,7 @@ app.use('/api/dept-events', require('./routes/deptEvents'));
 app.use('/api/leetcode', require('./routes/leetcode'));
 app.use('/api/ai', require('./routes/ai'));
 
-// PDF proxy — fetches Cloudinary PDF server-side and streams it inline
+// PDF proxy — fetches Cloudinary PDF server-side and streams it inline (no auth needed)
 app.get('/api/proxy-pdf', async (req, res) => {
   const axios = require('axios');
   const { url } = req.query;
