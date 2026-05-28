@@ -25,6 +25,7 @@ const achievementStorage = new CloudinaryStorage({
     resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
     public_id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    flags: file.mimetype === 'application/pdf' ? 'attachment:false' : undefined,
   }),
 });
 
