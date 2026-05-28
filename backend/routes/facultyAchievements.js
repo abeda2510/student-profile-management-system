@@ -50,8 +50,13 @@ router.post('/my', protect, facultyOnly, uploadAchievement.single('certificate')
       department: faculty?.department,
     };
     if (req.file) {
-      data.certificatePath = req.file.path;
-      data.certificateUrl = req.file.path;
+      // For PDFs stored as raw, insert fl_inline so they can be viewed in browser
+      let fileUrl = req.file.path;
+      if (req.file.mimetype === 'application/pdf' && fileUrl.includes('/raw/upload/') && !fileUrl.includes('fl_inline')) {
+        fileUrl = fileUrl.replace('/raw/upload/', '/raw/upload/fl_inline/');
+      }
+      data.certificatePath = fileUrl;
+      data.certificateUrl = fileUrl;
       data.cloudinaryId = req.file.filename;
     }
     const achievement = await FacultyAchievement.create(data);

@@ -25,9 +25,13 @@ router.post('/', protect, uploadAchievement.single('certificate'), async (req, r
     const points = POINTS_MAP[req.body.activityType] || 0;
     const data = { ...req.body, student: req.user.id, regNumber: student?.regNumber, status: 'APPROVED', points };
     if (req.file) {
+      let fileUrl = req.file.path;
+      if (req.file.mimetype === 'application/pdf' && fileUrl.includes('/raw/upload/') && !fileUrl.includes('fl_inline')) {
+        fileUrl = fileUrl.replace('/raw/upload/', '/raw/upload/fl_inline/');
+      }
       data.certificateFile = req.file.originalname;
-      data.certificatePath = req.file.path;
-      data.certificateUrl = req.file.path;
+      data.certificatePath = fileUrl;
+      data.certificateUrl = fileUrl;
       data.cloudinaryId = req.file.filename;
     }
     const achievement = new Achievement(data);
