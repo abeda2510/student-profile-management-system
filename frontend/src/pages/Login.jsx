@@ -59,7 +59,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1565c0 50%, #0288d1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
       <div style={{ width: '100%', maxWidth: 460 }}>
 
         {/* Logo Card */}
@@ -202,7 +202,7 @@ export default function Login() {
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: '#94a3b8' }}>
           © 2026 Vignan's University · All rights reserved
         </div>
       </div>
