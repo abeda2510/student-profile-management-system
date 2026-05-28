@@ -44,6 +44,7 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/faculty', require('./routes/faculty'));
 app.use('/api/faculty-achievements', require('./routes/facultyAchievements'));
+app.use('/api/dept-events', require('./routes/deptEvents'));
 app.use('/api/leetcode', require('./routes/leetcode'));
 app.use('/api/ai', require('./routes/ai'));
 

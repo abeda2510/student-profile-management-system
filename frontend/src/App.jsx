@@ -10,6 +10,7 @@ import SectionReport from './pages/SectionReport';
 import AchievementDashboard from './pages/AchievementDashboard';
 import FacultyAchievements from './pages/FacultyAchievements';
 import FacultyMyAchievements from './pages/FacultyMyAchievements';
+import DeptEvents from './pages/DeptEvents';
 import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/Chatbot';
@@ -44,6 +45,7 @@ function Topbar() {
     { to: '/section-report', label: 'Reports' },
     { to: '/achievement-report', label: 'Achievements' },
     { to: '/my-achievements', label: 'My Achievements' },
+    { to: '/dept-events', label: 'Dept Events' },
     ...(role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
   ];
   const links = isFaculty ? facultyLinks : studentLinks;
@@ -117,6 +119,7 @@ export default function App() {
                   <Route path="/achievement-report" element={<FacultyAchievements />} />
                   <Route path="/achievement-dashboard" element={<AchievementDashboard />} />
                   <Route path="/my-achievements" element={<FacultyMyAchievements />} />
+                  <Route path="/dept-events" element={<DeptEvents />} />
                   <Route path="/admin" element={<AdminSearch />} />
                 </Routes>
               </div>
