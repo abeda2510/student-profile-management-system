@@ -24,7 +24,11 @@ function PdfViewer({ url }) {
         setBlobUrl(objUrl);
         setLoading(false);
       })
-      .catch(() => { setError(true); setLoading(false); });
+      .catch(err => {
+        console.error('PDF proxy error:', err.response?.data || err.message);
+        setError(true);
+        setLoading(false);
+      });
 
     return () => { if (objUrl) URL.revokeObjectURL(objUrl); };
   }, [url]);

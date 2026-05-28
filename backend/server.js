@@ -16,6 +16,24 @@ app.use(helmet({
 
 app.use(cors());
 
+// PDF proxy — placed before rate limiter, fetches Cloudinary PDF and streams inline
+app.get('/api/proxy-pdf', async (req, res) => {
+  const axios = require('axios');
+  const { url } = req.query;
+  if (!url || !url.startsWith('https://res.cloudinary.com'))
+    return res.status(400).json({ message: 'Invalid URL' });
+  try {
+    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 20000 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(Buffer.from(response.data));
+  } catch (err) {
+    console.error('proxy-pdf error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch PDF: ' + err.message });
+  }
+});
+
 // Rate limiting — 100 requests per 15 minutes per IP
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
