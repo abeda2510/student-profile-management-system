@@ -48,8 +48,20 @@ export default function AdminSearch() {
   const [deptEventYear, setDeptEventYear] = useState('');
   const [deptEventsLoading, setDeptEventsLoading] = useState(false);
   const [deptZipLoading, setDeptZipLoading] = useState(false);
+  const [deptEvents, setDeptEvents] = useState(null);
+  const [deptFetching, setDeptFetching] = useState(false);
 
   const YEARS = Array.from({ length: 8 }, (_, i) => { const y = 2020 + i; return `${y}-${y + 1}`; });
+
+  const fetchDeptEvents = async () => {
+    setDeptFetching(true);
+    try {
+      const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
+      const { data } = await api.get(`/dept-events${params}`);
+      setDeptEvents(data);
+    } catch { alert('Failed to fetch events'); }
+    setDeptFetching(false);
+  };
 
   const downloadDeptExcel = async () => {
     setDeptEventsLoading(true);
@@ -370,7 +382,7 @@ export default function AdminSearch() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Year</label>
-            <select value={deptEventYear} onChange={e => setDeptEventYear(e.target.value)}
+            <select value={deptEventYear} onChange={e => { setDeptEventYear(e.target.value); setDeptEvents(null); }}
               style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff', minWidth: 160 }}>
               <option value="">All Years</option>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
@@ -378,20 +390,67 @@ export default function AdminSearch() {
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', paddingBottom: 2 }}>
+            <button onClick={fetchDeptEvents} disabled={deptFetching}
+              style={{ background: deptFetching ? '#94a3b8' : '#059669', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              {deptFetching ? 'Fetching...' : '🔍 Fetch Report'}
+            </button>
             <button onClick={downloadDeptExcel} disabled={deptEventsLoading}
-              style={{ background: deptEventsLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-              📊 {deptEventsLoading ? 'Generating...' : 'Download Excel'}
+              style={{ background: deptEventsLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              📊 {deptEventsLoading ? 'Generating...' : 'Excel'}
             </button>
             <button onClick={downloadDeptZip} disabled={deptZipLoading}
-              style={{ background: deptZipLoading ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-              🗜️ {deptZipLoading ? 'Generating...' : 'Download ZIP'}
+              style={{ background: deptZipLoading ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              🗜️ {deptZipLoading ? 'Generating...' : 'ZIP'}
             </button>
           </div>
         </div>
 
-        <div style={{ marginTop: 12, fontSize: 12, color: '#94a3b8' }}>
-          Excel includes event details (coordinator, date, venue, budget, description, outcome). ZIP includes all uploaded documents (poster, report, winners list, certificate, budget report).
-        </div>
+        {/* Results Table */}
+        {deptEvents && (
+          <div style={{ marginTop: 20, overflowX: 'auto' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
+              {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''} found{deptEventYear ? ` for ${deptEventYear}` : ''}
+            </div>
+            {deptEvents.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>No events found for the selected year.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#1e40af' }}>
+                    {['#', 'Event Name', 'Type', 'Coordinator', 'Dept', 'Year', 'Date', 'Budget', 'Docs'].map(h => (
+                      <th key={h} style={{ padding: '10px 12px', color: '#fff', fontWeight: 700, textAlign: 'left', fontSize: 11, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {deptEvents.map((ev, i) => (
+                    <tr key={ev._id} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '9px 12px', color: '#94a3b8' }}>{i + 1}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: '#0f172a' }}>{ev.eventName}</td>
+                      <td style={{ padding: '9px 12px' }}>
+                        {ev.eventType && <span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{ev.eventType}</span>}
+                      </td>
+                      <td style={{ padding: '9px 12px' }}>{ev.coordinatorName}</td>
+                      <td style={{ padding: '9px 12px', color: '#64748b' }}>{ev.department || '—'}</td>
+                      <td style={{ padding: '9px 12px' }}>
+                        <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>{ev.year}</span>
+                      </td>
+                      <td style={{ padding: '9px 12px', color: '#64748b', fontSize: 12 }}>{ev.date ? new Date(ev.date).toLocaleDateString('en-IN') : '—'}</td>
+                      <td style={{ padding: '9px 12px' }}>{ev.budget ? `₹${ev.budget.toLocaleString()}` : '—'}</td>
+                      <td style={{ padding: '9px 12px' }}>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {['poster','onePageReport','winnersList','sampleCertificate','budgetReport'].map(k =>
+                            ev[k]?.url ? <span key={k} style={{ background: '#d1fae5', color: '#065f46', borderRadius: 4, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>✓</span> : null
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

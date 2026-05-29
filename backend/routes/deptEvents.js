@@ -36,10 +36,11 @@ async function uploadToCloudinary(buffer, mimetype, folder, filename) {
   });
 }
 
-// GET all events (faculty sees own, admin sees all)
+// GET all events (faculty sees own, admin sees all, supports year filter)
 router.get('/', protect, facultyOnly, async (req, res) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { createdBy: req.user.id };
+    if (req.query.year) filter.year = req.query.year;
     const events = await DeptEvent.find(filter).sort({ createdAt: -1 });
     res.json(events);
   } catch (err) { res.status(500).json({ message: err.message }); }
