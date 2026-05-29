@@ -44,6 +44,45 @@ export default function AdminSearch() {
   const [createResult, setCreateResult] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Dept events report state
+  const [deptEventYear, setDeptEventYear] = useState('');
+  const [deptEventsLoading, setDeptEventsLoading] = useState(false);
+  const [deptZipLoading, setDeptZipLoading] = useState(false);
+
+  const YEARS = Array.from({ length: 8 }, (_, i) => { const y = 2020 + i; return `${y}-${y + 1}`; });
+
+  const downloadDeptExcel = async () => {
+    setDeptEventsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
+      const res = await fetch(`${baseUrl}/dept-events/report/excel${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `dept_events${deptEventYear ? '_' + deptEventYear : ''}.xlsx`; a.click();
+      URL.revokeObjectURL(url);
+    } catch { alert('Download failed'); }
+    setDeptEventsLoading(false);
+  };
+
+  const downloadDeptZip = async () => {
+    setDeptZipLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
+      const res = await fetch(`${baseUrl}/dept-events/report/zip${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `dept_events_docs${deptEventYear ? '_' + deptEventYear : ''}.zip`; a.click();
+      URL.revokeObjectURL(url);
+    } catch { alert('ZIP download failed'); }
+    setDeptZipLoading(false);
+  };
+
   const refreshFaculty = () => api.get('/faculty/all-faculty').then(r => setFacultyList(r.data)).catch(() => {});
 
   useEffect(() => { refreshFaculty(); }, []);
@@ -317,6 +356,43 @@ export default function AdminSearch() {
           )}
         </>
       )}
+
+      {/* Dept Events Report — Admin Only */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0', marginTop: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fdf4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🎪</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Department Events Report</div>
+            <div style={{ fontSize: 12, color: '#64748b' }}>Download all department events by academic year</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Year</label>
+            <select value={deptEventYear} onChange={e => setDeptEventYear(e.target.value)}
+              style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff', minWidth: 160 }}>
+              <option value="">All Years</option>
+              {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', paddingBottom: 2 }}>
+            <button onClick={downloadDeptExcel} disabled={deptEventsLoading}
+              style={{ background: deptEventsLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              📊 {deptEventsLoading ? 'Generating...' : 'Download Excel'}
+            </button>
+            <button onClick={downloadDeptZip} disabled={deptZipLoading}
+              style={{ background: deptZipLoading ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              🗜️ {deptZipLoading ? 'Generating...' : 'Download ZIP'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, fontSize: 12, color: '#94a3b8' }}>
+          Excel includes event details (coordinator, date, venue, budget, description, outcome). ZIP includes all uploaded documents (poster, report, winners list, certificate, budget report).
+        </div>
+      </div>
     </div>
   );
 }
