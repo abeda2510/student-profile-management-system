@@ -324,12 +324,6 @@ export default function SectionReport() {
               {xlLoading ? 'Generating...' : 'Download Excel'}
             </button>
           )}
-          {results && (
-            <button onClick={downloadZip} disabled={zipLoading}
-              style={{ width: '100%', background: zipLoading?'#94a3b8':'#7c3aed', color: '#fff', border: 'none', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-              {zipLoading ? 'Generating...' : 'Download ZIP'}
-            </button>
-          )}
         </div>
       </div>
     </div>

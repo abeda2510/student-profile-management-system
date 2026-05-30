@@ -431,10 +431,6 @@ export default function FacultyDashboard() {
                       style={{ background: xlLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
                       {xlLoading ? 'Generating...' : 'Download Excel'}
                     </button>
-                    <button onClick={downloadZip} disabled={zipLoading}
-                      style={{ background: zipLoading ? '#94a3b8' : '#7c3aed', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-                      {zipLoading ? 'Generating...' : 'Download ZIP'}
-                    </button>
                   </>
                 )}
               </div>
