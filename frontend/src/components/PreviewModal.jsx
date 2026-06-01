@@ -55,7 +55,13 @@ export function PreviewModal({ url, onClose }) {
 
   const handleDownload = async () => {
     try {
-      const res = await fetch(url);
+      // Use backend proxy to bypass CORS for Cloudinary files
+      const isCloudinary = url.includes('res.cloudinary.com');
+      const fetchUrl = isCloudinary
+        ? `${BACKEND}/proxy-pdf?url=${encodeURIComponent(url)}`
+        : url;
+      const res = await fetch(fetchUrl);
+      if (!res.ok) throw new Error('fetch failed');
       const blob = await res.blob();
       const ext = url.split('?')[0].split('.').pop() || 'file';
       const a = document.createElement('a');
@@ -64,7 +70,6 @@ export function PreviewModal({ url, onClose }) {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      // fallback — open in new tab
       window.open(url, '_blank');
     }
   };
