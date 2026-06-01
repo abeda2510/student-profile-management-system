@@ -51,8 +51,23 @@ export function PreviewModal({ url, onClose }) {
   const [imgErr, setImgErr] = useState(false);
   if (!url) return null;
 
-  console.log('PreviewModal URL:', url);
   const raw = isRawPdf(url);
+
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const ext = url.split('?')[0].split('.').pop() || 'file';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `document.${ext}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // fallback — open in new tab
+      window.open(url, '_blank');
+    }
+  };
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -60,10 +75,10 @@ export function PreviewModal({ url, onClose }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Document Preview</span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <a href={url} download target="_blank" rel="noreferrer"
-              style={{ background: '#d1fae5', color: '#065f46', borderRadius: 7, padding: '5px 14px', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+            <button onClick={handleDownload}
+              style={{ background: '#d1fae5', color: '#065f46', border: 'none', borderRadius: 7, padding: '5px 14px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               ⬇ Download
-            </a>
+            </button>
             <button onClick={onClose}
               style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 7, padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
               ✕ Close
