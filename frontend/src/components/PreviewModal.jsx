@@ -55,7 +55,6 @@ export function PreviewModal({ url, onClose }) {
 
   const handleDownload = async () => {
     try {
-      // Use backend proxy to bypass CORS for Cloudinary files
       const isCloudinary = url.includes('res.cloudinary.com');
       const fetchUrl = isCloudinary
         ? `${BACKEND}/proxy-pdf?url=${encodeURIComponent(url)}`
@@ -63,7 +62,17 @@ export function PreviewModal({ url, onClose }) {
       const res = await fetch(fetchUrl);
       if (!res.ok) throw new Error('fetch failed');
       const blob = await res.blob();
-      const ext = url.split('?')[0].split('.').pop() || 'file';
+      // Determine correct extension from content-type or URL
+      let ext = 'file';
+      const ct = blob.type;
+      if (ct.includes('pdf')) ext = 'pdf';
+      else if (ct.includes('png')) ext = 'png';
+      else if (ct.includes('jpeg') || ct.includes('jpg')) ext = 'jpg';
+      else {
+        const urlExt = url.split('?')[0].split('.').pop().toLowerCase();
+        if (['pdf','jpg','jpeg','png'].includes(urlExt)) ext = urlExt;
+        else if (url.includes('/raw/upload/')) ext = 'pdf';
+      }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `document.${ext}`;

@@ -30,7 +30,9 @@ app.get('/proxy-pdf', async (req, res) => {
       timeout: 20000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    const contentType = response.headers['content-type'] || 'application/octet-stream';
+    const contentType = url.includes('/raw/upload/')
+      ? 'application/pdf'
+      : (response.headers['content-type'] || 'application/octet-stream');
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', 'attachment');
     res.setHeader('Access-Control-Allow-Origin', '*');
