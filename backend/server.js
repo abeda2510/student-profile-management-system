@@ -34,7 +34,7 @@ app.get('/proxy-pdf', async (req, res) => {
       ? 'application/pdf'
       : (response.headers['content-type'] || 'application/octet-stream');
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', 'attachment');
+    res.setHeader('Content-Disposition', `attachment; filename="document.${contentType.includes('pdf') ? 'pdf' : contentType.includes('png') ? 'png' : 'jpg'}"`);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(Buffer.from(response.data));
   } catch (err) {
