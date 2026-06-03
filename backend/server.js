@@ -17,12 +17,12 @@ app.use(helmet({
 app.use(cors());
 
 // Proxy — fetches any Cloudinary file server-side and streams it (bypasses CORS)
-app.get('/proxy-pdf', async (req, res) => {
+// Available at both /proxy-pdf and /spm/proxy-pdf
+const proxyHandler = async (req, res) => {
   const axios = require('axios');
   let { url } = req.query;
   if (!url || !url.startsWith('https://res.cloudinary.com'))
     return res.status(400).send('Invalid URL');
-  // Strip fl_inline — not needed for server-side fetch
   url = url.replace('/fl_inline/', '/');
   try {
     const response = await axios.get(url, {
@@ -41,7 +41,9 @@ app.get('/proxy-pdf', async (req, res) => {
     console.error('proxy error:', err.response?.status, err.message);
     res.status(500).send('Failed: ' + err.message);
   }
-});
+};
+app.get('/proxy-pdf', proxyHandler);
+app.get('/spm/proxy-pdf', proxyHandler);
 
 // Rate limiting — 100 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -52,6 +54,7 @@ const limiter = rateLimit({
   message: { message: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);
+app.use('/spm/api/', limiter);
 
 // Stricter limit on auth routes — 10 attempts per 15 minutes
 const authLimiter = rateLimit({
@@ -60,36 +63,28 @@ const authLimiter = rateLimit({
   message: { message: 'Too many login attempts, please try again later.' },
 });
 app.use('/api/auth/', authLimiter);
+app.use('/spm/api/auth/', authLimiter);
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/spm/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/students', require('./routes/students'));
-app.use('/api/documents', require('./routes/documents'));
-app.use('/api/achievements', require('./routes/achievements'));
-app.use('/api/faculty', require('./routes/faculty'));
-app.use('/api/faculty-achievements', require('./routes/facultyAchievements'));
-app.use('/api/dept-events', require('./routes/deptEvents'));
-app.use('/api/leetcode', require('./routes/leetcode'));
-app.use('/api/ai', require('./routes/ai'));
-
-// PDF proxy — fetches Cloudinary PDF server-side and streams it inline (no auth needed)
-app.get('/api/proxy-pdf', async (req, res) => {
-  const axios = require('axios');
-  const { url } = req.query;
-  if (!url || !url.startsWith('https://res.cloudinary.com'))
-    return res.status(400).json({ message: 'Invalid URL' });
-  try {
-    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.send(Buffer.from(response.data));
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch PDF' });
-  }
+// Routes — mounted on both /api and /spm/api
+const routes = [
+  ['/api/auth',                '/spm/api/auth',                require('./routes/auth')],
+  ['/api/students',            '/spm/api/students',            require('./routes/students')],
+  ['/api/documents',           '/spm/api/documents',           require('./routes/documents')],
+  ['/api/achievements',        '/spm/api/achievements',        require('./routes/achievements')],
+  ['/api/faculty',             '/spm/api/faculty',             require('./routes/faculty')],
+  ['/api/faculty-achievements','/spm/api/faculty-achievements',require('./routes/facultyAchievements')],
+  ['/api/dept-events',         '/spm/api/dept-events',         require('./routes/deptEvents')],
+  ['/api/leetcode',            '/spm/api/leetcode',            require('./routes/leetcode')],
+  ['/api/ai',                  '/spm/api/ai',                  require('./routes/ai')],
+];
+routes.forEach(([path1, path2, router]) => {
+  app.use(path1, router);
+  app.use(path2, router);
 });
 
 // Multer file size error handler
