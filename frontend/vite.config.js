@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: '/student_profile/',
+  
+  base: command === 'build' ? '/student_profile/' : '/',
   server: {
     proxy: {
       '/api': 'http://localhost:5000',
       '/uploads': 'http://localhost:5000'
     }
   }
-});
+}));
