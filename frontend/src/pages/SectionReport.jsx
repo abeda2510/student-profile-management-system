@@ -89,10 +89,12 @@ export default function SectionReport() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [myStudents, setMyStudents] = useState([]);
   const [error, setError] = useState('');
+  const [adminDocTypes, setAdminDocTypes] = useState([]);
 
   useEffect(() => {
     api.get('/students/count').then(r => setTotalStudents(r.data.count)).catch(() => {});
     api.get('/faculty/my-students').then(r => setMyStudents(r.data)).catch(() => {});
+    api.get('/documents/admin-types').then(r => setAdminDocTypes(r.data)).catch(() => {});
   }, []);
 
   const toggleItem = (val) => setSelItems(s => s.includes(val) ? s.filter(x => x !== val) : [...s, val]);
@@ -201,6 +203,27 @@ export default function SectionReport() {
                 </div>
               </div>
             ))}
+
+            {/* Admin-uploaded document types */}
+            {adminDocTypes.length > 0 && (
+              <div style={{ marginBottom: 14, padding: '12px 16px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a22' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: '#d97706' }}>📂 Admin Documents</span>
+                  <button onClick={() => {
+                    const vals = adminDocTypes.map(t => t.label);
+                    const allSel = vals.every(v => selItems.includes(v));
+                    setSelItems(s => allSel ? s.filter(x => !vals.includes(x)) : [...new Set([...s, ...vals])]);
+                  }} style={{ fontSize: 11, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Select All</button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {adminDocTypes.map(t => (
+                    <span key={t.label} onClick={() => toggleItem(t.label)} style={chip(selItems.includes(t.label), '#d97706', '#fffbeb')}>
+                      {t.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({t.count})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Results Table */}

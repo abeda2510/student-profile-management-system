@@ -270,6 +270,15 @@ async function getStudentDocData(st, docType) {
     const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO' });
     return { ...base, data: docs.length ? docs.map(d => d.label || d.filename).join('; ') : '—', count: docs.length };
   }
+  // Admin-uploaded custom documents — docType is a custom label key like 'ADMIN:CRT Attendance'
+  if (docType.startsWith('ADMIN:')) {
+    const label = docType.replace('ADMIN:', '');
+    const docs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label });
+    return { ...base, data: docs.length ? (docs[0].fileUrl || 'Uploaded') : '—', count: docs.length };
+  }
+  // Fallback: try to find any admin doc with matching docType as label
+  const adminDocs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label: docType });
+  if (adminDocs.length) return { ...base, data: adminDocs[0].fileUrl || 'Uploaded', count: adminDocs.length };
   return { ...base, data: '—' };
 }
 

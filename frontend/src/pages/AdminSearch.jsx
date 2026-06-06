@@ -97,7 +97,63 @@ export default function AdminSearch() {
 
   const refreshFaculty = () => api.get('/faculty/all-faculty').then(r => setFacultyList(r.data)).catch(() => {});
 
-  useEffect(() => { refreshFaculty(); }, []);
+  // Admin document upload state
+  const [showAdminDocs, setShowAdminDocs] = useState(false);
+  const [adminDocLabel, setAdminDocLabel] = useState('');
+  const [adminDocType, setAdminDocType] = useState('ADMIN_CUSTOM');
+  const [adminDocRegNumber, setAdminDocRegNumber] = useState('');
+  const [adminDocFile, setAdminDocFile] = useState(null);
+  const [adminDocUploading, setAdminDocUploading] = useState(false);
+  const [adminDocResult, setAdminDocResult] = useState(null);
+  const [adminDocTypes, setAdminDocTypes] = useState([]);
+  const [adminBulkFile, setAdminBulkFile] = useState(null);
+  const [adminBulkLabel, setAdminBulkLabel] = useState('');
+  const [adminBulkUploading, setAdminBulkUploading] = useState(false);
+  const [adminBulkResult, setAdminBulkResult] = useState(null);
+
+  const PRESET_DOC_TYPES = [
+    'CRT Attendance', 'CRT Performance', 'Semester Attendance',
+    'Semester Performance', 'Lab Record', 'Project Report', 'Other'
+  ];
+
+  const loadAdminDocTypes = () => api.get('/documents/admin-types')
+    .then(r => setAdminDocTypes(r.data)).catch(() => {});
+
+  const uploadAdminDoc = async (e) => {
+    e.preventDefault();
+    if (!adminDocRegNumber || !adminDocLabel) return;
+    setAdminDocUploading(true); setAdminDocResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('regNumber', adminDocRegNumber);
+      fd.append('docType', 'ADMIN_CUSTOM');
+      fd.append('label', adminDocLabel);
+      if (adminDocFile) fd.append('file', adminDocFile);
+      const { data } = await api.post('/documents/admin-upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setAdminDocResult({ success: true, message: `Uploaded for ${adminDocRegNumber}` });
+      setAdminDocRegNumber(''); setAdminDocFile(null); setAdminDocLabel('');
+      loadAdminDocTypes();
+    } catch (err) { setAdminDocResult({ success: false, message: err.response?.data?.message || 'Upload failed' }); }
+    setAdminDocUploading(false);
+  };
+
+  const uploadAdminBulk = async (e) => {
+    e.preventDefault();
+    if (!adminBulkFile || !adminBulkLabel) return;
+    setAdminBulkUploading(true); setAdminBulkResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', adminBulkFile);
+      fd.append('docType', 'ADMIN_CUSTOM');
+      fd.append('label', adminBulkLabel);
+      const { data } = await api.post('/documents/admin-bulk-meta', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setAdminBulkResult({ success: true, message: data.message });
+      setAdminBulkFile(null); loadAdminDocTypes();
+    } catch (err) { setAdminBulkResult({ success: false, message: err.response?.data?.message || 'Upload failed' }); }
+    setAdminBulkUploading(false);
+  };
+
+  useEffect(() => { refreshFaculty(); loadAdminDocTypes(); }, []);
 
   const createFaculty = async (e) => {
     e.preventDefault();
@@ -368,6 +424,121 @@ export default function AdminSearch() {
           )}
         </>
       )}
+
+      {/* Admin Document Upload Section */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0', marginTop: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showAdminDocs ? 20 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📂</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Admin Document Upload</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>Upload CRT Attendance, CRT Performance, Semester Attendance etc. for students</div>
+            </div>
+          </div>
+          <button onClick={() => setShowAdminDocs(v => !v)}
+            style={{ background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', padding: '6px 14px', borderRadius: 7, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+            {showAdminDocs ? 'Hide' : 'Upload Docs'}
+          </button>
+        </div>
+
+        {showAdminDocs && (
+          <div>
+            {/* Existing admin doc types */}
+            {adminDocTypes.length > 0 && (
+              <div style={{ marginBottom: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46', marginBottom: 8 }}>ALREADY UPLOADED DOCUMENT TYPES</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {adminDocTypes.map(t => (
+                    <span key={t.label} style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '3px 12px', fontSize: 12, fontWeight: 600 }}>
+                      {t.label} <span style={{ opacity: 0.7 }}>({t.count})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+              {/* Single student upload */}
+              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📎 Upload for Single Student</div>
+                <form onSubmit={uploadAdminDoc}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type / Title *</label>
+                    <input list="preset-doc-types" value={adminDocLabel} onChange={e => setAdminDocLabel(e.target.value)}
+                      placeholder="e.g. CRT Attendance, Semester Attendance" required
+                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                    <datalist id="preset-doc-types">
+                      {PRESET_DOC_TYPES.map(t => <option key={t} value={t} />)}
+                      {adminDocTypes.map(t => <option key={t.label} value={t.label} />)}
+                    </datalist>
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Registration Number *</label>
+                    <input value={adminDocRegNumber} onChange={e => setAdminDocRegNumber(e.target.value)}
+                      placeholder="e.g. 231FA04001" required
+                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>File (Optional)</label>
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Max 2MB</span>
+                    </div>
+                    <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => {
+                      const f = e.target.files[0];
+                      if (f && f.size > 2 * 1024 * 1024) { alert('Max 2MB'); e.target.value = ''; return; }
+                      setAdminDocFile(f);
+                    }} style={{ fontSize: 12, padding: '8px', border: '1.5px solid #d1d5db', borderRadius: 8, width: '100%', boxSizing: 'border-box', background: '#fff' }} />
+                  </div>
+                  <button type="submit" disabled={adminDocUploading}
+                    style={{ background: adminDocUploading ? '#94a3b8' : '#d97706', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                    {adminDocUploading ? 'Uploading...' : '📤 Upload'}
+                  </button>
+                  {adminDocResult && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 7, background: adminDocResult.success ? '#d1fae5' : '#fee2e2', color: adminDocResult.success ? '#065f46' : '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                      {adminDocResult.message}
+                    </div>
+                  )}
+                </form>
+              </div>
+
+              {/* Bulk upload via Excel */}
+              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📊 Bulk Upload via Excel</div>
+                <div style={{ fontSize: 12, color: '#64748b', background: '#fffbeb', padding: '10px 12px', borderRadius: 7, marginBottom: 14, border: '1px solid #fde68a' }}>
+                  Excel format: columns <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>regNumber</code> and optionally <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>value</code> (URL or data)
+                </div>
+                <form onSubmit={uploadAdminBulk}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type / Title *</label>
+                    <input list="preset-doc-types-bulk" value={adminBulkLabel} onChange={e => setAdminBulkLabel(e.target.value)}
+                      placeholder="e.g. CRT Attendance Sem 5" required
+                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                    <datalist id="preset-doc-types-bulk">
+                      {PRESET_DOC_TYPES.map(t => <option key={t} value={t} />)}
+                      {adminDocTypes.map(t => <option key={t.label} value={t.label} />)}
+                    </datalist>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Excel / CSV File *</label>
+                    <input type="file" accept=".xlsx,.xls,.csv" onChange={e => setAdminBulkFile(e.target.files[0])} required
+                      style={{ fontSize: 12, padding: '8px', border: '1.5px solid #d1d5db', borderRadius: 8, width: '100%', boxSizing: 'border-box', background: '#fff' }} />
+                  </div>
+                  <button type="submit" disabled={adminBulkUploading}
+                    style={{ background: adminBulkUploading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                    {adminBulkUploading ? 'Processing...' : '📥 Bulk Upload'}
+                  </button>
+                  {adminBulkResult && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 7, background: adminBulkResult.success ? '#d1fae5' : '#fee2e2', color: adminBulkResult.success ? '#065f46' : '#991b1b', fontSize: 12, fontWeight: 600 }}>
+                      {adminBulkResult.message}
+                    </div>
+                  )}
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Dept Events Report — Admin Only */}
       <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0', marginTop: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
