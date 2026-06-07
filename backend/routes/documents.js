@@ -90,38 +90,39 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
         // 1. Look for column matching the label name (e.g. "CRT Performance")
         // 2. Then try common data column names
         // 3. Do NOT use second column as fallback (could be student name)
-        const labelKey = Object.keys(row).find(k => k.toLowerCase().includes(label.toLowerCase()) || label.toLowerCase().includes(k.toLowerCase()));
-        // Also try to find any numeric/percentage column that isn't the reg number
-        const numericKey = Object.keys(row).find(k => {
-          if (k === Object.keys(row)[0]) return false; // skip first col (reg number)
-          const v = String(row[k]);
-          return /^\d+(\.\d+)?%?$/.test(v.trim()); // match numbers and percentages
-        });
-
-        // Build a combined value from all non-reg-number columns
+        // Build a combined value from all non-reg-number, non-name columns
         const regCol = Object.keys(row)[0];
-        const dataFields = Object.entries(row)
-          .filter(([k]) => k !== regCol && !k.toLowerCase().includes('student') && !k.toLowerCase().includes('name'))
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(' | ');
+        const dataEntries = Object.entries(row)
+          .filter(([k]) => k !== regCol && !k.toLowerCase().includes('student') && !k.toLowerCase().includes('name'));
 
-        const value = String(
-          (labelKey && !labelKey.toLowerCase().includes('reg') && !labelKey.toLowerCase().includes('name') ? row[labelKey] : null) ||
-          (numericKey ? row[numericKey] : null) ||
-          dataFields ||
-          ''
-        ).trim();
+        // Store combined value
+        const combinedValue = dataEntries.map(([k, v]) => `${k}: ${v}`).join(' | ');
+        const value = combinedValue || '';
         console.log(`Row: regNumber=${regNumber}, value=${value}`);
         if (!regNumber) continue;
         const student = await Student.findOne({ regNumber });
         if (!student) { skipped++; errors.push(regNumber); continue; }
+        
+        // Delete old records for this student + label
         await Document.deleteMany({ regNumber, docType, label, uploadedBy: 'admin' });
+        
+        // Store combined record
         await Document.create({ 
-          student: student._id, regNumber, docType, label, 
+          student: student._id, regNumber, docType, label,
           fileUrl: value || null,
-          filename: value || null, // store value in filename too as backup
+          filename: value || null,
           uploadedBy: 'admin' 
         });
+        
+        // Also store each column as a sub-document: label = "CRT Performance - Aptitude"
+        for (const [colName, colVal] of dataEntries) {
+          const subLabel = `${label} - ${colName}`;
+          await Document.deleteMany({ regNumber, docType: 'ADMIN_CUSTOM', label: subLabel, uploadedBy: 'admin' });
+          await Document.create({
+            student: student._id, regNumber, docType: 'ADMIN_CUSTOM', label: subLabel,
+            fileUrl: String(colVal), filename: String(colVal), uploadedBy: 'admin'
+          });
+        }
         created++;
       }
       res.json({

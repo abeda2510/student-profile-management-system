@@ -464,7 +464,7 @@ export default function AdminSearch() {
               <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📊 Bulk Upload via Excel</div>
                 <div style={{ fontSize: 12, color: '#64748b', background: '#fffbeb', padding: '10px 12px', borderRadius: 7, marginBottom: 14, border: '1px solid #fde68a' }}>
-                  Excel format: columns <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>regNumber</code> and optionally <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>value</code> (URL or data)
+                  Excel format: First column = <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>Reg No</code> — remaining columns are stored as data (e.g. Aptitude, Coding, Overall %)
                 </div>
                 <form onSubmit={uploadAdminBulk}>
                   <div style={{ marginBottom: 10 }}>
