@@ -97,17 +97,21 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
           const v = String(row[k]);
           return /^\d+(\.\d+)?%?$/.test(v.trim()); // match numbers and percentages
         });
+
+        // Build a combined value from all non-reg-number columns
+        const regCol = Object.keys(row)[0];
+        const dataFields = Object.entries(row)
+          .filter(([k]) => k !== regCol && !k.toLowerCase().includes('student') && !k.toLowerCase().includes('name'))
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(' | ');
+
         const value = String(
-          (labelKey ? row[labelKey] : null) ||
+          (labelKey && !labelKey.toLowerCase().includes('reg') && !labelKey.toLowerCase().includes('name') ? row[labelKey] : null) ||
           (numericKey ? row[numericKey] : null) ||
-          row.value || row.Value || row.data || row.Data ||
-          row.Score || row.score || row.Percentage || row.percentage ||
-          row.Marks || row.marks || row['Attendance (%)'] || row['Attendance(%)'] ||
-          row['attendance'] || row['Attendance'] ||
-          row['Performance'] || row['performance'] ||
+          dataFields ||
           ''
         ).trim();
-        console.log(`Row: regNumber=${regNumber}, labelKey=${labelKey}, numericKey=${numericKey}, value=${value}`);
+        console.log(`Row: regNumber=${regNumber}, value=${value}`);
         if (!regNumber) continue;
         const student = await Student.findOne({ regNumber });
         if (!student) { skipped++; errors.push(regNumber); continue; }
