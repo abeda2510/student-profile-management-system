@@ -141,6 +141,7 @@ export default function AdminSearch() {
     e.preventDefault();
     const finalLabel = adminBulkLabel === '__other__' ? '' : adminBulkLabel;
     if (!adminBulkFile || !finalLabel) return alert('Please select document type and file');
+    if (finalLabel === 'Semester Attendance') return alert('Please select a semester number (Sem 1–8)');
     setAdminBulkUploading(true); setAdminBulkResult(null);
     try {
       const fd = new FormData();
@@ -469,8 +470,13 @@ export default function AdminSearch() {
                 <form onSubmit={uploadAdminBulk}>
                   <div style={{ marginBottom: 10 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type *</label>
-                    <select value={adminBulkLabel.startsWith('__other__') ? 'Other' : adminBulkLabel}
-                      onChange={e => setAdminBulkLabel(e.target.value === 'Other' ? '__other__' : e.target.value)} required
+                    <select
+                      value={adminBulkLabel.startsWith('Semester Attendance') ? 'Semester Attendance' : adminBulkLabel.startsWith('__other__') ? 'Other' : adminBulkLabel}
+                      onChange={e => {
+                        if (e.target.value === 'Other') setAdminBulkLabel('__other__');
+                        else if (e.target.value === 'Semester Attendance') setAdminBulkLabel('Semester Attendance');
+                        else setAdminBulkLabel(e.target.value);
+                      }} required
                       style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
                       <option value="">-- Select Type --</option>
                       <option value="CRT Attendance">CRT Attendance</option>
@@ -478,7 +484,36 @@ export default function AdminSearch() {
                       <option value="Semester Attendance">Semester Attendance</option>
                       <option value="Other">Other</option>
                     </select>
-                    {(adminBulkLabel === '__other__' || (adminBulkLabel && !['CRT Attendance','CRT Performance','Semester Attendance','__other__',''].includes(adminBulkLabel))) && (
+
+                    {/* Semester number checkboxes — shown when Semester Attendance is selected */}
+                    {adminBulkLabel.startsWith('Semester Attendance') && (
+                      <div style={{ marginTop: 10, padding: '12px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 8, textTransform: 'uppercase' }}>Select Semester *</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {[1,2,3,4,5,6,7,8].map(sem => {
+                            const semLabel = `Semester Attendance - Sem ${sem}`;
+                            const checked = adminBulkLabel === semLabel;
+                            return (
+                              <label key={sem} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                padding: '5px 12px', borderRadius: 99, border: `1.5px solid ${checked ? '#1e40af' : '#93c5fd'}`,
+                                background: checked ? '#1e40af' : '#fff', color: checked ? '#fff' : '#1e40af',
+                                fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
+                                <input type="radio" name="semNum" value={semLabel}
+                                  checked={checked}
+                                  onChange={() => setAdminBulkLabel(semLabel)}
+                                  style={{ display: 'none' }} />
+                                Sem {sem}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {adminBulkLabel === 'Semester Attendance' && (
+                          <div style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>Please select a semester number above</div>
+                        )}
+                      </div>
+                    )}
+
+                    {(adminBulkLabel === '__other__' || (adminBulkLabel && !['CRT Attendance','CRT Performance','Semester Attendance','__other__',''].includes(adminBulkLabel) && !adminBulkLabel.startsWith('Semester Attendance'))) && (
                       <input value={adminBulkLabel === '__other__' ? '' : adminBulkLabel}
                         onChange={e => setAdminBulkLabel(e.target.value)} placeholder="Enter document type name..." required
                         style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: 8 }} />
