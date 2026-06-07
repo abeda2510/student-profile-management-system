@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 60000, // 60s timeout for Render free tier cold starts
+});
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
@@ -8,7 +11,7 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// viewUrl — kept for compatibility, proxy handles fl_inline stripping
+// viewUrl — kept for compatibility
 export function viewUrl(url) {
   return url;
 }

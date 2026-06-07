@@ -59,7 +59,7 @@ export default function AdminSearch() {
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const { data } = await api.get(`/dept-events${params}`);
       setDeptEvents(data);
-    } catch { alert('Failed to fetch events'); }
+    } catch (err) { alert('Failed to fetch events: ' + (err.response?.data?.message || err.message)); }
     setDeptFetching(false);
   };
 
@@ -70,12 +70,12 @@ export default function AdminSearch() {
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/excel${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `dept_events${deptEventYear ? '_' + deptEventYear : ''}.xlsx`; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Download failed'); }
+    } catch (err) { alert('Excel download failed: ' + err.message); }
     setDeptEventsLoading(false);
   };
 
@@ -86,12 +86,12 @@ export default function AdminSearch() {
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/zip${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `dept_events_docs${deptEventYear ? '_' + deptEventYear : ''}.zip`; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('ZIP download failed'); }
+    } catch (err) { alert('ZIP download failed: ' + err.message); }
     setDeptZipLoading(false);
   };
 
