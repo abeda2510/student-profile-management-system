@@ -86,7 +86,16 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
           row['Reg No'] || row['reg no'] || row['REGNUMBER'] || row['REG NUMBER'] ||
           Object.values(row)[0] || '' // fallback: use first column
         ).trim();
-        const value = String(row.value || row.Value || row.data || row.Data || row.Score || row.score || row.Percentage || row.percentage || row.Marks || row.marks || '').trim();
+        const value = String(
+          row.value || row.Value || row.data || row.Data ||
+          row.Score || row.score || row.Percentage || row.percentage ||
+          row.Marks || row.marks || row['Attendance (%)'] || row['Attendance(%)'] ||
+          row['attendance'] || row['Attendance'] || row['CRT Attendance'] ||
+          row['CRT Performance'] || row['Semester Attendance'] ||
+          row['Performance'] || row['performance'] ||
+          // Pick second column value if exists (first is reg number)
+          Object.values(row)[1] || ''
+        ).trim();
         if (!regNumber) continue;
         const student = await Student.findOne({ regNumber });
         if (!student) { skipped++; errors.push(regNumber); continue; }
