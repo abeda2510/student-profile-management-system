@@ -163,38 +163,48 @@ export default function AdminSearch() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-        throw new Error(err.message);
+        throw new Error(err.message || 'Upload failed');
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const contentType = response.headers.get('content-type') || '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop(); // keep incomplete line
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const msg = JSON.parse(line);
-            if (msg.status === 'done') {
-              setAdminBulkResult({ success: true, message: msg.message });
-              setAdminBulkFile(null);
-              setBulkProgress(null);
-              loadAdminDocTypes();
-            } else if (msg.status === 'error') {
-              setAdminBulkResult({ success: false, message: msg.message });
-              setBulkProgress(null);
-            } else if (msg.status === 'progress') {
-              setBulkProgress({ processed: msg.processed, total: msg.total, message: msg.message });
-            } else {
-              setBulkProgress({ message: msg.message });
-            }
-          } catch {}
+      // New backend: streaming NDJSON
+      if (contentType.includes('x-ndjson')) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const msg = JSON.parse(line);
+              if (msg.status === 'done') {
+                setAdminBulkResult({ success: true, message: msg.message || 'Upload complete!' });
+                setAdminBulkFile(null); setBulkProgress(null); loadAdminDocTypes();
+              } else if (msg.status === 'error') {
+                setAdminBulkResult({ success: false, message: msg.message || 'Upload failed' });
+                setBulkProgress(null);
+              } else if (msg.status === 'progress') {
+                setBulkProgress({ processed: msg.processed, total: msg.total, message: msg.message });
+              } else {
+                setBulkProgress({ message: msg.message || 'Processing...' });
+              }
+            } catch {}
+          }
         }
+      } else {
+        // Old backend: plain JSON response
+        const data = await response.json();
+        const msg = data.message || `Created ${data.created ?? '?'} records.`;
+        const cols = data.detectedColumns ? ` (Columns: ${data.detectedColumns.join(', ')})` : '';
+        setAdminBulkResult({ success: true, message: msg + cols });
+        setAdminBulkFile(null); setBulkProgress(null); loadAdminDocTypes();
       }
     } catch (err) {
       setAdminBulkResult({ success: false, message: err.message || 'Upload failed' });
