@@ -139,13 +139,14 @@ export default function AdminSearch() {
 
   const uploadAdminBulk = async (e) => {
     e.preventDefault();
-    if (!adminBulkFile || !adminBulkLabel) return;
+    const finalLabel = adminBulkLabel === '__other__' ? '' : adminBulkLabel;
+    if (!adminBulkFile || !finalLabel) return alert('Please select document type and file');
     setAdminBulkUploading(true); setAdminBulkResult(null);
     try {
       const fd = new FormData();
       fd.append('file', adminBulkFile);
       fd.append('docType', 'ADMIN_CUSTOM');
-      fd.append('label', adminBulkLabel);
+      fd.append('label', finalLabel);
       const { data } = await api.post('/documents/admin-bulk-meta', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setAdminBulkResult({ success: true, message: data.message });
       setAdminBulkFile(null); loadAdminDocTypes();
@@ -467,14 +468,21 @@ export default function AdminSearch() {
                 </div>
                 <form onSubmit={uploadAdminBulk}>
                   <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type / Title *</label>
-                    <input list="preset-doc-types-bulk" value={adminBulkLabel} onChange={e => setAdminBulkLabel(e.target.value)}
-                      placeholder="e.g. CRT Attendance Sem 5" required
-                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                    <datalist id="preset-doc-types-bulk">
-                      {PRESET_DOC_TYPES.map(t => <option key={t} value={t} />)}
-                      {adminDocTypes.map(t => <option key={t.label} value={t.label} />)}
-                    </datalist>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type *</label>
+                    <select value={adminBulkLabel.startsWith('__other__') ? 'Other' : adminBulkLabel}
+                      onChange={e => setAdminBulkLabel(e.target.value === 'Other' ? '__other__' : e.target.value)} required
+                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
+                      <option value="">-- Select Type --</option>
+                      <option value="CRT Attendance">CRT Attendance</option>
+                      <option value="CRT Performance">CRT Performance</option>
+                      <option value="Semester Attendance">Semester Attendance</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {(adminBulkLabel === '__other__' || (adminBulkLabel && !['CRT Attendance','CRT Performance','Semester Attendance','__other__',''].includes(adminBulkLabel))) && (
+                      <input value={adminBulkLabel === '__other__' ? '' : adminBulkLabel}
+                        onChange={e => setAdminBulkLabel(e.target.value)} placeholder="Enter document type name..." required
+                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: 8 }} />
+                    )}
                   </div>
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Excel / CSV File *</label>
