@@ -262,56 +262,93 @@ export default function FacultyDashboard() {
             {searchTab === 'docs' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {searchDocs.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13 }}>No documents.</div>}
-                {/* CRT Summary Section */}
+
+                {/* CRT Performance Card */}
                 {(() => {
                   const crtAttendance = searchDocs.find(d => d.label === 'CRT Attendance');
                   const crtOverall = searchDocs.find(d => d.label === 'CRT Performance - Overall %' || d.label === 'CRT Performance');
                   const crtSubDocs = searchDocs.filter(d => d.label?.startsWith('CRT Performance - ') && d.label !== 'CRT Performance - Overall %');
-                  const semAttendance = searchDocs.filter(d => /sem(ester)?\s*\d+\s*attendance/i.test(d.label));
-                  if (crtAttendance || crtOverall || crtSubDocs.length > 0 || semAttendance.length > 0) {
-                    return (
-                      <div style={{ background: '#fffbeb', borderRadius: 10, padding: '12px 14px', border: '1px solid #fde68a', marginBottom: 4 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: '#d97706', marginBottom: 10 }}>📊 CRT Performance</div>
-                        {crtOverall && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #fde68a', fontSize: 13 }}>
-                            <span style={{ color: '#92400e', fontWeight: 600 }}>Overall %</span>
-                            <span style={{ fontWeight: 700, color: '#0f172a' }}>{crtOverall.fileUrl || crtOverall.filename || '—'}</span>
-                          </div>
-                        )}
-                        {crtSubDocs.map(d => (
-                          <div key={d._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #fef3c7', fontSize: 13 }}>
-                            <span style={{ color: '#64748b' }}>{d.label.replace('CRT Performance - ', '')}</span>
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{d.fileUrl || d.filename || '—'}</span>
-                          </div>
-                        ))}
-                        {crtAttendance && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid #fde68a', marginTop: 6, fontSize: 13 }}>
-                            <span style={{ color: '#92400e', fontWeight: 600 }}>CRT Attendance</span>
-                            <span style={{ fontWeight: 700, color: '#0f172a' }}>{crtAttendance.fileUrl || crtAttendance.filename || '—'}</span>
-                          </div>
-                        )}
-                        {semAttendance.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            <div style={{ fontWeight: 700, fontSize: 12, color: '#d97706', marginBottom: 6 }}>Semester-wise Attendance</div>
-                            {semAttendance.map(d => (
-                              <div key={d._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #fef3c7', fontSize: 12 }}>
-                                <span style={{ color: '#64748b' }}>{d.label}</span>
-                                <span style={{ fontWeight: 600, color: '#0f172a' }}>{d.fileUrl || d.filename || '—'}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
+                  if (!crtAttendance && !crtOverall && crtSubDocs.length === 0) return null;
+                  return (
+                    <div style={{ background: '#fffbeb', borderRadius: 10, padding: '12px 14px', border: '1px solid #fde68a' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#d97706', marginBottom: 10 }}>📊 CRT Performance</div>
+                      {crtOverall && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #fde68a', fontSize: 13 }}>
+                          <span style={{ color: '#92400e', fontWeight: 600 }}>Overall %</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{crtOverall.fileUrl || crtOverall.filename || '—'}</span>
+                        </div>
+                      )}
+                      {crtSubDocs.map(d => (
+                        <div key={d._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #fef3c7', fontSize: 13 }}>
+                          <span style={{ color: '#64748b' }}>{d.label.replace('CRT Performance - ', '')}</span>
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{d.fileUrl || d.filename || '—'}</span>
+                        </div>
+                      ))}
+                      {crtAttendance && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid #fde68a', marginTop: 6, fontSize: 13 }}>
+                          <span style={{ color: '#92400e', fontWeight: 600 }}>CRT Attendance</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{crtAttendance.fileUrl || crtAttendance.filename || '—'}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
                 })()}
-                {searchDocs.filter(d => !d.label?.startsWith('CRT')).map(d => (
-                  <div key={d._id} style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div><span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700, marginRight: 8 }}>{d.docType}</span>{d.label || d.filename}</div>
-                    {(d.fileUrl || d.filepath) && <ViewButton url={d.fileUrl || d.filepath} />}
-                  </div>
-                ))}
+
+                {/* Semester-wise Attendance Card — shows only Attendance % per sem */}
+                {(() => {
+                  // Collect all sems that have any Semester Attendance data
+                  const semNums = [...new Set(
+                    searchDocs
+                      .filter(d => d.label?.startsWith('Semester Attendance - Sem '))
+                      .map(d => {
+                        const m = d.label.match(/Semester Attendance - Sem (\d+)/);
+                        return m ? parseInt(m[1]) : null;
+                      })
+                      .filter(Boolean)
+                  )].sort((a, b) => a - b);
+
+                  if (semNums.length === 0) return null;
+
+                  return (
+                    <div style={{ background: '#f0fdf4', borderRadius: 10, padding: '12px 14px', border: '1px solid #bbf7d0' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#059669', marginBottom: 10 }}>📅 Semester-wise Attendance</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
+                        {semNums.map(sem => {
+                          // Prefer "Attendance %" sub-column, fallback to combined value
+                          const pctDoc = searchDocs.find(d => d.label === `Semester Attendance - Sem ${sem} - Attendance %`);
+                          const combinedDoc = searchDocs.find(d => d.label === `Semester Attendance - Sem ${sem}`);
+                          const val = pctDoc
+                            ? (pctDoc.fileUrl || pctDoc.filename)
+                            : combinedDoc
+                              ? (combinedDoc.fileUrl || combinedDoc.filename)
+                              : null;
+                          // Extract just the percentage number if combined value
+                          let display = val || '—';
+                          if (!pctDoc && val) {
+                            const m = val.match(/Attendance\s*%[:\s]+([0-9.]+)/i);
+                            if (m) display = m[1] + '%';
+                          }
+                          return (
+                            <div key={sem} style={{ background: '#fff', borderRadius: 8, padding: '10px 12px', border: '1px solid #d1fae5', textAlign: 'center' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', marginBottom: 4 }}>Sem {sem}</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{display}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Other docs — hide all CRT and Semester Attendance entries (already shown above) */}
+                {searchDocs
+                  .filter(d => !d.label?.startsWith('CRT') && !d.label?.startsWith('Semester Attendance'))
+                  .map(d => (
+                    <div key={d._id} style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div><span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700, marginRight: 8 }}>{d.docType}</span>{d.label || d.filename}</div>
+                      {(d.fileUrl || d.filepath) && <ViewButton url={d.fileUrl || d.filepath} />}
+                    </div>
+                  ))}
               </div>
             )}
             {searchTab === 'achievements' && (
