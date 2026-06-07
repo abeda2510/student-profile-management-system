@@ -176,6 +176,8 @@ export default function SectionReport() {
   };
 
   const uniqueStudents = results ? [...new Map(results.map(r => [r.regNumber, r])).values()] : [];
+  // Derive actual column list from returned data (handles sub-column expansion)
+  const actualCols = results ? [...new Set(results.map(r => r.docType))] : selItems;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -204,39 +206,49 @@ export default function SectionReport() {
               </div>
             ))}
 
-            {/* Admin-uploaded document types */}
-            {adminDocTypes.length > 0 && (
-              <div style={{ marginBottom: 14, padding: '12px 16px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a22' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: '#d97706' }}>📂 Admin Documents</span>
-                  <button onClick={() => {
-                    const vals = adminDocTypes.map(t => t.label);
-                    const allSel = vals.every(v => selItems.includes(v));
-                    setSelItems(s => allSel ? s.filter(x => !vals.includes(x)) : [...new Set([...s, ...vals])]);
-                  }} style={{ fontSize: 11, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Select All</button>
+            {/* Admin-uploaded document types — show only parent labels (not sub-columns) */}
+            {adminDocTypes.length > 0 && (() => {
+              // Only show labels that are NOT sub-columns (i.e. don't have a parent label also in the list)
+              const allLabels = adminDocTypes.map(t => t.label);
+              const parentTypes = adminDocTypes.filter(t => !allLabels.some(l => l !== t.label && t.label.startsWith(l + ' - ')));
+              // Sum count for parent = count of all its sub-labels + itself
+              const parentWithCount = parentTypes.map(t => {
+                const subCount = adminDocTypes.filter(x => x.label.startsWith(t.label + ' - ')).reduce((a, x) => a + x.count, 0);
+                return { ...t, totalCount: subCount > 0 ? subCount : t.count };
+              });
+              return (
+                <div style={{ marginBottom: 14, padding: '12px 16px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a22' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#d97706' }}>📂 Admin Documents</span>
+                    <button onClick={() => {
+                      const vals = parentWithCount.map(t => t.label);
+                      const allSel = vals.every(v => selItems.includes(v));
+                      setSelItems(s => allSel ? s.filter(x => !vals.includes(x)) : [...new Set([...s, ...vals])]);
+                    }} style={{ fontSize: 11, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Select All</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {parentWithCount.map(t => (
+                      <span key={t.label} onClick={() => toggleItem(t.label)} style={chip(selItems.includes(t.label), '#d97706', '#fffbeb')}>
+                        {t.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({t.totalCount})</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {adminDocTypes.map(t => (
-                    <span key={t.label} onClick={() => toggleItem(t.label)} style={chip(selItems.includes(t.label), '#d97706', '#fffbeb')}>
-                      {t.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({t.count})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Results Table */}
           {results && (
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <div style={{ padding: '14px 20px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
-                {uniqueStudents.length} students fetched &nbsp;·&nbsp; {selItems.length} doc type{selItems.length !== 1 ? 's' : ''}
+                {uniqueStudents.length} students fetched &nbsp;·&nbsp; {actualCols.length} doc type{actualCols.length !== 1 ? 's' : ''}
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#059669' }}>
-                      {['#','Reg No','Name','Dept','Section', ...selItems].map(h => (
+                      {['#','Reg No','Name','Dept','Section', ...actualCols].map(h => (
                         <th key={h} style={{ padding: '10px 14px', color: '#fff', fontWeight: 700, textAlign: 'left', fontSize: 11, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -253,7 +265,7 @@ export default function SectionReport() {
                           <td style={{ padding: '9px 14px' }}>{r.name}</td>
                           <td style={{ padding: '9px 14px' }}>{r.branch}</td>
                           <td style={{ padding: '9px 14px' }}>{r.section}</td>
-                          {selItems.map(dt => {
+                          {actualCols.map(dt => {
                             const val = docMap[dt];
                             const ok = val && val !== '—' && val !== '-';
                             return (

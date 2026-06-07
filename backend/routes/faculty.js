@@ -143,7 +143,7 @@ async function fetchCodeChefStats(username) {
       }
     });
 
-    // Stars: appears as "1★username" in HTML - digit before ★ (Unicode \u2605)
+    // Stars: appears as "1?username" in HTML - digit before ? (Unicode \u2605)
     const starsMatch = html.match(/([1-7])\u2605/) || html.match(/([1-7])&#9733;/);
     const stars = starsMatch ? parseInt(starsMatch[1]) : null;
 
@@ -408,7 +408,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
 
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
 
-  // For admin doc types, expand to sub-columns (CRT Performance → CRT Performance - Aptitude, etc.)
+  // For admin doc types, expand to sub-columns (CRT Performance ? CRT Performance - Aptitude, etc.)
   const Document = require('../models/Document');
   const expandedDocTypes = [];
   for (const dt of docTypes) {
@@ -454,7 +454,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
     const sheetName = `${group.branch}-${group.section}`.substring(0, 31);
     const ws = wb.addWorksheet(sheetName);
 
-    const totalCols = 5 + docTypes.length + 1; // S.No,RegNo,Name,Dept,Sec + docs + Status
+    const totalCols = 5 + finalDocTypes.length + 1; // S.No,RegNo,Name,Dept,Sec + docs + Status
     const lastColLetter = totalCols <= 26
       ? String.fromCharCode(64 + totalCols)
       : 'A' + String.fromCharCode(64 + totalCols - 26);
@@ -481,7 +481,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
     // Row 4: column headers
     const headers = [
       'S.No', 'Reg No', 'Name', 'Department', 'Section',
-      ...docTypes.map(d => DOC_LABELS[d] || d),
+      ...finalDocTypes.map(d => DOC_LABELS[d] || d),
       'Status',
     ];
     const hRow = ws.addRow(headers);
@@ -501,18 +501,18 @@ router.get('/section-report/excel', protect, async (req, res) => {
     ws.getColumn(3).width = 26;
     ws.getColumn(4).width = 13;
     ws.getColumn(5).width = 10;
-    docTypes.forEach((_, i) => { ws.getColumn(6 + i).width = 28; });
-    ws.getColumn(6 + docTypes.length).width = 14;
+    finalDocTypes.forEach((_, i) => { ws.getColumn(6 + i).width = 28; });
+    ws.getColumn(6 + finalDocTypes.length).width = 14;
 
     // Data rows (starting row 5)
     group.rows.forEach((r, i) => {
-      const filled = docTypes.filter(dt => r[dt] && r[dt] !== '').length;
-      const total = docTypes.length;
+      const filled = finalDocTypes.filter(dt => r[dt] && r[dt] !== '').length;
+      const total = finalDocTypes.length;
       const status = filled === total ? 'Complete' : `${filled}/${total} filled`;
 
       const rowData = [
         i + 1, r.regNumber, r.name, r.branch, r.section,
-        ...docTypes.map(dt => r[dt] || 'Not filled'),
+        ...finalDocTypes.map(dt => r[dt] || 'Not filled'),
         status,
       ];
       const row = ws.addRow(rowData);
@@ -526,7 +526,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
         };
         // Make URL cells hyperlinks
         const cellVal = String(cell.value || '');
-        if (colNumber >= 6 && colNumber <= 5 + docTypes.length && cellVal.startsWith('http')) {
+        if (colNumber >= 6 && colNumber <= 5 + finalDocTypes.length && cellVal.startsWith('http')) {
           cell.value = { text: 'View Document', hyperlink: cellVal };
           cell.font = { color: { argb: 'FF1e40af' }, size: 10, underline: true };
         }
@@ -548,7 +548,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
     ['Departments', branches.length ? branches.join(', ') : 'All'],
     ['Sections', sections.length ? sections.join(', ') : 'All'],
     ['Academic Year', admissionYear || 'All'],
-    ['Document Types', docTypes.map(d => DOC_LABELS[d] || d).join(', ')],
+    ['Document Types', finalDocTypes.map(d => DOC_LABELS[d] || d).join(', ')],
     ['Total Students', rows.length],
     ['Generated On', new Date().toLocaleString()],
   ].forEach(([k, v]) => {
