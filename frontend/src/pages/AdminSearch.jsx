@@ -457,52 +457,9 @@ export default function AdminSearch() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={{ maxWidth: 600 }}>
 
-              {/* Single student upload */}
-              <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📎 Upload for Single Student</div>
-                <form onSubmit={uploadAdminDoc}>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Document Type / Title *</label>
-                    <input list="preset-doc-types" value={adminDocLabel} onChange={e => setAdminDocLabel(e.target.value)}
-                      placeholder="e.g. CRT Attendance, Semester Attendance" required
-                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                    <datalist id="preset-doc-types">
-                      {PRESET_DOC_TYPES.map(t => <option key={t} value={t} />)}
-                      {adminDocTypes.map(t => <option key={t.label} value={t.label} />)}
-                    </datalist>
-                  </div>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Registration Number *</label>
-                    <input value={adminDocRegNumber} onChange={e => setAdminDocRegNumber(e.target.value)}
-                      placeholder="e.g. 231FA04001" required
-                      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>File (Optional)</label>
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Max 2MB</span>
-                    </div>
-                    <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e => {
-                      const f = e.target.files[0];
-                      if (f && f.size > 2 * 1024 * 1024) { alert('Max 2MB'); e.target.value = ''; return; }
-                      setAdminDocFile(f);
-                    }} style={{ fontSize: 12, padding: '8px', border: '1.5px solid #d1d5db', borderRadius: 8, width: '100%', boxSizing: 'border-box', background: '#fff' }} />
-                  </div>
-                  <button type="submit" disabled={adminDocUploading}
-                    style={{ background: adminDocUploading ? '#94a3b8' : '#d97706', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
-                    {adminDocUploading ? 'Uploading...' : '📤 Upload'}
-                  </button>
-                  {adminDocResult && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 7, background: adminDocResult.success ? '#d1fae5' : '#fee2e2', color: adminDocResult.success ? '#065f46' : '#991b1b', fontSize: 12, fontWeight: 600 }}>
-                      {adminDocResult.message}
-                    </div>
-                  )}
-                </form>
-              </div>
-
-              {/* Bulk upload via Excel */}
+              {/* Bulk upload via Excel only */}
               <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📊 Bulk Upload via Excel</div>
                 <div style={{ fontSize: 12, color: '#64748b', background: '#fffbeb', padding: '10px 12px', borderRadius: 7, marginBottom: 14, border: '1px solid #fde68a' }}>
