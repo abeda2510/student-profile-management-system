@@ -137,21 +137,69 @@ export default function AdminSearch() {
     setAdminDocUploading(false);
   };
 
+  const [bulkProgress, setBulkProgress] = useState(null);
+
   const uploadAdminBulk = async (e) => {
     e.preventDefault();
     const finalLabel = adminBulkLabel === '__other__' ? '' : adminBulkLabel;
     if (!adminBulkFile || !finalLabel) return alert('Please select document type and file');
     if (finalLabel === 'Semester Attendance') return alert('Please select a semester number (Sem 1–8)');
-    setAdminBulkUploading(true); setAdminBulkResult(null);
+    setAdminBulkUploading(true); setAdminBulkResult(null); setBulkProgress(null);
     try {
       const fd = new FormData();
       fd.append('file', adminBulkFile);
       fd.append('docType', 'ADMIN_CUSTOM');
       fd.append('label', finalLabel);
-      const { data } = await api.post('/documents/admin-bulk-meta', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setAdminBulkResult({ success: true, message: data.message + (data.detectedColumns ? ` (Columns found: ${data.detectedColumns.join(', ')})` : '') });
-      setAdminBulkFile(null); loadAdminDocTypes();
-    } catch (err) { setAdminBulkResult({ success: false, message: err.response?.data?.message || 'Upload failed' }); }
+
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+
+      // Use fetch for streaming NDJSON response
+      const response = await fetch(`${baseUrl}/documents/admin-bulk-meta`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(err.message);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const msg = JSON.parse(line);
+            if (msg.status === 'done') {
+              setAdminBulkResult({ success: true, message: msg.message });
+              setAdminBulkFile(null);
+              setBulkProgress(null);
+              loadAdminDocTypes();
+            } else if (msg.status === 'error') {
+              setAdminBulkResult({ success: false, message: msg.message });
+              setBulkProgress(null);
+            } else if (msg.status === 'progress') {
+              setBulkProgress({ processed: msg.processed, total: msg.total, message: msg.message });
+            } else {
+              setBulkProgress({ message: msg.message });
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      setAdminBulkResult({ success: false, message: err.message || 'Upload failed' });
+      setBulkProgress(null);
+    }
     setAdminBulkUploading(false);
   };
 
@@ -528,6 +576,26 @@ export default function AdminSearch() {
                     style={{ background: adminBulkUploading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     {adminBulkUploading ? 'Processing...' : '📥 Bulk Upload'}
                   </button>
+                  {/* Live progress bar */}
+                  {adminBulkUploading && bulkProgress && (
+                    <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1e40af', marginBottom: 6 }}>{bulkProgress.message}</div>
+                      {bulkProgress.total > 0 && (
+                        <div style={{ background: '#dbeafe', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%', borderRadius: 99, background: '#1e40af',
+                            width: `${Math.round((bulkProgress.processed / bulkProgress.total) * 100)}%`,
+                            transition: 'width 0.3s'
+                          }} />
+                        </div>
+                      )}
+                      {bulkProgress.total > 0 && (
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                          {bulkProgress.processed} / {bulkProgress.total} rows
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {adminBulkResult && (
                     <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 7, background: adminBulkResult.success ? '#d1fae5' : '#fee2e2', color: adminBulkResult.success ? '#065f46' : '#991b1b', fontSize: 12, fontWeight: 600 }}>
                       {adminBulkResult.message}

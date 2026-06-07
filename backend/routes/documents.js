@@ -58,79 +58,110 @@ router.post('/admin-upload', protect, adminOnly, uploadDoc.single('file'), async
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// Admin: bulk upload documents from Excel — assigns metadata (no file) to multiple students
+// Admin: bulk upload documents from Excel — handles unlimited rows via chunked streaming
 router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
   try {
     const XLSX = require('xlsx');
     const multer = require('multer');
-    const upload = multer({ storage: multer.memoryStorage() }).single('file');
+    // Allow up to 500MB files
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }).single('file');
+
     upload(req, res, async (err) => {
       if (err || !req.file) return res.status(400).json({ message: 'No file uploaded' });
       const { docType, label } = req.body;
       if (!docType || !label) return res.status(400).json({ message: 'docType and label required' });
 
-      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      if (!rows.length) return res.status(400).json({ message: 'Excel file is empty or has no data rows' });
-      
-      // Log detected columns to help debug
-      const detectedCols = Object.keys(rows[0]);
-      console.log('Admin bulk upload - detected columns:', detectedCols, '| Total rows:', rows.length);
+      // Stream NDJSON progress back — keeps connection alive for huge files
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.flushHeaders();
 
-      let created = 0, skipped = 0, errors = [];
-      for (const row of rows) {
-        // Accept many possible column names for reg number
-        const regNumber = String(
-          row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] ||
-          row['Registration Number'] || row['registration_number'] || row['RegNo'] ||
-          row['Reg No'] || row['reg no'] || row['REGNUMBER'] || row['REG NUMBER'] ||
-          Object.values(row)[0] || '' // fallback: use first column
-        ).trim();
-        // Smart value extraction:
-        // 1. Look for column matching the label name (e.g. "CRT Performance")
-        // 2. Then try common data column names
-        // 3. Do NOT use second column as fallback (could be student name)
-        // Build a combined value from all non-reg-number, non-name columns
-        const regCol = Object.keys(row)[0];
-        const dataEntries = Object.entries(row)
-          .filter(([k]) => k !== regCol && !k.toLowerCase().includes('student') && !k.toLowerCase().includes('name'));
+      const sendProgress = (data) => {
+        try { res.write(JSON.stringify(data) + '\n'); } catch {}
+      };
 
-        // Store combined value
-        const combinedValue = dataEntries.map(([k, v]) => `${k}: ${v}`).join(' | ');
-        const value = combinedValue || '';
-        console.log(`Row: regNumber=${regNumber}, value=${value}`);
-        if (!regNumber) continue;
-        const student = await Student.findOne({ regNumber });
-        if (!student) { skipped++; errors.push(regNumber); continue; }
-        
-        // Delete old records for this student + label
-        await Document.deleteMany({ regNumber, docType, label, uploadedBy: 'admin' });
-        
-        // Store combined record
-        await Document.create({ 
-          student: student._id, regNumber, docType, label,
-          fileUrl: value || null,
-          filename: value || null,
-          uploadedBy: 'admin' 
-        });
-        
-        // Also store each column as a sub-document: label = "CRT Performance - Aptitude"
-        for (const [colName, colVal] of dataEntries) {
-          const subLabel = `${label} - ${colName}`;
-          await Document.deleteMany({ regNumber, docType: 'ADMIN_CUSTOM', label: subLabel, uploadedBy: 'admin' });
-          await Document.create({
-            student: student._id, regNumber, docType: 'ADMIN_CUSTOM', label: subLabel,
-            fileUrl: String(colVal), filename: String(colVal), uploadedBy: 'admin'
-          });
+      try {
+        // Parse Excel
+        sendProgress({ status: 'parsing', message: 'Parsing Excel file...' });
+        const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        if (!rows.length) { sendProgress({ status: 'error', message: 'Excel file is empty' }); return res.end(); }
+
+        const detectedCols = Object.keys(rows[0]);
+        const totalRows = rows.length;
+        sendProgress({ status: 'parsed', message: `Found ${totalRows} rows, columns: ${detectedCols.join(', ')}`, totalRows, detectedColumns: detectedCols });
+
+        // Parse all rows into structured objects
+        const parsed = [];
+        for (const row of rows) {
+          const regNumber = String(
+            row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] ||
+            row['Registration Number'] || row['registration_number'] || row['RegNo'] ||
+            row['Reg No'] || row['reg no'] || row['REGNUMBER'] || row['REG NUMBER'] ||
+            Object.values(row)[0] || ''
+          ).trim();
+          if (!regNumber) continue;
+          const regCol = Object.keys(row)[0];
+          const dataEntries = Object.entries(row)
+            .filter(([k]) => k !== regCol && !k.toLowerCase().includes('student') && !k.toLowerCase().includes('name'))
+            .map(([k, v]) => [k, String(v)]);
+          const combinedValue = dataEntries.map(([k, v]) => `${k}: ${v}`).join(' | ');
+          parsed.push({ regNumber, combinedValue, dataEntries });
         }
-        created++;
+
+        // Get distinct sub-labels for bulk delete
+        const subLabelSet = new Set();
+        parsed.forEach(({ dataEntries }) => dataEntries.forEach(([colName]) => subLabelSet.add(`${label} - ${colName}`)));
+        const subLabels = [...subLabelSet];
+
+        const BATCH = 500; // process 500 students at a time
+        let totalCreated = 0, totalSkipped = 0, allErrors = [];
+
+        for (let i = 0; i < parsed.length; i += BATCH) {
+          const chunk = parsed.slice(i, i + BATCH);
+          const chunkRegs = chunk.map(p => p.regNumber);
+
+          sendProgress({ status: 'progress', message: `Processing rows ${i + 1}–${Math.min(i + BATCH, parsed.length)} of ${parsed.length}...`, processed: i, total: parsed.length });
+
+          // Fetch students for this batch
+          const students = await Student.find({ regNumber: { $in: chunkRegs } }).select('_id regNumber').lean();
+          const studentMap = {};
+          students.forEach(s => { studentMap[s.regNumber] = s._id; });
+
+          // Bulk delete old docs for this batch
+          await Document.deleteMany({ regNumber: { $in: chunkRegs }, uploadedBy: 'admin', label });
+          if (subLabels.length) {
+            await Document.deleteMany({ regNumber: { $in: chunkRegs }, uploadedBy: 'admin', label: { $in: subLabels } });
+          }
+
+          // Build bulk write ops
+          const toInsert = [];
+          for (const { regNumber, combinedValue, dataEntries } of chunk) {
+            const studentId = studentMap[regNumber];
+            if (!studentId) { totalSkipped++; allErrors.push(regNumber); continue; }
+
+            toInsert.push({ student: studentId, regNumber, docType, label, fileUrl: combinedValue || null, filename: combinedValue || null, uploadedBy: 'admin' });
+            for (const [colName, colVal] of dataEntries) {
+              toInsert.push({ student: studentId, regNumber, docType: 'ADMIN_CUSTOM', label: `${label} - ${colName}`, fileUrl: colVal, filename: colVal, uploadedBy: 'admin' });
+            }
+            totalCreated++;
+          }
+
+          if (toInsert.length) await Document.insertMany(toInsert, { ordered: false });
+        }
+
+        sendProgress({
+          status: 'done',
+          message: `Done! Created ${totalCreated} records. ${totalSkipped} reg numbers not found.${allErrors.length ? ' Not found: ' + allErrors.slice(0, 10).join(', ') + (allErrors.length > 10 ? `... and ${allErrors.length - 10} more` : '') : ''}`,
+          created: totalCreated,
+          skipped: totalSkipped,
+          detectedColumns: detectedCols,
+          totalRows,
+        });
+      } catch (innerErr) {
+        sendProgress({ status: 'error', message: innerErr.message });
       }
-      res.json({
-        message: `Created ${created} records. ${skipped} reg numbers not found.${errors.length ? ' Not found: ' + errors.slice(0,5).join(', ') + (errors.length > 5 ? '...' : '') : ''}`,
-        created, skipped,
-        detectedColumns: detectedCols,
-        totalRows: rows.length
-      });
+      res.end();
     });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
