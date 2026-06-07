@@ -305,8 +305,18 @@ router.get('/section-report', protect, async (req, res) => {
   const docTypes = [].concat(req.query.docType || []).filter(Boolean);
   if (!docTypes.length) return res.status(400).json({ message: 'Select at least one document type' });
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  
+  // Expand admin doc types to sub-columns
+  const Document = require('../models/Document');
+  const expandedDocTypes = [];
+  for (const dt of docTypes) {
+    const subLabels = await Document.distinct('label', { uploadedBy: 'admin', label: { $regex: `^${dt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} - ` } });
+    if (subLabels.length > 0) { subLabels.sort().forEach(sl => expandedDocTypes.push(sl)); }
+    else { expandedDocTypes.push(dt); }
+  }
+  
   const results = [];
-  for (const st of students) for (const dt of docTypes) results.push(await getStudentDocData(st, dt));
+  for (const st of students) for (const dt of expandedDocTypes) results.push(await getStudentDocData(st, dt));
   res.json(results);
 });
 
@@ -398,11 +408,28 @@ router.get('/section-report/excel', protect, async (req, res) => {
 
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
 
+  // For admin doc types, expand to sub-columns (CRT Performance → CRT Performance - Aptitude, etc.)
+  const Document = require('../models/Document');
+  const expandedDocTypes = [];
+  for (const dt of docTypes) {
+    // Check if this admin label has sub-documents
+    const subLabels = await Document.distinct('label', {
+      uploadedBy: 'admin',
+      label: { $regex: `^${dt} - ` }
+    });
+    if (subLabels.length > 0) {
+      subLabels.sort().forEach(sl => expandedDocTypes.push(sl));
+    } else {
+      expandedDocTypes.push(dt);
+    }
+  }
+  const finalDocTypes = expandedDocTypes.length > 0 ? expandedDocTypes : docTypes;
+
   // One flat row per student
   const rows = [];
   for (const st of students) {
     const row = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section };
-    for (const dt of docTypes) {
+    for (const dt of finalDocTypes) {
       const r = await getStudentDocData(st, dt);
       row[dt] = r.data && r.data !== '—' ? r.data : '';
     }
