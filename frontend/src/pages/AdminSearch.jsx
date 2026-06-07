@@ -142,7 +142,8 @@ export default function AdminSearch() {
   const uploadAdminBulk = async (e) => {
     e.preventDefault();
     const finalLabel = adminBulkLabel === '__other__' ? '' : adminBulkLabel;
-    if (!adminBulkFile || !finalLabel) return alert('Please select document type and file');
+    if (!adminBulkFile) return alert('Please choose an Excel file');
+    if (!finalLabel) return alert('Please select a document type');
     if (finalLabel === 'Semester Attendance') return alert('Please select a semester number (Sem 1–8)');
     setAdminBulkUploading(true); setAdminBulkResult(null); setBulkProgress(null);
     try {
