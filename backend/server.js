@@ -35,29 +35,29 @@ const proxyHandler = async (req, res) => {
     res.status(500).send('Failed: ' + err.message);
   }
 };
-app.get('/proxy-pdf', proxyHandler);
+app.get('/api/spm/proxy-pdf', proxyHandler);
 
 // Rate limiting
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false, message: { message: 'Too many requests, please try again later.' } });
-app.use('/api/', limiter);
+app.use('/api/spm/', limiter);
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { message: 'Too many login attempts, please try again later.' } });
-app.use('/api/auth/', authLimiter);
+app.use('/api/spm/auth/', authLimiter);
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/auth',                require('./routes/auth'));
-app.use('/api/students',            require('./routes/students'));
-app.use('/api/documents',           require('./routes/documents'));
-app.use('/api/achievements',        require('./routes/achievements'));
-app.use('/api/faculty',             require('./routes/faculty'));
-app.use('/api/faculty-achievements',require('./routes/facultyAchievements'));
-app.use('/api/dept-events',         require('./routes/deptEvents'));
-app.use('/api/leetcode',            require('./routes/leetcode'));
-app.use('/api/ai',                  require('./routes/ai'));
+app.use('/api/spm/auth',                require('./routes/auth'));
+app.use('/api/spm/students',            require('./routes/students'));
+app.use('/api/spm/documents',           require('./routes/documents'));
+app.use('/api/spm/achievements',        require('./routes/achievements'));
+app.use('/api/spm/faculty',             require('./routes/faculty'));
+app.use('/api/spm/faculty-achievements',require('./routes/facultyAchievements'));
+app.use('/api/spm/dept-events',         require('./routes/deptEvents'));
+app.use('/api/spm/leetcode',            require('./routes/leetcode'));
+app.use('/api/spm/ai',                  require('./routes/ai'));
 
 // Multer file size error handler
 app.use((err, req, res, next) => {

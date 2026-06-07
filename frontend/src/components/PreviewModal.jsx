@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const BACKEND = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/spm';
+const PROXY_PDF = `${BACKEND}/proxy-pdf`;
 
 function isRawPdf(url) {
   return url && url.includes('/raw/upload/');
@@ -13,7 +14,7 @@ function PdfViewer({ url }) {
 
   useEffect(() => {
     setSrc(null); setErr(false); setLoading(true);
-    const proxyUrl = `${BACKEND}/proxy-pdf?url=${encodeURIComponent(url)}`;
+    const proxyUrl = `${PROXY_PDF}?url=${encodeURIComponent(url)}`;
     console.log('Fetching PDF via proxy:', proxyUrl);
     fetch(proxyUrl)
       .then(r => {
@@ -57,7 +58,7 @@ export function PreviewModal({ url, onClose }) {
     try {
       const isCloudinary = url.includes('res.cloudinary.com');
       const fetchUrl = isCloudinary
-        ? `${BACKEND}/proxy-pdf?url=${encodeURIComponent(url)}`
+        ? `${PROXY_PDF}?url=${encodeURIComponent(url)}`
         : url;
       const res = await fetch(fetchUrl);
       if (!res.ok) throw new Error('fetch failed');
