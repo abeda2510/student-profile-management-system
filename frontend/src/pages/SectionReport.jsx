@@ -230,36 +230,44 @@ export default function SectionReport() {
           {results && (
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <div style={{ padding: '14px 20px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
-                {uniqueStudents.length} students fetched &nbsp;·&nbsp; {results.length} records
+                {uniqueStudents.length} students fetched &nbsp;·&nbsp; {selItems.length} doc type{selItems.length !== 1 ? 's' : ''}
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#059669' }}>
-                      {['#','Reg No','Name','Dept','Section','Document','Data','Status'].map(h => (
+                      {['#','Reg No','Name','Dept','Section', ...selItems].map(h => (
                         <th key={h} style={{ padding: '10px 14px', color: '#fff', fontWeight: 700, textAlign: 'left', fontSize: 11, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {results.map((r, i) => (
-                      <tr key={`${r.regNumber}-${r.docType}-${i}`} style={{ background: i%2===0?'#fff':'#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '9px 14px', color: '#94a3b8' }}>{i+1}</td>
-                        <td style={{ padding: '9px 14px', fontWeight: 700, color: '#1e40af' }}>{r.regNumber}</td>
-                        <td style={{ padding: '9px 14px' }}>{r.name}</td>
-                        <td style={{ padding: '9px 14px' }}>{r.branch}</td>
-                        <td style={{ padding: '9px 14px' }}>{r.section}</td>
-                        <td style={{ padding: '9px 14px', color: '#64748b', fontSize: 12 }}>{r.docType}</td>
-                        <td style={{ padding: '9px 14px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {r.data && r.data !== '-' ? r.data : <span style={{ color: '#94a3b8' }}>-</span>}
-                        </td>
-                        <td style={{ padding: '9px 14px' }}>
-                          <span style={{ background: r.data && r.data !== '-' ? '#d1fae5' : '#fee2e2', color: r.data && r.data !== '-' ? '#065f46' : '#991b1b', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>
-                            {r.data && r.data !== '-' ? 'Available' : 'Missing'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {uniqueStudents.map((r, i) => {
+                      // Build a map of docType → data for this student
+                      const docMap = {};
+                      results.filter(x => x.regNumber === r.regNumber).forEach(x => { docMap[x.docType] = x.data; });
+                      return (
+                        <tr key={r.regNumber} style={{ background: i%2===0?'#fff':'#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '9px 14px', color: '#94a3b8' }}>{i+1}</td>
+                          <td style={{ padding: '9px 14px', fontWeight: 700, color: '#1e40af' }}>{r.regNumber}</td>
+                          <td style={{ padding: '9px 14px' }}>{r.name}</td>
+                          <td style={{ padding: '9px 14px' }}>{r.branch}</td>
+                          <td style={{ padding: '9px 14px' }}>{r.section}</td>
+                          {selItems.map(dt => {
+                            const val = docMap[dt];
+                            const ok = val && val !== '—' && val !== '-';
+                            return (
+                              <td key={dt} style={{ padding: '9px 14px' }}>
+                                {ok
+                                  ? <span style={{ fontWeight: 600, color: '#0f172a' }}>{val}</span>
+                                  : <span style={{ color: '#94a3b8' }}>—</span>
+                                }
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
