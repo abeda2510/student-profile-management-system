@@ -148,7 +148,7 @@ export default function AdminSearch() {
       fd.append('docType', 'ADMIN_CUSTOM');
       fd.append('label', finalLabel);
       const { data } = await api.post('/documents/admin-bulk-meta', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setAdminBulkResult({ success: true, message: data.message });
+      setAdminBulkResult({ success: true, message: data.message + (data.detectedColumns ? ` (Columns found: ${data.detectedColumns.join(', ')})` : '') });
       setAdminBulkFile(null); loadAdminDocTypes();
     } catch (err) { setAdminBulkResult({ success: false, message: err.response?.data?.message || 'Upload failed' }); }
     setAdminBulkUploading(false);

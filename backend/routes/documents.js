@@ -71,19 +71,35 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
 
       const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      if (!rows.length) return res.status(400).json({ message: 'Excel file is empty or has no data rows' });
+      
+      // Log detected columns to help debug
+      const detectedCols = Object.keys(rows[0]);
+      console.log('Admin bulk upload - detected columns:', detectedCols, '| Total rows:', rows.length);
 
-      let created = 0, skipped = 0;
+      let created = 0, skipped = 0, errors = [];
       for (const row of rows) {
-        const regNumber = String(row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] || '').trim();
-        const value = String(row.value || row.Value || row.data || row.Data || '').trim();
+        // Accept many possible column names for reg number
+        const regNumber = String(
+          row.regNumber || row.RegNumber || row['Reg Number'] || row['reg_number'] ||
+          row['Registration Number'] || row['registration_number'] || row['RegNo'] ||
+          row['Reg No'] || row['reg no'] || row['REGNUMBER'] || row['REG NUMBER'] ||
+          Object.values(row)[0] || '' // fallback: use first column
+        ).trim();
+        const value = String(row.value || row.Value || row.data || row.Data || row.Score || row.score || row.Percentage || row.percentage || row.Marks || row.marks || '').trim();
         if (!regNumber) continue;
         const student = await Student.findOne({ regNumber });
-        if (!student) { skipped++; continue; }
+        if (!student) { skipped++; errors.push(regNumber); continue; }
         await Document.deleteMany({ regNumber, docType, label, uploadedBy: 'admin' });
         await Document.create({ student: student._id, regNumber, docType, label, fileUrl: value || null, uploadedBy: 'admin' });
         created++;
       }
-      res.json({ message: `Created ${created} records. ${skipped} reg numbers not found.`, created, skipped });
+      res.json({
+        message: `Created ${created} records. ${skipped} reg numbers not found.${errors.length ? ' Not found: ' + errors.slice(0,5).join(', ') + (errors.length > 5 ? '...' : '') : ''}`,
+        created, skipped,
+        detectedColumns: detectedCols,
+        totalRows: rows.length
+      });
     });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
