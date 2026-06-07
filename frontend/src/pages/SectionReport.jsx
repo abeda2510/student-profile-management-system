@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import api from '../api';
 
 const DOC_GROUPS = [
@@ -139,7 +139,7 @@ export default function SectionReport() {
     setXlLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
       const params = new URLSearchParams();
       Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
       selItems.forEach(d => params.append('docType', d));
@@ -158,7 +158,7 @@ export default function SectionReport() {
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
       const params = new URLSearchParams();
       Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
       certTypes.forEach(d => params.append('activityTypes', d));

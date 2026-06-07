@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 60000, // 60s timeout for Render free tier cold starts
+  baseURL: import.meta.env.VITE_API_URL || '/api/spm',
+  timeout: 60000,
 });
 
 api.interceptors.request.use(config => {

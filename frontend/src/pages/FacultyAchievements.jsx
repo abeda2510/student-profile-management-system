@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
@@ -86,7 +86,7 @@ export default function FacultyAchievements() {
     setXlLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
       const res = await fetch(`${baseUrl}/achievements/faculty-report/excel?${buildParams()}`, { headers: { Authorization: `Bearer ${token}` } });
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -100,7 +100,7 @@ export default function FacultyAchievements() {
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
       const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${buildParams()}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: 'Server error' }));
