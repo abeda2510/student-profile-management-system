@@ -91,8 +91,15 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
         // 2. Then try common data column names
         // 3. Do NOT use second column as fallback (could be student name)
         const labelKey = Object.keys(row).find(k => k.toLowerCase().includes(label.toLowerCase()) || label.toLowerCase().includes(k.toLowerCase()));
+        // Also try to find any numeric/percentage column that isn't the reg number
+        const numericKey = Object.keys(row).find(k => {
+          if (k === Object.keys(row)[0]) return false; // skip first col (reg number)
+          const v = String(row[k]);
+          return /^\d+(\.\d+)?%?$/.test(v.trim()); // match numbers and percentages
+        });
         const value = String(
           (labelKey ? row[labelKey] : null) ||
+          (numericKey ? row[numericKey] : null) ||
           row.value || row.Value || row.data || row.Data ||
           row.Score || row.score || row.Percentage || row.percentage ||
           row.Marks || row.marks || row['Attendance (%)'] || row['Attendance(%)'] ||
@@ -100,6 +107,7 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
           row['Performance'] || row['performance'] ||
           ''
         ).trim();
+        console.log(`Row: regNumber=${regNumber}, labelKey=${labelKey}, numericKey=${numericKey}, value=${value}`);
         if (!regNumber) continue;
         const student = await Student.findOne({ regNumber });
         if (!student) { skipped++; errors.push(regNumber); continue; }
