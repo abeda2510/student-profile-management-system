@@ -190,6 +190,22 @@ router.get('/:regNumber', protect, facultyOrAdmin, async (req, res) => {
   res.json(docs);
 });
 
+// Admin: delete ALL docs with a given label (parent + all sub-columns)
+router.delete('/admin-label/:label', protect, adminOnly, async (req, res) => {
+  try {
+    const label = decodeURIComponent(req.params.label);
+    // Delete exact label + any sub-labels starting with "label - "
+    const result = await Document.deleteMany({
+      uploadedBy: 'admin',
+      $or: [
+        { label },
+        { label: { $regex: `^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} - ` } }
+      ]
+    });
+    res.json({ message: `Deleted ${result.deletedCount} records for "${label}"`, deletedCount: result.deletedCount });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // Delete document (own or admin)
 router.delete('/:id', protect, async (req, res) => {
   const filter = req.user.role === 'admin'

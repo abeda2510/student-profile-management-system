@@ -504,19 +504,40 @@ export default function AdminSearch() {
 
         {showAdminDocs && (
           <div>
-            {/* Existing admin doc types */}
-            {adminDocTypes.length > 0 && (
-              <div style={{ marginBottom: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46', marginBottom: 8 }}>ALREADY UPLOADED DOCUMENT TYPES</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {adminDocTypes.map(t => (
-                    <span key={t.label} style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '3px 12px', fontSize: 12, fontWeight: 600 }}>
-                      {t.label} <span style={{ opacity: 0.7 }}>({t.count})</span>
-                    </span>
-                  ))}
+            {/* Existing admin doc types — parent labels only, with delete */}
+            {adminDocTypes.length > 0 && (() => {
+              const allLabels = adminDocTypes.map(t => t.label);
+              const parentTypes = adminDocTypes.filter(t =>
+                !allLabels.some(l => l !== t.label && t.label.startsWith(l + ' - '))
+              );
+              return (
+                <div style={{ marginBottom: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46', marginBottom: 8 }}>ALREADY UPLOADED DOCUMENT TYPES</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {parentTypes.map(t => {
+                      const subCount = adminDocTypes.filter(x => x.label.startsWith(t.label + ' - ')).reduce((a, x) => a + x.count, 0);
+                      const total = subCount > 0 ? subCount : t.count;
+                      return (
+                        <span key={t.label} style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '3px 10px 3px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {t.label} <span style={{ opacity: 0.7 }}>({total})</span>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Delete ALL records for "${t.label}" (including all sub-columns)? This cannot be undone.`)) return;
+                              try {
+                                const { data } = await api.delete(`/documents/admin-label/${encodeURIComponent(t.label)}`);
+                                alert(data.message);
+                                loadAdminDocTypes();
+                              } catch (err) { alert('Delete failed: ' + (err.response?.data?.message || err.message)); }
+                            }}
+                            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 99, width: 18, height: 18, fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}
+                            title={`Delete all "${t.label}" records`}>✕</button>
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div style={{ maxWidth: 600 }}>
 
