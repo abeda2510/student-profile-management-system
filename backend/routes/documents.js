@@ -104,7 +104,12 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
         const student = await Student.findOne({ regNumber });
         if (!student) { skipped++; errors.push(regNumber); continue; }
         await Document.deleteMany({ regNumber, docType, label, uploadedBy: 'admin' });
-        await Document.create({ student: student._id, regNumber, docType, label, fileUrl: value || null, uploadedBy: 'admin' });
+        await Document.create({ 
+          student: student._id, regNumber, docType, label, 
+          fileUrl: value || null,
+          filename: value || null, // store value in filename too as backup
+          uploadedBy: 'admin' 
+        });
         created++;
       }
       res.json({

@@ -274,11 +274,18 @@ async function getStudentDocData(st, docType) {
   if (docType.startsWith('ADMIN:')) {
     const label = docType.replace('ADMIN:', '');
     const docs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label });
-    return { ...base, data: docs.length ? (docs[0].fileUrl || 'Uploaded') : '—', count: docs.length };
+    if (!docs.length) return { ...base, data: '—' };
+    const doc = docs[0];
+    const val = doc.fileUrl || doc.filename || doc.filepath;
+    return { ...base, data: val && val !== 'null' ? val : '—', count: docs.length };
   }
   // Fallback: try to find any admin doc with matching docType as label
   const adminDocs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label: docType });
-  if (adminDocs.length) return { ...base, data: adminDocs[0].fileUrl || 'Uploaded', count: adminDocs.length };
+  if (adminDocs.length) {
+    const doc = adminDocs[0];
+    const val = doc.fileUrl || doc.filename || doc.filepath;
+    return { ...base, data: val && val !== 'null' ? val : '—', count: adminDocs.length };
+  }
   return { ...base, data: '—' };
 }
 
