@@ -27,7 +27,7 @@ router.post('/', protect, uploadAchievement.single('certificate'), async (req, r
     if (req.file) {
       data.certificateFile = req.file.originalname;
       data.certificatePath = req.file.path;
-      data.certificateUrl = req.file.path;
+      data.certificateUrl = `/student_profile/spm/uploads/achievements/${req.file.filename}`;
       data.cloudinaryId = req.file.filename;
     }
     const achievement = new Achievement(data);
@@ -64,6 +64,19 @@ router.get('/my-points', protect, async (req, res) => {
 router.delete('/:id', protect, async (req, res) => {
   const a = await Achievement.findOne({ _id: req.params.id, student: req.user.id });
   if (!a) return res.status(404).json({ message: 'Not found' });
+
+  // Delete local file from disk
+  if (a.certificatePath) {
+    const fs = require('fs');
+    try {
+      if (fs.existsSync(a.certificatePath)) {
+        fs.unlinkSync(a.certificatePath);
+      }
+    } catch (err) {
+      console.error('Failed to delete local achievement file:', err.message);
+    }
+  }
+
   if (a.cloudinaryId) {
     try { await cloudinary.uploader.destroy(a.cloudinaryId, { resource_type: 'auto' }); } catch {}
   }

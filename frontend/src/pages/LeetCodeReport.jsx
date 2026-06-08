@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import api from "../api";
 
 const DEPTS = ["CSE","ECE","EEE","MECH","CIVIL","IT","AIML","CSBS"];
@@ -85,7 +85,7 @@ export default function LeetCodeReport() {
     try {
       const token = localStorage.getItem("token");
       const params = buildParams();
-      const res = await window.fetch((import.meta.env.VITE_API_URL || '/api/spm') + "/leetcode/report/excel?" + params, {
+      const res = await window.fetch((import.meta.env.VITE_API_URL || '/spm') + "/leetcode/report/excel?" + params, {
         headers: { Authorization: "Bearer " + token }
       });
       if (!res.ok) throw new Error();

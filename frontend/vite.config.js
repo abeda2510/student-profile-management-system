@@ -15,7 +15,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/spm': 'http://localhost:5000',
+      '/student_profile/spm': {
+        target: 'http://localhost:5000',
+        rewrite: (path) => path.replace(/^\/student_profile/, '')
+      },
+      '/spm': 'http://localhost:5000',
       '/uploads': 'http://localhost:5000'
     }
   }

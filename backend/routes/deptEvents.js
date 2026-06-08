@@ -24,16 +24,23 @@ const DOC_FIELDS = [
   { name: 'budgetReport', maxCount: 1 },
 ];
 
-async function uploadToCloudinary(buffer, mimetype, folder, filename) {
-  return new Promise((resolve, reject) => {
-    // Always upload as image — Cloudinary converts PDF first page to JPG
-    // This avoids CORS issues with raw files
-    const stream = cloudinaryPkg.uploader.upload_stream(
-      { folder, resource_type: 'image', public_id: filename, format: mimetype === 'application/pdf' ? 'jpg' : undefined },
-      (err, result) => { if (err) reject(err); else resolve(result); }
-    );
-    stream.end(buffer);
-  });
+async function saveFileLocally(buffer, folder, filename, originalname) {
+  const fs = require('fs');
+  const path = require('path');
+  const uploadPath = path.join(__dirname, '..', 'uploads', 'dept-events');
+  if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+
+  const ext = path.extname(originalname);
+  const fullFilename = `${filename}${ext}`;
+  const filepath = path.join(uploadPath, fullFilename);
+
+  fs.writeFileSync(filepath, buffer);
+
+  return {
+    url: `/student_profile/spm/uploads/dept-events/${fullFilename}`,
+    path: filepath,
+    filename: fullFilename
+  };
 }
 
 // GET all events (faculty sees own, admin sees all, supports year filter)
@@ -62,8 +69,8 @@ router.post('/', protect, facultyOnly, upload.fields(DOC_FIELDS), async (req, re
       const files = req.files?.[field.name];
       if (files?.[0]) {
         const f = files[0];
-        const result = await uploadToCloudinary(f.buffer, f.mimetype, folder, `${field.name}_${Date.now()}`);
-        docData[field.name] = { url: result.secure_url, cloudinaryId: result.public_id };
+        const result = await saveFileLocally(f.buffer, folder, `${field.name}_${Date.now()}`, f.originalname);
+        docData[field.name] = { url: result.url, cloudinaryId: result.filename };
       }
     }
 
@@ -90,12 +97,20 @@ router.delete('/:id', protect, facultyOnly, async (req, res) => {
     const event = await DeptEvent.findOne(filter);
     if (!event) return res.status(404).json({ message: 'Not found' });
 
-    // Delete Cloudinary files
+    // Delete local files
+    const fs = require('fs');
+    const path = require('path');
     for (const field of DOC_FIELDS) {
       const doc = event[field.name];
       if (doc?.cloudinaryId) {
-        try { await cloudinaryPkg.uploader.destroy(doc.cloudinaryId, { resource_type: 'raw' }); } catch {}
-        try { await cloudinaryPkg.uploader.destroy(doc.cloudinaryId, { resource_type: 'image' }); } catch {}
+        try {
+          const filepath = path.join(__dirname, '..', 'uploads', 'dept-events', doc.cloudinaryId);
+          if (fs.existsSync(filepath)) {
+            fs.unlinkSync(filepath);
+          }
+        } catch (err) {
+          console.error('Failed to delete local dept-event file:', err.message);
+        }
       }
     }
     await event.deleteOne();

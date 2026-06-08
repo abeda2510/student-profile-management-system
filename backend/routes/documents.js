@@ -21,7 +21,7 @@ router.post('/upload', protect, uploadDoc.single('file'), async (req, res) => {
     label,
     filename: req.file.originalname,
     filepath: req.file.path,
-    fileUrl: req.file.path,
+    fileUrl: `/student_profile/spm/uploads/documents/${req.file.filename}`,
     cloudinaryId: req.file.filename,
     uploadedBy: 'student',
   });
@@ -48,7 +48,7 @@ router.post('/admin-upload', protect, adminOnly, uploadDoc.single('file'), async
     if (req.file) {
       docData.filename = req.file.originalname;
       docData.filepath = req.file.path;
-      docData.fileUrl = req.file.path;
+      docData.fileUrl = `/student_profile/spm/uploads/documents/${req.file.filename}`;
       docData.cloudinaryId = req.file.filename;
     }
     // Replace existing doc of same type+label to avoid duplicates
@@ -64,7 +64,7 @@ router.post('/admin-bulk-meta', protect, adminOnly, async (req, res) => {
     const XLSX = require('xlsx');
     const multer = require('multer');
     // Allow up to 500MB files
-    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }).single('file');
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }).single('file');
 
     upload(req, res, async (err) => {
       if (err || !req.file) return res.status(400).json({ message: 'No file uploaded' });
@@ -213,6 +213,19 @@ router.delete('/:id', protect, async (req, res) => {
     : { _id: req.params.id, student: req.user.id };
   const doc = await Document.findOne(filter);
   if (!doc) return res.status(404).json({ message: 'Not found' });
+
+  // Delete local file from disk
+  if (doc.filepath) {
+    const fs = require('fs');
+    try {
+      if (fs.existsSync(doc.filepath)) {
+        fs.unlinkSync(doc.filepath);
+      }
+    } catch (err) {
+      console.error('Failed to delete local document file:', err.message);
+    }
+  }
+
   if (doc.cloudinaryId) {
     try { await cloudinary.uploader.destroy(doc.cloudinaryId, { resource_type: 'auto' }); } catch {}
   }

@@ -440,7 +440,7 @@ router.post('/bulk-counsellor', protect, adminOnly, async (req, res) => {
 router.post('/bulk-counsellor-file', protect, adminOnly, (req, res) => {
   const XLSX = require('xlsx');
   const multer = require('multer');
-  const upload = multer({ storage: multer.memoryStorage() }).single('file');
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }).single('file');
 
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ message: 'File upload error' });

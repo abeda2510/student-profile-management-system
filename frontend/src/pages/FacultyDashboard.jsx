@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
@@ -133,7 +133,7 @@ export default function FacultyDashboard() {
     setXlLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = new URLSearchParams();
       myStudents.forEach(st => { params.append('branch', st.branch); params.append('section', st.section); });
       selItems.forEach(d => params.append('docType', d));
@@ -150,7 +150,7 @@ export default function FacultyDashboard() {
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = new URLSearchParams();
       myStudents.forEach(st => { params.append('branch', st.branch); params.append('section', st.section); });
       const certTypes = selItems.filter(i => ['INTERNSHIP','HACKATHON','MARK_MEMO'].includes(i));
@@ -219,7 +219,7 @@ export default function FacultyDashboard() {
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{searchResult.name}</div>
                   <button onClick={async () => {
                     const token = localStorage.getItem('token');
-                    const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+                    const baseUrl = import.meta.env.VITE_API_URL || '/spm';
                     const res = await fetch(`${baseUrl}/students/profile-pdf/${searchResult.regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
                     if (!res.ok) { alert('PDF failed'); return; }
                     const blob = await res.blob();
@@ -417,7 +417,7 @@ export default function FacultyDashboard() {
                       <div style={{ fontWeight: 700, fontSize: 16 }}>{selectedStudent.name}</div>
                       <button onClick={async () => {
                         const token = localStorage.getItem('token');
-                        const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+                        const baseUrl = import.meta.env.VITE_API_URL || '/spm';
                         const res = await fetch(`${baseUrl}/students/profile-pdf/${selectedStudent.regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
                         if (!res.ok) { alert('PDF failed'); return; }
                         const blob = await res.blob();

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
@@ -134,7 +134,7 @@ export default function AdminSearch() {
     setDeptEventsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/excel${params}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
@@ -150,7 +150,7 @@ export default function AdminSearch() {
     setDeptZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/zip${params}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
@@ -220,7 +220,7 @@ export default function AdminSearch() {
       fd.append('label', finalLabel);
 
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
 
       // Use fetch for streaming NDJSON response
       const response = await fetch(`${baseUrl}/documents/admin-bulk-meta`, {
