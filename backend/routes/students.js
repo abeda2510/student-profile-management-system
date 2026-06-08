@@ -1,6 +1,48 @@
 const router = require('express').Router();
 const Student = require('../models/Student');
+const Achievement = require('../models/Achievement');
+const Document = require('../models/Document');
 const { protect, adminOnly } = require('../middleware/auth');
+
+const RANGE_METRICS = {
+  cgpa: { label: 'CGPA', type: 'student' },
+  codeChefRating: { label: 'CodeChef Rating', type: 'student' },
+  codeChefStars: { label: 'CodeChef Stars', type: 'student' },
+  codeChefRank: { label: 'CodeChef Rank', type: 'student' },
+  leetCodeSolved: { label: 'LeetCode Solved', type: 'student' },
+  leetCodeEasy: { label: 'LeetCode Easy', type: 'student' },
+  leetCodeMedium: { label: 'LeetCode Medium', type: 'student' },
+  leetCodeHard: { label: 'LeetCode Hard', type: 'student' },
+  currentYear: { label: 'Current Year', type: 'student' },
+  currentSemester: { label: 'Current Semester', type: 'student' },
+  admissionYear: { label: 'Admission Year', type: 'student' },
+  tenthPercent: { label: '10th Percentage', type: 'student' },
+  interPercent: { label: '12th Percentage', type: 'student' },
+  sem1Cgpa: { label: 'Sem 1 CGPA', type: 'student' },
+  sem2Cgpa: { label: 'Sem 2 CGPA', type: 'student' },
+  sem3Cgpa: { label: 'Sem 3 CGPA', type: 'student' },
+  sem4Cgpa: { label: 'Sem 4 CGPA', type: 'student' },
+  sem5Cgpa: { label: 'Sem 5 CGPA', type: 'student' },
+  sem6Cgpa: { label: 'Sem 6 CGPA', type: 'student' },
+  sem7Cgpa: { label: 'Sem 7 CGPA', type: 'student' },
+  sem8Cgpa: { label: 'Sem 8 CGPA', type: 'student' },
+  sem1Sgpa: { label: 'Sem 1 SGPA', type: 'student' },
+  sem2Sgpa: { label: 'Sem 2 SGPA', type: 'student' },
+  sem3Sgpa: { label: 'Sem 3 SGPA', type: 'student' },
+  sem4Sgpa: { label: 'Sem 4 SGPA', type: 'student' },
+  sem5Sgpa: { label: 'Sem 5 SGPA', type: 'student' },
+  sem6Sgpa: { label: 'Sem 6 SGPA', type: 'student' },
+  sem7Sgpa: { label: 'Sem 7 SGPA', type: 'student' },
+  sem8Sgpa: { label: 'Sem 8 SGPA', type: 'student' },
+  certifications: { label: 'Certifications / Approved Achievements', type: 'achievementCount' },
+  documents: { label: 'Uploaded Documents', type: 'documentCount' },
+};
+
+const parseRangeNumber = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
 
 // Get own profile
 router.get('/me', protect, async (req, res) => {
@@ -276,6 +318,90 @@ router.get('/search/:regNumber', protect, adminOnly, async (req, res) => {
 router.get('/count', protect, async (req, res) => {
   const count = await Student.countDocuments({ role: 'student' });
   res.json({ count });
+});
+
+// Admin: range search across numeric student fields and derived counts
+router.get('/search-range', protect, adminOnly, async (req, res) => {
+  try {
+    const metric = String(req.query.metric || req.query.field || req.query.feature || '').trim();
+    const metricDef = RANGE_METRICS[metric];
+    if (!metricDef) {
+      return res.status(400).json({
+        message: 'Unsupported metric',
+        availableMetrics: Object.keys(RANGE_METRICS),
+      });
+    }
+
+    const min = parseRangeNumber(req.query.min);
+    const max = parseRangeNumber(req.query.max);
+    if ((req.query.min !== undefined && req.query.min !== '' && min === null) || (req.query.max !== undefined && req.query.max !== '' && max === null)) {
+      return res.status(400).json({ message: 'min and max must be numeric values' });
+    }
+
+    if (metricDef.type === 'student') {
+      const filter = { role: 'student', [metric]: { $ne: null } };
+      if (min !== null) filter[metric].$gte = min;
+      if (max !== null) filter[metric].$lte = max;
+
+      const students = await Student.find(filter)
+        .select(`regNumber name branch section ${metric}`)
+        .sort({ [metric]: 1, name: 1 });
+
+      return res.json({
+        metric,
+        label: metricDef.label,
+        min,
+        max,
+        total: students.length,
+        students: students.map(student => ({
+          regNumber: student.regNumber,
+          name: student.name,
+          branch: student.branch || '—',
+          section: student.section || '—',
+          metricValue: student[metric] ?? null,
+        })),
+      });
+    }
+
+    const students = await Student.find({ role: 'student' }).select('regNumber name branch section');
+    const counts = new Map(students.map(student => [student.regNumber, 0]));
+
+    if (metric === 'certifications') {
+      const achievementCounts = await Achievement.aggregate([
+        { $match: { status: 'APPROVED' } },
+        { $group: { _id: '$regNumber', count: { $sum: 1 } } },
+      ]);
+      achievementCounts.forEach(item => counts.set(item._id, item.count));
+    } else if (metric === 'documents') {
+      const documentCounts = await Document.aggregate([
+        { $group: { _id: '$regNumber', count: { $sum: 1 } } },
+      ]);
+      documentCounts.forEach(item => counts.set(item._id, item.count));
+    }
+
+    const results = students
+      .map(student => ({
+        regNumber: student.regNumber,
+        name: student.name,
+        branch: student.branch || '—',
+        section: student.section || '—',
+        metricValue: counts.get(student.regNumber) || 0,
+      }))
+      .filter(student => (min === null || student.metricValue >= min) && (max === null || student.metricValue <= max))
+      .sort((a, b) => a.metricValue - b.metricValue || a.name.localeCompare(b.name));
+
+    res.json({
+      metric,
+      label: metricDef.label,
+      min,
+      max,
+      total: results.length,
+      students: results,
+    });
+  } catch (err) {
+    console.error('search-range error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // Admin: list all students
