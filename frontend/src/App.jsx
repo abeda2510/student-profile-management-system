@@ -44,7 +44,6 @@ function Topbar() {
     { to: '/', label: 'Dashboard' },
     { to: '/section-report', label: 'Reports' },
     { to: '/achievement-report', label: 'Achievements' },
-    { to: '/my-achievements', label: 'My Achievements' },
     { to: '/dept-events', label: 'Dept Events' },
     ...(role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
   ];
