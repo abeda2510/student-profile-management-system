@@ -16,6 +16,15 @@ import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/Chatbot';
 
 const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
+const ROUTER_BASE = import.meta.env.BASE_URL || '/';
+
+function stripBase(pathname) {
+  if (ROUTER_BASE === '/') return pathname;
+  const normalizedBase = ROUTER_BASE.endsWith('/') ? ROUTER_BASE.slice(0, -1) : ROUTER_BASE;
+  if (pathname === normalizedBase) return '/';
+  if (pathname.startsWith(normalizedBase + '/')) return pathname.slice(normalizedBase.length) || '/';
+  return pathname;
+}
 
 const PrivateRoute = ({ children }) =>
   localStorage.getItem('token') ? children : <Navigate to="/login" />;
@@ -34,6 +43,7 @@ function Topbar() {
   const name = localStorage.getItem('name');
   const logout = () => { localStorage.clear(); navigate('/login'); };
   const isFaculty = loginType === 'faculty';
+  const activePath = stripBase(pathname);
 
   const studentLinks = [
     { to: '/', label: 'Dashboard' },
@@ -67,7 +77,7 @@ function Topbar() {
       {/* Nav Links */}
       <div style={{ display: 'flex', alignItems: 'stretch', height: '100%', gap: 0, flex: 1 }}>
         {links.map(l => {
-          const active = pathname === l.to;
+          const active = activePath === l.to;
           return (
             <button key={l.to} onClick={() => navigate(l.to)} style={{
               padding: '0 18px', background: 'none', border: 'none',
@@ -100,7 +110,7 @@ function Topbar() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={ROUTER_BASE}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

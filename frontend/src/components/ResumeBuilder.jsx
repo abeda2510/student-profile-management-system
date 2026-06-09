@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 const inp = { padding: '9px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, width: '100%', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
 const label = { fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase', display: 'block', marginBottom: 4 };
@@ -41,7 +41,7 @@ export default function ResumeBuilder({ student, onClose }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const payload = { skillGroups, projects, internship: hasInternship ? internship : null, certifications: certifications.filter(Boolean), extraAchievements: extraAch.filter(Boolean) };
       const res = await fetch(`${baseUrl}/ai/generate-resume`, {
         method: 'POST',

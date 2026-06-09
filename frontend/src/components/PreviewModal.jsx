@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/spm';
+const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:5000/spm';
 const PROXY_PDF = `${BACKEND}/proxy-pdf`;
 
 function isRawPdf(url) {

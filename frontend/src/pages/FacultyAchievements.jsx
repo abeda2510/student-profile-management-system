@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
@@ -108,7 +108,7 @@ function ReportTab() {
     setXlLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const res = await fetch(`${baseUrl}/achievements/faculty-report/excel?${buildParams()}`, { headers: { Authorization: `Bearer ${token}` } });
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -122,7 +122,7 @@ function ReportTab() {
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const res = await fetch(`${baseUrl}/achievements/faculty-report/zip?${buildParams()}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { const err = await res.json().catch(() => ({ message: 'Server error' })); throw new Error(err.message); }
       const blob = await res.blob();

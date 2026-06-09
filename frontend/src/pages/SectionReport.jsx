@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api';
 
 const DOC_GROUPS = [
@@ -139,7 +139,7 @@ export default function SectionReport() {
     setXlLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = new URLSearchParams();
       Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
       selItems.forEach(d => params.append('docType', d));
@@ -158,7 +158,7 @@ export default function SectionReport() {
     setZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = new URLSearchParams();
       Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
       certTypes.forEach(d => params.append('activityTypes', d));
@@ -289,17 +289,37 @@ export default function SectionReport() {
 
         {/* Right Sidebar */}
         <div style={{ position: 'sticky', top: 20 }}>
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-            <div style={{ background: '#fff', borderRadius: 12, padding: '14px 16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#1e40af' }}>{totalStudents}</div>
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>Total Students</div>
+          {/* My Counsellees quick-select */}
+          {myStudents.length > 0 && (
+            <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius: 12, padding: '12px 16px', border: '1px solid #bbf7d0', marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#065f46' }}>👥 My Counsellees</div>
+                  <div style={{ fontSize: 11, color: '#059669', marginTop: 2 }}>{myStudents.length} students assigned</div>
+                </div>
+                <button onClick={() => {
+                  const depts = {};
+                  myStudents.forEach(s => {
+                    if (!depts[s.branch]) depts[s.branch] = new Set();
+                    depts[s.branch].add(String(s.section));
+                  });
+                  const sel = {};
+                  Object.entries(depts).forEach(([d, secs]) => { sel[d] = [...secs]; });
+                  setSelDepts(sel);
+                }} style={{ background: '#059669', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                  Select Mine
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {myStudents.slice(0, 6).map(s => (
+                  <span key={s._id} style={{ background: '#fff', border: '1px solid #bbf7d0', borderRadius: 99, padding: '2px 8px', fontSize: 11, color: '#065f46', fontWeight: 600 }}>
+                    {s.name.split(' ')[0]}
+                  </span>
+                ))}
+                {myStudents.length > 6 && <span style={{ fontSize: 11, color: '#059669', fontWeight: 600, padding: '2px 4px' }}>+{myStudents.length - 6} more</span>}
+              </div>
             </div>
-            <div style={{ background: '#fff', borderRadius: 12, padding: '14px 16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#059669' }}>{myStudents.length}</div>
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>My Counsellees</div>
-            </div>
-          </div>
+          )}
 
           {/* Filters */}
           <div style={{ background: '#fff', borderRadius: 14, padding: '16px', border: '1px solid #e2e8f0', marginBottom: 14 }}>

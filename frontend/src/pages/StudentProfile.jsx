@@ -1,4 +1,4 @@
-﻿
+
 import React, { useEffect, useState } from 'react';
 import api from '../api';
 import ResumeBuilder from '../components/ResumeBuilder';
@@ -255,7 +255,7 @@ export default function StudentProfile() {
           <button type="button" onClick={async () => {
             const token = localStorage.getItem('token');
             const regNumber = form.regNumber;
-            const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+            const baseUrl = import.meta.env.VITE_API_URL || '/spm';
             const res = await fetch(`${baseUrl}/students/profile-pdf/${regNumber}`, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) { alert('PDF generation failed'); return; }
             const blob = await res.blob();

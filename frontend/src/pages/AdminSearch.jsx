@@ -1,6 +1,65 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
+
+const RANGE_METRICS = [
+  {
+    label: 'Academic',
+    items: [
+      { value: 'cgpa', label: 'CGPA' },
+      { value: 'currentYear', label: 'Current Year' },
+      { value: 'currentSemester', label: 'Current Semester' },
+      { value: 'admissionYear', label: 'Admission Year' },
+      { value: 'tenthPercent', label: '10th Percentage' },
+      { value: 'interPercent', label: '12th Percentage' },
+    ],
+  },
+  {
+    label: 'Semester CGPA',
+    items: [
+      { value: 'sem1Cgpa', label: 'Sem 1 CGPA' },
+      { value: 'sem2Cgpa', label: 'Sem 2 CGPA' },
+      { value: 'sem3Cgpa', label: 'Sem 3 CGPA' },
+      { value: 'sem4Cgpa', label: 'Sem 4 CGPA' },
+      { value: 'sem5Cgpa', label: 'Sem 5 CGPA' },
+      { value: 'sem6Cgpa', label: 'Sem 6 CGPA' },
+      { value: 'sem7Cgpa', label: 'Sem 7 CGPA' },
+      { value: 'sem8Cgpa', label: 'Sem 8 CGPA' },
+    ],
+  },
+  {
+    label: 'Semester SGPA',
+    items: [
+      { value: 'sem1Sgpa', label: 'Sem 1 SGPA' },
+      { value: 'sem2Sgpa', label: 'Sem 2 SGPA' },
+      { value: 'sem3Sgpa', label: 'Sem 3 SGPA' },
+      { value: 'sem4Sgpa', label: 'Sem 4 SGPA' },
+      { value: 'sem5Sgpa', label: 'Sem 5 SGPA' },
+      { value: 'sem6Sgpa', label: 'Sem 6 SGPA' },
+      { value: 'sem7Sgpa', label: 'Sem 7 SGPA' },
+      { value: 'sem8Sgpa', label: 'Sem 8 SGPA' },
+    ],
+  },
+  {
+    label: 'Coding',
+    items: [
+      { value: 'leetCodeSolved', label: 'LeetCode Solved' },
+      { value: 'leetCodeEasy', label: 'LeetCode Easy' },
+      { value: 'leetCodeMedium', label: 'LeetCode Medium' },
+      { value: 'leetCodeHard', label: 'LeetCode Hard' },
+      { value: 'codeChefRating', label: 'CodeChef Rating' },
+      { value: 'codeChefStars', label: 'CodeChef Stars' },
+      { value: 'codeChefRank', label: 'CodeChef Rank' },
+    ],
+  },
+  {
+    label: 'Engagement',
+    items: [
+      { value: 'certifications', label: 'Certifications / Approved Achievements' },
+      { value: 'documents', label: 'Uploaded Documents' },
+    ],
+  },
+];
 
 const s = {
   card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: 16 },
@@ -38,6 +97,14 @@ export default function AdminSearch() {
   const [assignResult, setAssignResult] = useState('');
   const [showAssign, setShowAssign] = useState(false);
 
+  // Range search state
+  const [rangeMetric, setRangeMetric] = useState('cgpa');
+  const [rangeMin, setRangeMin] = useState('');
+  const [rangeMax, setRangeMax] = useState('');
+  const [rangeLoading, setRangeLoading] = useState(false);
+  const [rangeResult, setRangeResult] = useState(null);
+  const [rangeError, setRangeError] = useState('');
+
   // Create faculty state
   const [showCreateFaculty, setShowCreateFaculty] = useState(false);
   const [newFaculty, setNewFaculty] = useState({ facultyId: '', name: '', password: '', email: '', department: '', designation: '' });
@@ -67,7 +134,7 @@ export default function AdminSearch() {
     setDeptEventsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/excel${params}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
@@ -83,7 +150,7 @@ export default function AdminSearch() {
     setDeptZipLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
       const params = deptEventYear ? `?year=${encodeURIComponent(deptEventYear)}` : '';
       const res = await fetch(`${baseUrl}/dept-events/report/zip${params}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message); }
@@ -153,7 +220,7 @@ export default function AdminSearch() {
       fd.append('label', finalLabel);
 
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/spm';
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
 
       // Use fetch for streaming NDJSON response
       const response = await fetch(`${baseUrl}/documents/admin-bulk-meta`, {
@@ -247,6 +314,25 @@ export default function AdminSearch() {
       setError('Student not found');
       setProfile(null);
     }
+  };
+
+  const searchByRange = async (e) => {
+    e.preventDefault();
+    setRangeLoading(true);
+    setRangeError('');
+    setRangeResult(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('metric', rangeMetric);
+      if (rangeMin !== '') params.set('min', rangeMin);
+      if (rangeMax !== '') params.set('max', rangeMax);
+      const { data } = await api.get(`/students/search-range?${params.toString()}`);
+      setRangeResult(data);
+    } catch (err) {
+      setRangeError(err.response?.data?.message || err.message || 'Failed to fetch students');
+      setRangeResult(null);
+    }
+    setRangeLoading(false);
   };
 
   const uploadCounsellor = async () => {
@@ -410,6 +496,77 @@ export default function AdminSearch() {
         <button style={s.btn} type="submit">Search</button>
       </form>
       {error && <div style={{ color: '#ef4444', marginBottom: 16 }}>{error}</div>}
+
+      {/* Range Search */}
+      <div style={{ ...s.card, marginBottom: 24 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', marginBottom: 6 }}>Search Students By Range</div>
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>Pick a metric, set a minimum and maximum value, then fetch all matching students.</div>
+        <form onSubmit={searchByRange}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.6fr 0.6fr auto', gap: 10, alignItems: 'end' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Feature</div>
+              <select value={rangeMetric} onChange={e => setRangeMetric(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', fontFamily: 'inherit' }}>
+                {RANGE_METRICS.map(group => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.items.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Min</div>
+              <input type="number" step="any" value={rangeMin} onChange={e => setRangeMin(e.target.value)} placeholder="e.g. 4" style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Max</div>
+              <input type="number" step="any" value={rangeMax} onChange={e => setRangeMax(e.target.value)} placeholder="e.g. 7" style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' }} />
+            </div>
+            <button type="submit" disabled={rangeLoading} style={{ ...s.btn, marginLeft: 0, background: rangeLoading ? '#94a3b8' : '#059669', height: 42 }}>
+              {rangeLoading ? 'Searching...' : 'Fetch Students'}
+            </button>
+          </div>
+        </form>
+
+        {rangeError && <div style={{ color: '#dc2626', marginTop: 10, fontSize: 13 }}>{rangeError}</div>}
+
+        {rangeResult && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>{rangeResult.label} results</div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>Matching students: <strong style={{ color: '#0f172a' }}>{rangeResult.total}</strong></div>
+            </div>
+
+            {rangeResult.students.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: 13 }}>No students found in that range.</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#eff6ff', color: '#1e40af' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Reg Number</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Name</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Branch</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>Section</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px' }}>{rangeResult.label}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rangeResult.students.map(student => (
+                      <tr key={student.regNumber} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '10px 12px' }}>{student.regNumber}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 600 }}>{student.name}</td>
+                        <td style={{ padding: '10px 12px' }}>{student.branch}</td>
+                        <td style={{ padding: '10px 12px' }}>{student.section}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#059669' }}>{student.metricValue ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {profile && (
         <>
