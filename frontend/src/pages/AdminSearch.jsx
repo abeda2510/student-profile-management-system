@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api, { viewUrl } from '../api';
+import { ViewButton } from '../components/PreviewModal';
 
 // Reusable SVG Donut Chart Component
 function DonutChart({ male, female, size = 180, strokeWidth = 16 }) {
@@ -178,6 +179,8 @@ export default function AdminSearch() {
   const [stats, setStats] = useState(null);
   const [selectedDept, setSelectedDept] = useState('');
   const [error, setError] = useState('');
+  const [achievements, setAchievements] = useState([]);
+  const [achLoading, setAchLoading] = useState(false);
 
   // Fetch aggregated statistics
   const fetchStats = async () => {
@@ -193,9 +196,33 @@ export default function AdminSearch() {
     setLoading(false);
   };
 
+  // Fetch achievements/certifications
+  const fetchAchievements = async (dept) => {
+    setAchLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (dept) params.append('branch', dept);
+      params.append('status', 'APPROVED');
+      const { data } = await api.get(`/achievements/faculty-report?${params}`);
+      setAchievements(data);
+    } catch (err) {
+      console.error('Failed to load achievements:', err);
+    }
+    setAchLoading(false);
+  };
+
   useEffect(() => {
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    fetchAchievements(selectedDept);
+  }, [selectedDept]);
+
+  const handleRefresh = async () => {
+    await fetchStats();
+    await fetchAchievements(selectedDept);
+  };
 
   if (loading) {
     return (
@@ -230,6 +257,9 @@ export default function AdminSearch() {
   const totalCount = currentDeptObj ? currentDeptObj.total : stats.totalStudents;
   const maleCount = currentDeptObj ? currentDeptObj.male : stats.male;
   const femaleCount = currentDeptObj ? currentDeptObj.female : stats.female;
+  const totalCerts = selectedDept
+    ? (stats.certificationsByBranch?.[selectedDept] || 0)
+    : (stats.totalCertifications || 0);
 
   const malePercent = totalCount > 0 ? ((maleCount / totalCount) * 100).toFixed(1) : '0.0';
   const femalePercent = totalCount > 0 ? ((femaleCount / totalCount) * 100).toFixed(1) : '0.0';
@@ -341,7 +371,7 @@ export default function AdminSearch() {
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
-            <button onClick={fetchStats} title="Refresh Live Data" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', width: 38, height: 38, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
+            <button onClick={handleRefresh} title="Refresh Live Data" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', width: 38, height: 38, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
               🔄
             </button>
           </div>
@@ -394,6 +424,18 @@ export default function AdminSearch() {
             <div style={{ fontSize: 32, fontWeight: 800 }}>{sectionsCount}</div>
             <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8, fontWeight: 500 }}>
               {selectedDept ? `Active sections in ${selectedDept}` : 'Active sections across all depts'}
+            </div>
+          </div>
+
+          {/* Card 5: Certifications */}
+          <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>Certifications Done</span>
+              <span style={{ fontSize: 20 }}>📜</span>
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 800 }}>{totalCerts.toLocaleString()}</div>
+            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8, fontWeight: 500 }}>
+              {selectedDept ? `Approved in ${selectedDept}` : 'University overall certifications'}
             </div>
           </div>
         </div>
@@ -454,54 +496,69 @@ export default function AdminSearch() {
           </div>
         </div>
 
-        {/* Detailed Table card */}
+        {/* Approved Certifications Card */}
         <div className="grid-block" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', margin: 0 }}>
-              {selectedDept ? `${selectedDept} Sections breakdown` : 'Academic Departments overview'}
-            </h3>
-            <p style={{ color: '#64748b', fontSize: 11, margin: '2px 0 0 0', fontWeight: 500 }}>
-              Tabulated numerical register data for administration reference
-            </p>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                {selectedDept ? `Approved Certifications - ${selectedDept}` : 'Approved Certifications - University Overall'}
+              </h3>
+              <p style={{ color: '#64748b', fontSize: 11, margin: '2px 0 0 0', fontWeight: 500 }}>
+                List of student certificates and approved professional achievements
+              </p>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, background: '#f0fdf4', color: '#16a34a', padding: '4px 12px', borderRadius: 99, border: '1.5px solid #bbf7d0' }}>
+              {achievements.length} Certifications
+            </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '14px 24px', fontWeight: 700 }}>
-                    {selectedDept ? 'Section ID' : 'Department Branch'}
-                  </th>
-                  <th style={{ padding: '14px 24px', fontWeight: 700, textAlign: 'right' }}>Total Students</th>
-                  <th style={{ padding: '14px 24px', fontWeight: 700, textAlign: 'right' }}>Male Count</th>
-                  <th style={{ padding: '14px 24px', fontWeight: 700, textAlign: 'right' }}>Female Count</th>
-                  {!selectedDept && <th style={{ padding: '14px 24px', fontWeight: 700, textAlign: 'right' }}>Sections Count</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {selectedDept && currentDeptObj ? (
-                  currentDeptObj.sections.map(s => (
-                    <tr key={s.section} className="table-row">
-                      <td style={{ padding: '14px 24px', fontWeight: 700, color: '#0f172a' }}>Section {s.section}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 800, color: '#0f172a', textAlign: 'right' }}>{s.total.toLocaleString()}</td>
-                      <td style={{ padding: '14px 24px', color: '#475569', textAlign: 'right' }}>{s.male.toLocaleString()}</td>
-                      <td style={{ padding: '14px 24px', color: '#475569', textAlign: 'right' }}>{s.female.toLocaleString()}</td>
+          {achLoading ? (
+            <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontWeight: 600 }}>
+              <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, borderRadius: '50%', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', animation: 'spin 1s linear infinite', marginRight: 12, verticalAlign: 'middle' }} />
+              Loading certifications data...
+            </div>
+          ) : achievements.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+              No approved certifications found.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>#</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Reg No</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Name</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Department</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Certification Title</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Category</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Academic Year</th>
+                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Certificate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {achievements.map((ach, idx) => (
+                    <tr key={ach._id} className="table-row">
+                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{idx + 1}</td>
+                      <td style={{ padding: '14px 24px', fontWeight: 700, color: '#4f46e5' }}>{ach.regNumber}</td>
+                      <td style={{ padding: '14px 24px', fontWeight: 600, color: '#334155' }}>{ach.studentName || '—'}</td>
+                      <td style={{ padding: '14px 24px', color: '#475569' }}>{ach.branch || '—'}</td>
+                      <td style={{ padding: '14px 24px', fontWeight: 600, color: '#0f172a' }}>{ach.title}</td>
+                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{ach.activityType ? ach.activityType.replace(/_/g, ' ') : '—'}</td>
+                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{ach.academicYear || '—'}</td>
+                      <td style={{ padding: '14px 24px' }}>
+                        {ach.certificateUrl || ach.certificatePath ? (
+                          <ViewButton url={viewUrl(ach.certificateUrl || ach.certificatePath)} label="View" />
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>—</span>
+                        )}
+                      </td>
                     </tr>
-                  ))
-                ) : (
-                  stats.departments.map(d => (
-                    <tr key={d.branch} className="table-row">
-                      <td style={{ padding: '14px 24px', fontWeight: 700, color: '#4f46e5' }}>{d.branch}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 800, color: '#0f172a', textAlign: 'right' }}>{d.total.toLocaleString()}</td>
-                      <td style={{ padding: '14px 24px', color: '#475569', textAlign: 'right' }}>{d.male.toLocaleString()}</td>
-                      <td style={{ padding: '14px 24px', color: '#475569', textAlign: 'right' }}>{d.female.toLocaleString()}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 600, color: '#059669', textAlign: 'right' }}>{d.sectionsCount}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

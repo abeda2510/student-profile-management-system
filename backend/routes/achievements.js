@@ -244,8 +244,9 @@ router.get('/ranking/department', protect, facultyOrAdmin, async (req, res) => {
 // Faculty: achievement report with filters
 router.get('/faculty-report', protect, async (req, res) => {
   try {
-    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates, status } = req.query;
     const achFilter = {};
+    if (status) achFilter.status = status;
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
     if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };
@@ -312,8 +313,9 @@ router.get('/faculty-report', protect, async (req, res) => {
 router.get('/faculty-report/excel', protect, async (req, res) => {
   try {
     const ExcelJS = require('exceljs');
-    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates, status } = req.query;
     const achFilter = {};
+    if (status) achFilter.status = status;
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
     if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };
@@ -387,8 +389,9 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     const axios = require('axios');
     const path = require('path');
     const fs = require('fs');
-    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates, status } = req.query;
     const achFilter = {};
+    if (status) achFilter.status = status;
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
     if (activityTypes) achFilter.activityType = { $in: [].concat(activityTypes).map(t => new RegExp("^" + t.trim() + "$", "i")) };

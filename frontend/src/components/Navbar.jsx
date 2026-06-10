@@ -32,7 +32,6 @@ export default function Navbar() {
       ? [{ to: '/admin', label: 'Dashboard' }]
       : [{ to: '/', label: 'Dashboard' }]),
     { to: '/section-report', label: 'Reports' },
-    { to: '/achievement-report', label: 'Achievements' },
   ];
   const links = loginType === 'faculty' ? facultyLinks : studentLinks;
   const isFaculty = loginType === 'faculty';

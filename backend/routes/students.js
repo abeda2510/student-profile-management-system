@@ -323,19 +323,49 @@ router.get('/count', protect, async (req, res) => {
 // Admin: dashboard stats aggregate
 router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
   try {
-    const rawStats = await Student.aggregate([
-      { $match: { role: 'student' } },
-      {
-        $group: {
-          _id: {
-            branch: { $ifNull: [ "$branch", "Unknown" ] },
-            section: { $ifNull: [ "$section", "Unknown" ] },
-            gender: { $ifNull: [ "$gender", "Unknown" ] }
-          },
-          count: { $sum: 1 }
+    const [rawStats, certStats] = await Promise.all([
+      Student.aggregate([
+        { $match: { role: 'student' } },
+        {
+          $group: {
+            _id: {
+              branch: { $ifNull: [ "$branch", "Unknown" ] },
+              section: { $ifNull: [ "$section", "Unknown" ] },
+              gender: { $ifNull: [ "$gender", "Unknown" ] }
+            },
+            count: { $sum: 1 }
+          }
         }
-      }
+      ]),
+      Achievement.aggregate([
+        { $match: { status: 'APPROVED' } },
+        {
+          $lookup: {
+            from: 'students',
+            localField: 'regNumber',
+            foreignField: 'regNumber',
+            as: 'studentInfo'
+          }
+        },
+        { $unwind: '$studentInfo' },
+        {
+          $group: {
+            _id: {
+              branch: { $ifNull: [ '$studentInfo.branch', 'Unknown' ] }
+            },
+            count: { $sum: 1 }
+          }
+        }
+      ])
     ]);
+
+    const certificationsByBranch = {};
+    let totalCertifications = 0;
+    certStats.forEach(item => {
+      const branch = String(item._id.branch || 'Unknown').trim().toUpperCase() || 'UNKNOWN';
+      certificationsByBranch[branch] = item.count;
+      totalCertifications += item.count;
+    });
 
     let totalStudents = 0;
     let maleCount = 0;
@@ -409,6 +439,8 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
       totalStudents,
       male: maleCount,
       female: femaleCount,
+      totalCertifications,
+      certificationsByBranch,
       departments: formattedDepartments
     });
   } catch (err) {

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
@@ -117,10 +117,9 @@ export default function FacultyDashboard() {
       )}
 
       {/* Quick Nav */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 4 : 3}, 1fr)`, gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 3 : 2}, 1fr)`, gap: 12, marginBottom: 24 }}>
         {[
           { icon: '📊', label: 'Reports', desc: 'Section-wise data & Excel export', color: '#059669', bg: '#f0fdf4', path: '/section-report' },
-          { icon: '🏆', label: 'Achievements', desc: 'Student achievement reports & ZIP', color: '#1e40af', bg: '#eff6ff', path: '/achievement-report' },
           { icon: '🎪', label: 'Dept Events', desc: 'Department events tracking', color: '#7c3aed', bg: '#f5f3ff', path: '/dept-events' },
           ...(isAdmin ? [{ icon: '⚙️', label: 'Admin Panel', desc: 'Upload docs, manage users', color: '#d97706', bg: '#fffbeb', path: '/admin' }] : []),
         ].map(({ icon, label, desc, color, bg, path }) => (

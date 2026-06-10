@@ -125,7 +125,6 @@ function Topbar() {
       ? [{ to: '/admin', label: 'Dashboard' }]
       : [{ to: '/', label: 'Dashboard' }]),
     { to: '/section-report', label: 'Reports' },
-    { to: '/achievement-report', label: 'Achievements' },
     { to: '/dept-events', label: 'Dept Events' },
   ];
   const links = isFaculty ? facultyLinks : studentLinks;

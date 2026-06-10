@@ -50,6 +50,13 @@ const DOC_GROUPS = [
       { value: 'PAN_DOC', label: 'PAN Card' },
       { value: 'TENTH_MEMO', label: '10th Mark Memo' },
       { value: 'INTER_MEMO', label: 'Inter Mark Memo' },
+      { value: 'INTERNSHIP', label: 'Internships' },
+      { value: 'HACKATHON', label: 'Hackathons' },
+      { value: 'RESEARCH_PUBLICATION', label: 'Research Publications' },
+      { value: 'TECHNICAL_COMPETITION', label: 'Technical Competitions' },
+      { value: 'WORKSHOP', label: 'Workshops' },
+      { value: 'NPTEL', label: 'NPTEL Certifications' },
+      { value: 'CERTIFICATION', label: 'Other Certifications' },
     ]
   },
   { key: 'performance', label: 'Performance', color: '#059669', bg: '#f0fdf4',

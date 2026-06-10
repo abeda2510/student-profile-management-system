@@ -292,16 +292,10 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
       : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
-  if (docType === 'INTERNSHIP') {
+  if (['INTERNSHIP', 'HACKATHON', 'RESEARCH_PUBLICATION', 'TECHNICAL_COMPETITION', 'WORKSHOP', 'NPTEL', 'CERTIFICATION'].includes(docType)) {
     const achs = preloadedAchs
-      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === 'INTERNSHIP')
-      : await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
-    return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
-  }
-  if (docType === 'HACKATHON') {
-    const achs = preloadedAchs
-      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === 'HACKATHON')
-      : await Achievement.find({ regNumber: st.regNumber, activityType: 'HACKATHON' });
+      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === docType && a.status === 'APPROVED')
+      : await Achievement.find({ regNumber: st.regNumber, activityType: docType, status: 'APPROVED' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'MARK_MEMO') {
@@ -439,6 +433,11 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
     ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
+    RESEARCH_PUBLICATION: 'Research Publication',
+    TECHNICAL_COMPETITION: 'Technical Competition',
+    WORKSHOP: 'Workshop',
+    NPTEL: 'NPTEL Certification',
+    CERTIFICATION: 'Other Certification',
   };
   const docTypes = parseQueryArray(req.query.docType);
   const { admissionYear } = req.query;
@@ -528,6 +527,11 @@ router.get('/section-report/excel', protect, async (req, res) => {
     ABC_ID: 'ABC ID', APAAR_ID: 'APAAR ID', LEETCODE: 'LeetCode',
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
+    RESEARCH_PUBLICATION: 'Research Publication',
+    TECHNICAL_COMPETITION: 'Technical Competition',
+    WORKSHOP: 'Workshop',
+    NPTEL: 'NPTEL Certification',
+    CERTIFICATION: 'Other Certification',
   };
 
   const docTypes = parseQueryArray(req.query.docType);
