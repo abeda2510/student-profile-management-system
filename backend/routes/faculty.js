@@ -1,4 +1,4 @@
-﻿const router = require('express').Router();
+const router = require('express').Router();
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const Achievement = require('../models/Achievement');
@@ -173,7 +173,13 @@ async function fetchCodeChefStats(username) {
     return null;
   }
 }
-async function getStudentDocData(st, docType) {
+function parseQueryArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map(String).filter(Boolean);
+  if (typeof val === 'object') return Object.values(val).map(String).filter(Boolean);
+  return [String(val)].filter(Boolean);
+}
+async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAchs = null) {
   const base = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section, docType };
   if (docType === 'ABC_ID') return { ...base, data: st.abcId || '—' };
   if (docType === 'APAAR_ID') return { ...base, data: st.apaarId || '—' };
@@ -218,6 +224,26 @@ async function getStudentDocData(st, docType) {
   if (docType === 'PARENT_PHONE') return { ...base, data: st.parentPhone || '—' };
   if (docType === 'ADDRESS') return { ...base, data: st.address || '—' };
   if (docType === 'CGPA') return { ...base, data: st.cgpa != null ? String(st.cgpa) : '—' };
+  if (docType === 'CRT_PERFORMANCE') {
+    const perf = st.crtPerformance && st.crtPerformance.length
+      ? st.crtPerformance
+      : [];
+    if (!perf.length) return { ...base, data: '—', chartType: 'bar', chartData: [] };
+    const avg = (perf.reduce((s, p) => s + (p.score / (p.maxScore || 100)) * 100, 0) / perf.length).toFixed(1);
+    const summary = perf.map(p => `${p.module}:${p.score}/${p.maxScore || 100}`).join(', ');
+    return { ...base, data: `Avg ${avg}% | ${summary}`, chartType: 'bar',
+      chartData: perf.map(p => ({ label: p.module, value: p.score, max: p.maxScore || 100 })),
+      avg: parseFloat(avg) };
+  }
+  if (docType === 'ATTENDANCE') {
+    const att = st.attendance && st.attendance.length ? st.attendance : [];
+    if (!att.length) return { ...base, data: '—', chartType: 'bar', chartData: [] };
+    const avg = (att.reduce((s, a) => s + (a.present / (a.total || 1)) * 100, 0) / att.length).toFixed(1);
+    const summary = att.map(a => `${a.subject}:${Math.round((a.present/(a.total||1))*100)}%`).join(', ');
+    return { ...base, data: `Avg ${avg}% | ${summary}`, chartType: 'bar',
+      chartData: att.map(a => ({ label: a.subject, value: Math.round((a.present/(a.total||1))*100), max: 100 })),
+      avg: parseFloat(avg) };
+  }
   if (docType === 'ADMISSION_CATEGORY') return { ...base, data: st.admissionCategory || '—' };
   if (docType === 'CURRENT_YEAR') return { ...base, data: st.currentYear != null ? String(st.currentYear) : '—' };
   if (docType === 'CURRENT_SEMESTER') return { ...base, data: st.currentSemester != null ? String(st.currentSemester) : '—' };
@@ -243,44 +269,62 @@ async function getStudentDocData(st, docType) {
   if (docType === 'SEM7_SGPA') return { ...base, data: st.sem7Sgpa != null ? String(st.sem7Sgpa) : '—' };
   if (docType === 'SEM8_SGPA') return { ...base, data: st.sem8Sgpa != null ? String(st.sem8Sgpa) : '—' };
   if (docType === 'AADHAAR_DOC') {
-    const docs = await Document.find({ regNumber: st.regNumber, docType: 'AADHAAR' });
+    const docs = preloadedDocs 
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'AADHAAR')
+      : await Document.find({ regNumber: st.regNumber, docType: 'AADHAAR' });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'PAN_DOC') {
-    const docs = await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
+    const docs = preloadedDocs
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'PAN')
+      : await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'TENTH_MEMO') {
-    const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /10th|SSC/i });
+    const docs = preloadedDocs
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO' && /10th|SSC/i.test(d.label || ''))
+      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /10th|SSC/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'INTER_MEMO') {
-    const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
+    const docs = preloadedDocs
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO' && /inter|12th/i.test(d.label || ''))
+      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'INTERNSHIP') {
-    const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
+    const achs = preloadedAchs
+      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === 'INTERNSHIP')
+      : await Achievement.find({ regNumber: st.regNumber, activityType: 'INTERNSHIP' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'HACKATHON') {
-    const achs = await Achievement.find({ regNumber: st.regNumber, activityType: 'HACKATHON' });
+    const achs = preloadedAchs
+      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === 'HACKATHON')
+      : await Achievement.find({ regNumber: st.regNumber, activityType: 'HACKATHON' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'MARK_MEMO') {
-    const docs = await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO' });
+    const docs = preloadedDocs
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO')
+      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO' });
     return { ...base, data: docs.length ? docs.map(d => d.label || d.filename).join('; ') : '—', count: docs.length };
   }
   // Admin-uploaded custom documents — docType is a custom label key like 'ADMIN:CRT Attendance'
   if (docType.startsWith('ADMIN:')) {
     const label = docType.replace('ADMIN:', '');
-    const docs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label });
+    const docs = preloadedDocs
+      ? (preloadedDocs[st.regNumber] || []).filter(d => d.uploadedBy === 'admin' && d.label === label)
+      : await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label });
     if (!docs.length) return { ...base, data: '—' };
     const doc = docs[0];
     const val = doc.fileUrl || doc.filename || doc.filepath;
     return { ...base, data: val && val !== 'null' ? val : '—', count: docs.length };
   }
   // Fallback: try to find any admin doc with matching docType as label
-  const adminDocs = await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label: docType });
+  const adminDocs = preloadedDocs
+    ? (preloadedDocs[st.regNumber] || []).filter(d => d.uploadedBy === 'admin' && d.label === docType)
+    : await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label: docType });
   if (adminDocs.length) {
     const doc = adminDocs[0];
     const val = doc.fileUrl || doc.filename || doc.filepath;
@@ -291,18 +335,65 @@ async function getStudentDocData(st, docType) {
 
 // Build mongoose filter supporting multi-value branch/section arrays
 function buildFilter(query) {
-  const branches = [].concat(query.branch || []).filter(Boolean);
-  const sections = [].concat(query.section || []).filter(Boolean);
+  const branches = parseQueryArray(query.branch);
+  const sections = parseQueryArray(query.section);
   const filter = { role: 'student' };
-  if (query.admissionYear) filter.admissionYear = Number(query.admissionYear);
+  if (query.admissionYear) {
+    const yr = Number(query.admissionYear);
+    if (!isNaN(yr)) filter.admissionYear = yr;
+  }
+  if (query.currentYear) {
+    const cyr = Number(query.currentYear);
+    if (!isNaN(cyr)) filter.currentYear = cyr;
+  }
   if (branches.length) filter.branch = { $in: branches };
   if (sections.length) filter.section = { $in: sections };
+
+  // ── CGPA range ──────────────────────────────────────────
+  const cgpaMin = query.cgpaMin !== undefined ? Number(query.cgpaMin) : NaN;
+  const cgpaMax = query.cgpaMax !== undefined ? Number(query.cgpaMax) : NaN;
+  if (!isNaN(cgpaMin) || !isNaN(cgpaMax)) {
+    filter.cgpa = {};
+    if (!isNaN(cgpaMin)) filter.cgpa.$gte = cgpaMin;
+    if (!isNaN(cgpaMax)) filter.cgpa.$lte = cgpaMax;
+  }
+
+  // ── LeetCode filters ─────────────────────────────────────
+  const lcSolvedMin = Number(query.lcSolvedMin);
+  const lcSolvedMax = Number(query.lcSolvedMax);
+  const lcEasyMin   = Number(query.lcEasyMin);
+  const lcMedMin    = Number(query.lcMedMin);
+  const lcHardMin   = Number(query.lcHardMin);
+  if (!isNaN(lcSolvedMin) && query.lcSolvedMin !== undefined) {
+    filter.leetCodeSolved = filter.leetCodeSolved || {};
+    filter.leetCodeSolved.$gte = lcSolvedMin;
+  }
+  if (!isNaN(lcSolvedMax) && query.lcSolvedMax !== undefined) {
+    filter.leetCodeSolved = filter.leetCodeSolved || {};
+    filter.leetCodeSolved.$lte = lcSolvedMax;
+  }
+  if (!isNaN(lcEasyMin) && query.lcEasyMin !== undefined)   filter.leetCodeEasy   = { $gte: lcEasyMin };
+  if (!isNaN(lcMedMin)  && query.lcMedMin  !== undefined)   filter.leetCodeMedium = { $gte: lcMedMin  };
+  if (!isNaN(lcHardMin) && query.lcHardMin !== undefined)   filter.leetCodeHard   = { $gte: lcHardMin };
+
+  // ── CodeChef filters ──────────────────────────────────────
+  const ccRatingMin = Number(query.ccRatingMin);
+  const ccRatingMax = Number(query.ccRatingMax);
+  if (!isNaN(ccRatingMin) && query.ccRatingMin !== undefined) {
+    filter.codeChefRating = filter.codeChefRating || {};
+    filter.codeChefRating.$gte = ccRatingMin;
+  }
+  if (!isNaN(ccRatingMax) && query.ccRatingMax !== undefined) {
+    filter.codeChefRating = filter.codeChefRating || {};
+    filter.codeChefRating.$lte = ccRatingMax;
+  }
+
   return filter;
 }
 
 // Section report — fetch students + their data
 router.get('/section-report', protect, async (req, res) => {
-  const docTypes = [].concat(req.query.docType || []).filter(Boolean);
+  const docTypes = parseQueryArray(req.query.docType);
   if (!docTypes.length) return res.status(400).json({ message: 'Select at least one document type' });
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
   
@@ -315,8 +406,29 @@ router.get('/section-report', protect, async (req, res) => {
     else { expandedDocTypes.push(dt); }
   }
   
+  const Achievement = require('../models/Achievement');
+  const regNumbers = students.map(s => s.regNumber);
+  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
+  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+
+  const preloadedDocs = {};
+  allDocs.forEach(d => {
+    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
+    preloadedDocs[d.regNumber].push(d);
+  });
+
+  const preloadedAchs = {};
+  allAchs.forEach(a => {
+    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
+    preloadedAchs[a.regNumber].push(a);
+  });
+
   const results = [];
-  for (const st of students) for (const dt of expandedDocTypes) results.push(await getStudentDocData(st, dt));
+  for (const st of students) {
+    for (const dt of expandedDocTypes) {
+      results.push(await getStudentDocData(st, dt, preloadedDocs, preloadedAchs));
+    }
+  }
   res.json(results);
 });
 
@@ -328,7 +440,7 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
   };
-  const docTypes = [].concat(req.query.docType || []).filter(Boolean);
+  const docTypes = parseQueryArray(req.query.docType);
   const { admissionYear } = req.query;
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
 
@@ -372,11 +484,28 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
   drawRow(headers, y, true, false);
   y += ROW_H;
 
+  const Achievement = require('../models/Achievement');
+  const regNumbers = students.map(s => s.regNumber);
+  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
+  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+
+  const preloadedDocs = {};
+  allDocs.forEach(d => {
+    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
+    preloadedDocs[d.regNumber].push(d);
+  });
+
+  const preloadedAchs = {};
+  allAchs.forEach(a => {
+    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
+    preloadedAchs[a.regNumber].push(a);
+  });
+
   for (let i = 0; i < students.length; i++) {
     const st = students[i];
     const rowData = [i + 1, st.regNumber, st.name, st.branch, st.section];
     for (const dt of docTypes) {
-      const r = await getStudentDocData(st, dt);
+      const r = await getStudentDocData(st, dt, preloadedDocs, preloadedAchs);
       rowData.push(r.data && r.data !== '—' ? r.data : 'Missing');
     }
     if (y + ROW_H > doc.page.height - 30) {
@@ -401,9 +530,9 @@ router.get('/section-report/excel', protect, async (req, res) => {
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
   };
 
-  const docTypes = [].concat(req.query.docType || []).filter(Boolean);
-  const branches = [].concat(req.query.branch || []).filter(Boolean);
-  const sections = [].concat(req.query.section || []).filter(Boolean);
+  const docTypes = parseQueryArray(req.query.docType);
+  const branches = parseQueryArray(req.query.branch);
+  const sections = parseQueryArray(req.query.section);
   const { admissionYear } = req.query;
 
   const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
@@ -425,12 +554,29 @@ router.get('/section-report/excel', protect, async (req, res) => {
   }
   const finalDocTypes = expandedDocTypes.length > 0 ? expandedDocTypes : docTypes;
 
+  const Achievement = require('../models/Achievement');
+  const regNumbers = students.map(s => s.regNumber);
+  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
+  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+
+  const preloadedDocs = {};
+  allDocs.forEach(d => {
+    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
+    preloadedDocs[d.regNumber].push(d);
+  });
+
+  const preloadedAchs = {};
+  allAchs.forEach(a => {
+    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
+    preloadedAchs[a.regNumber].push(a);
+  });
+
   // One flat row per student
   const rows = [];
   for (const st of students) {
     const row = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section };
     for (const dt of finalDocTypes) {
-      const r = await getStudentDocData(st, dt);
+      const r = await getStudentDocData(st, dt, preloadedDocs, preloadedAchs);
       row[dt] = r.data && r.data !== '—' ? r.data : '';
     }
     rows.push(row);

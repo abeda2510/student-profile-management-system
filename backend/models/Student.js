@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const studentSchema = new mongoose.Schema({
-  regNumber: { type: String, required: true, unique: true },
+  regNumber: { type: String, required: true, unique: true, sparse: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'admin', 'faculty'], default: 'student' },
   name: { type: String, required: true },
@@ -60,6 +60,18 @@ const studentSchema = new mongoose.Schema({
   interYear: Number,
   interPercent: Number,
   interGroup: String,
+  // CRT Performance — array of { module, score, maxScore }
+  crtPerformance: [{
+    module: String,      // e.g. 'Aptitude', 'Reasoning', 'Verbal', 'Technical', 'Mock Test'
+    score: Number,
+    maxScore: { type: Number, default: 100 },
+  }],
+  // Attendance — array of { subject, present, total }
+  attendance: [{
+    subject: String,
+    present: Number,
+    total: Number,
+  }],
 }, { timestamps: true, collection: 'students' }); // → students collection
 
 studentSchema.pre('save', async function (next) {

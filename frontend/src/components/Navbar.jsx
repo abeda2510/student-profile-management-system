@@ -9,7 +9,18 @@ export default function Navbar() {
   const loginType = localStorage.getItem('loginType');
   const name = localStorage.getItem('name');
   const role = localStorage.getItem('role');
-  const logout = () => { localStorage.clear(); navigate('/login'); };
+  const logout = () => {
+    const r = localStorage.getItem('role');
+    const lt = localStorage.getItem('loginType');
+    localStorage.clear();
+    if (r === 'admin') {
+      navigate('/admin');
+    } else if (lt === 'faculty' || r === 'faculty') {
+      navigate('/faculty');
+    } else {
+      navigate('/login');
+    }
+  };
 
   const studentLinks = [
     { to: '/', label: 'Dashboard' },
@@ -17,10 +28,11 @@ export default function Navbar() {
     { to: '/achievements', label: 'Achievements' },
   ];
   const facultyLinks = [
-    { to: '/', label: 'Dashboard' },
+    ...(role === 'admin'
+      ? [{ to: '/admin', label: 'Dashboard' }]
+      : [{ to: '/', label: 'Dashboard' }]),
     { to: '/section-report', label: 'Reports' },
     { to: '/achievement-report', label: 'Achievements' },
-    ...(role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
   ];
   const links = loginType === 'faculty' ? facultyLinks : studentLinks;
   const isFaculty = loginType === 'faculty';

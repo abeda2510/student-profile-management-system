@@ -320,6 +320,103 @@ router.get('/count', protect, async (req, res) => {
   res.json({ count });
 });
 
+// Admin: dashboard stats aggregate
+router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
+  try {
+    const rawStats = await Student.aggregate([
+      { $match: { role: 'student' } },
+      {
+        $group: {
+          _id: {
+            branch: { $ifNull: [ "$branch", "Unknown" ] },
+            section: { $ifNull: [ "$section", "Unknown" ] },
+            gender: { $ifNull: [ "$gender", "Unknown" ] }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    let totalStudents = 0;
+    let maleCount = 0;
+    let femaleCount = 0;
+    const departments = {};
+
+    rawStats.forEach(item => {
+      const branchRaw = item._id.branch || 'Unknown';
+      const branch = String(branchRaw).trim().toUpperCase() || 'UNKNOWN';
+      const section = String(item._id.section || 'Unknown').trim().toUpperCase() || 'UNKNOWN';
+      const gender = String(item._id.gender || 'Unknown').trim().toLowerCase();
+      const count = item.count;
+
+      totalStudents += count;
+      if (gender === 'male') {
+        maleCount += count;
+      } else if (gender === 'female') {
+        femaleCount += count;
+      }
+
+      if (!departments[branch]) {
+        departments[branch] = {
+          branch,
+          total: 0,
+          male: 0,
+          female: 0,
+          sections: {}
+        };
+      }
+
+      const dept = departments[branch];
+      dept.total += count;
+      if (gender === 'male') {
+        dept.male += count;
+      } else if (gender === 'female') {
+        dept.female += count;
+      }
+
+      if (!dept.sections[section]) {
+        dept.sections[section] = {
+          section,
+          total: 0,
+          male: 0,
+          female: 0
+        };
+      }
+
+      const sect = dept.sections[section];
+      sect.total += count;
+      if (gender === 'male') {
+        sect.male += count;
+      } else if (gender === 'female') {
+        sect.female += count;
+      }
+    });
+
+    const formattedDepartments = Object.keys(departments).map(branchName => {
+      const dept = departments[branchName];
+      const sectionsArray = Object.keys(dept.sections).map(sectionName => dept.sections[sectionName]);
+      return {
+        branch: branchName,
+        total: dept.total,
+        male: dept.male,
+        female: dept.female,
+        sectionsCount: sectionsArray.length,
+        sections: sectionsArray.sort((a, b) => a.section.localeCompare(b.section, undefined, { numeric: true, sensitivity: 'base' }))
+      };
+    }).sort((a, b) => a.branch.localeCompare(b.branch));
+
+    res.json({
+      totalStudents,
+      male: maleCount,
+      female: femaleCount,
+      departments: formattedDepartments
+    });
+  } catch (err) {
+    console.error('dashboard-stats aggregate error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Admin: range search across numeric student fields and derived counts
 router.get('/search-range', protect, adminOnly, async (req, res) => {
   try {

@@ -1,31 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 
 const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
 
-const ROLES = [
-  { val: 'student', label: 'Student', icon: '👨‍🎓', desc: 'Access your profile & achievements', color: '#1e40af' },
-  { val: 'faculty', label: 'Faculty', icon: '👨‍🏫', desc: 'Manage & review students',           color: '#059669' },
-  { val: 'admin',   label: 'Admin',   icon: '🔐', desc: 'Full system access',                  color: '#7c3aed' },
-];
+const ROLES_CONFIG = {
+  student: { label: 'Student', icon: '👨‍🎓', desc: 'Access your profile & achievements', color: '#1e40af', bg: '#dbeafe' },
+  faculty: { label: 'Faculty', icon: '👨‍🏫', desc: 'Manage & review students',           color: '#059669', bg: '#d1fae5' },
+  admin:   { label: 'Admin',   icon: '🔐', desc: 'Full system access',                  color: '#7c3aed', bg: '#f3e8ff' },
+};
 
-export default function Login() {
-  const [role, setRole] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [studentForm, setStudentForm] = useState({ regNumber: '', password: '' });
+export default function Login({ adminOnly = false, facultyOnly = false }) {
+  const mode = adminOnly ? 'admin' : (facultyOnly ? 'faculty' : 'student');
+  const config = ROLES_CONFIG[mode];
+
+  const [studentForm, setStudentForm] = useState({ regNumber: '' });
+  const [otp, setOtp] = useState('');
+  const [otpStep, setOtpStep] = useState(1); // 1 = Enter registration number, 2 = Enter OTP
+  const [maskedEmail, setMaskedEmail] = useState('');
+  
   const [facultyForm, setFacultyForm] = useState({ facultyId: '', password: '' });
   const [showPass, setShowPass] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const selectedRole = ROLES.find(r => r.val === (isAdmin ? 'admin' : role));
+  // Reset local state if route/props change
+  useEffect(() => {
+    setError('');
+    setOtp('');
+    setOtpStep(1);
+    setStudentForm({ regNumber: '' });
+    setFacultyForm({ facultyId: '', password: '' });
+  }, [adminOnly, facultyOnly]);
 
-  const loginStudent = async (e) => {
-    e.preventDefault(); setError(''); setLoading(true);
+  const sendStudentOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
-      const { data } = await api.post('/auth/student/login', studentForm);
+      const { data } = await api.post('/auth/student/send-otp', { regNumber: studentForm.regNumber.trim().toUpperCase() });
+      setMaskedEmail(data.maskedEmail);
+      setOtpStep(2);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send OTP. Please check your Registration Number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyStudentOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/student/verify-otp', { 
+        regNumber: studentForm.regNumber.trim().toUpperCase(), 
+        otp: otp.trim() 
+      });
       localStorage.clear();
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
@@ -33,14 +66,37 @@ export default function Login() {
       localStorage.setItem('regNumber', data.regNumber);
       localStorage.setItem('name', data.name);
       navigate('/');
-    } catch (err) { setError(err.response?.data?.message || 'Login failed'); }
-    setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendStudentOtp = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/student/send-otp', { regNumber: studentForm.regNumber.trim().toUpperCase() });
+      setMaskedEmail(data.maskedEmail);
+      setError('');
+      alert('OTP has been resent successfully.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loginFaculty = async (e) => {
-    e.preventDefault(); setError(''); setLoading(true);
+    e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
-      const { data } = await api.post('/auth/faculty/login', facultyForm);
+      const { data } = await api.post('/auth/faculty/login', {
+        facultyId: facultyForm.facultyId.trim(),
+        password: facultyForm.password
+      });
       localStorage.clear();
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
@@ -48,151 +104,191 @@ export default function Login() {
       localStorage.setItem('facultyId', data.facultyId || data.regNumber);
       localStorage.setItem('name', data.name);
       navigate('/');
-    } catch (err) { setError(err.response?.data?.message || 'Login failed'); }
-    setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Invalid ID or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#dbeafe', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', fontFamily: "'Segoe UI', sans-serif" }}>
-
+    <div style={{ minHeight: '100vh', background: config.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', fontFamily: "'Segoe UI', sans-serif", transition: 'background 0.3s ease' }}>
+      
       {/* Logo Card */}
-      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', marginBottom: 28, textAlign: 'center' }}>
-        <img src={LOGO} alt="Vignan" style={{ height: 120, objectFit: 'contain' }} />
+      <div style={{ background: '#fff', borderRadius: 16, padding: '20px 40px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', marginBottom: 28, textAlign: 'center', border: '1px solid rgba(255,255,255,0.8)' }}>
+        <img src={LOGO} alt="Vignan logo" style={{ height: 110, objectFit: 'contain' }} />
       </div>
 
-      {/* Role Selection */}
-      {!role && (
-        <>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#1e293b', marginBottom: 6, textAlign: 'center' }}>Welcome Back</div>
-          <div style={{ fontSize: 14, color: '#64748b', marginBottom: 28, textAlign: 'center' }}>
-            Sign in to access your profile, achievements, and documents.
+      <div style={{ background: '#fff', borderRadius: 16, padding: '32px 32px', width: '100%', maxWidth: 410, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05)', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+        
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+            {config.icon}
           </div>
-
-          <div style={{ background: '#fff', borderRadius: 14, padding: '24px 28px', width: '100%', maxWidth: 400, boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Select your role</div>
-
-            {/* Dropdown */}
-            <select defaultValue="" onChange={e => { if (e.target.value) { const v = e.target.value; setRole(v === 'admin' ? 'faculty' : v); setIsAdmin(v === 'admin'); setError(''); } }}
-              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', color: '#374151', background: '#fff', outline: 'none', marginBottom: 14, cursor: 'pointer' }}>
-              <option value="" disabled>-- Choose Role --</option>
-              <option value="student">👨‍🎓 Student</option>
-              <option value="faculty">👨‍🏫 Faculty</option>
-              <option value="admin">🔐 Admin</option>
-            </select>
-
-            {/* Role Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {ROLES.map(r => (
-                <div key={r.val}
-                  onClick={() => { setRole(r.val === 'admin' ? 'faculty' : r.val); setIsAdmin(r.val === 'admin'); setError(''); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = r.color; e.currentTarget.style.background = '#eff6ff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                    {r.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: r.color }}>{r.label}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.desc}</div>
-                  </div>
-                  <span style={{ color: '#cbd5e1', fontSize: 14 }}>→</span>
-                </div>
-              ))}
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 18, color: '#0f172a' }}>{config.label} Login</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+              {mode === 'student' ? 'Access with your registration ID' : `Enter your ${mode} credentials`}
             </div>
-          </div>
-        </>
-      )}
-
-      {/* Login Form */}
-      {role && selectedRole && (
-        <div style={{ background: '#fff', borderRadius: 14, padding: '28px 28px', width: '100%', maxWidth: 400, boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
-            <button onClick={() => { setRole(null); setIsAdmin(false); setError(''); }}
-              style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
-            <div style={{ fontSize: 20 }}>{selectedRole.icon}</div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>{selectedRole.label} Login</div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                {role === 'student' ? 'Enter your registration number & password' : 'Enter your ID & password'}
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 14, background: '#fef2f2', padding: '9px 12px', borderRadius: 7, border: '1px solid #fecaca' }}>
-              ⚠️ {error}
-            </div>
-          )}
-
-          {role === 'student' ? (
-            <form onSubmit={loginStudent}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Registration Number</label>
-              <input value={studentForm.regNumber} onChange={e => setStudentForm({ ...studentForm, regNumber: e.target.value })}
-                placeholder="e.g. 231FA04040" required
-                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, marginBottom: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                onFocus={e => e.target.style.borderColor = selectedRole.color}
-                onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Password</label>
-              <div style={{ position: 'relative', marginBottom: 20 }}>
-                <input type={showPass ? 'text' : 'password'} value={studentForm.password}
-                  onChange={e => setStudentForm({ ...studentForm, password: e.target.value })}
-                  placeholder="Enter password" required
-                  style={{ width: '100%', padding: '11px 40px 11px 13px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                  onFocus={e => e.target.style.borderColor = selectedRole.color}
-                  onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-                <button type="button" onClick={() => setShowPass(s => !s)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#94a3b8' }}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-              <button type="submit" disabled={loading}
-                style={{ width: '100%', padding: 12, background: loading ? '#94a3b8' : selectedRole.color, color: '#fff', border: 'none', borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                {loading ? 'Signing in...' : 'Login as Student'}
-              </button>
-              <div style={{ textAlign: 'center', marginTop: 12 }}>
-                <Link to="/forgot-password" style={{ fontSize: 13, color: selectedRole.color, fontWeight: 600 }}>Forgot Password?</Link>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={loginFaculty}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>{isAdmin ? 'Admin ID' : 'Faculty ID'}</label>
-              <input value={facultyForm.facultyId} onChange={e => setFacultyForm({ ...facultyForm, facultyId: e.target.value })}
-                placeholder={isAdmin ? 'Enter admin ID' : 'Enter faculty ID'} required
-                style={{ width: '100%', padding: '11px 13px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, marginBottom: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                onFocus={e => e.target.style.borderColor = selectedRole.color}
-                onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: '#374151' }}>Password</label>
-              <div style={{ position: 'relative', marginBottom: 20 }}>
-                <input type={showPass ? 'text' : 'password'} value={facultyForm.password}
-                  onChange={e => setFacultyForm({ ...facultyForm, password: e.target.value })}
-                  placeholder="Enter password" required
-                  style={{ width: '100%', padding: '11px 40px 11px 13px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                  onFocus={e => e.target.style.borderColor = selectedRole.color}
-                  onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-                <button type="button" onClick={() => setShowPass(s => !s)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#94a3b8' }}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-              <button type="submit" disabled={loading}
-                style={{ width: '100%', padding: 12, background: loading ? '#94a3b8' : selectedRole.color, color: '#fff', border: 'none', borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                {loading ? 'Signing in...' : `Login as ${selectedRole.label}`}
-              </button>
-              <div style={{ textAlign: 'center', marginTop: 12 }}>
-                <Link to="/forgot-password" style={{ fontSize: 13, color: selectedRole.color, fontWeight: 600 }}>Forgot Password?</Link>
-              </div>
-            </form>
-          )}
-
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#94a3b8' }}>
-            Wrong role?{' '}
-            <span onClick={() => { setRole(null); setIsAdmin(false); setError(''); }}
-              style={{ color: selectedRole.color, fontWeight: 600, cursor: 'pointer' }}>Choose again</span>
           </div>
         </div>
-      )}
 
-      <div style={{ marginTop: 28, fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+        {/* Error notification */}
+        {error && (
+          <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 18, background: '#fef2f2', padding: '10px 14px', borderRadius: 8, border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>⚠️</span>
+            <span style={{ flex: 1, fontWeight: 500 }}>{error}</span>
+          </div>
+        )}
+
+        {/* Forms Render */}
+        {mode === 'student' ? (
+          <div>
+            {otpStep === 1 ? (
+              <form onSubmit={sendStudentOtp}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#374151' }}>Registration Number</label>
+                <input 
+                  value={studentForm.regNumber} 
+                  onChange={e => setStudentForm({ regNumber: e.target.value })}
+                  placeholder="e.g. 231FA04017" 
+                  required
+                  style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #cbd5e1', borderRadius: 8, fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color 0.2s' }}
+                  onFocus={e => e.target.style.borderColor = config.color}
+                  onBlur={e => e.target.style.borderColor = '#cbd5e1'} 
+                />
+                
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ width: '100%', padding: 12, background: loading ? '#94a3b8' : config.color, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 6px -1px rgba(30, 64, 175, 0.2)', transition: 'background 0.2s' }}
+                >
+                  {loading ? 'Sending OTP...' : 'Send OTP'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={verifyStudentOtp}>
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 8, marginBottom: 18, border: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>OTP sent to registered email:</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginTop: 2 }}>{maskedEmail}</div>
+                </div>
+
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#374151' }}>Enter 6-Digit OTP</label>
+                <input 
+                  type="text"
+                  maxLength={6}
+                  value={otp} 
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="------" 
+                  required
+                  style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #cbd5e1', borderRadius: 8, fontSize: 20, letterSpacing: 8, textAlign: 'center', marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                  onFocus={e => e.target.style.borderColor = config.color}
+                  onBlur={e => e.target.style.borderColor = '#cbd5e1'} 
+                />
+
+                <button 
+                  type="submit" 
+                  disabled={loading || otp.length < 6}
+                  style={{ width: '100%', padding: 12, background: (loading || otp.length < 6) ? '#94a3b8' : config.color, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: (loading || otp.length < 6) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+                >
+                  {loading ? 'Verifying...' : 'Verify & Login'}
+                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16, fontSize: 13 }}>
+                  <button 
+                    type="button" 
+                    onClick={() => { setOtpStep(1); setOtp(''); setError(''); }}
+                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    ← Back
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={resendStudentOtp}
+                    disabled={loading}
+                    style={{ background: 'none', border: 'none', color: config.color, cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : (
+          <form onSubmit={loginFaculty}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#374151' }}>
+              {mode === 'admin' ? 'Admin ID' : 'Faculty ID'}
+            </label>
+            <input 
+              value={facultyForm.facultyId} 
+              onChange={e => setFacultyForm({ ...facultyForm, facultyId: e.target.value })}
+              placeholder={mode === 'admin' ? 'Enter admin ID' : 'Enter faculty ID'} 
+              required
+              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #cbd5e1', borderRadius: 8, fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              onFocus={e => e.target.style.borderColor = config.color}
+              onBlur={e => e.target.style.borderColor = '#cbd5e1'} 
+            />
+
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#374151' }}>Password</label>
+            <div style={{ position: 'relative', marginBottom: 22 }}>
+              <input 
+                type={showPass ? 'text' : 'password'} 
+                value={facultyForm.password}
+                onChange={e => setFacultyForm({ ...facultyForm, password: e.target.value })}
+                placeholder="Enter password" 
+                required
+                style={{ width: '100%', padding: '12px 40px 12px 14px', border: '1.5px solid #cbd5e1', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                onFocus={e => e.target.style.borderColor = config.color}
+                onBlur={e => e.target.style.borderColor = '#cbd5e1'} 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPass(s => !s)}
+                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94a3b8' }}
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{ width: '100%', padding: 12, background: loading ? '#94a3b8' : config.color, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+            >
+              {loading ? 'Logging in...' : `Login as ${config.label}`}
+            </button>
+            
+            <div style={{ textAlign: 'center', marginTop: 14 }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: config.color, fontWeight: 600, textDecoration: 'none' }}>Forgot Password?</Link>
+            </div>
+          </form>
+        )}
+
+        {/* Dynamic Nav links to switch portal roles */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24, pt: 16, borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Other Portals</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, fontSize: 13 }}>
+            {mode !== 'student' && (
+              <Link to="/login" style={{ color: '#1e40af', fontWeight: 700, textDecoration: 'none' }}>👨‍🎓 Student Login</Link>
+            )}
+            {mode !== 'faculty' && (
+              <>
+                {mode !== 'student' && <span style={{ color: '#cbd5e1' }}>|</span>}
+                <Link to="/faculty" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>👨‍🏫 Faculty Login</Link>
+              </>
+            )}
+            {mode !== 'admin' && (
+              <>
+                <span style={{ color: '#cbd5e1' }}>|</span>
+                <Link to="/admin" style={{ color: '#7c3aed', fontWeight: 700, textDecoration: 'none' }}>🔐 Admin Login</Link>
+              </>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      <div style={{ marginTop: 28, fontSize: 12, color: '#94a3b8', textAlign: 'center', maxWidth: 400, lineHeight: 1.4 }}>
         Vignan's Foundation for Science, Technology &amp; Research · Deemed to be University
       </div>
     </div>

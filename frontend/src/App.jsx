@@ -26,13 +26,72 @@ function stripBase(pathname) {
   return pathname;
 }
 
-const PrivateRoute = ({ children }) =>
-  localStorage.getItem('token') ? children : <Navigate to="/login" />;
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const { pathname } = useLocation();
+  if (token) return children;
+
+  const facultyRoutes = ['/section-report', '/achievement-report', '/achievement-dashboard', '/my-achievements', '/dept-events'];
+  const isFacultyRoute = facultyRoutes.some(route => stripBase(pathname).startsWith(route));
+  if (isFacultyRoute) {
+    return <Navigate to="/faculty" replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
 
 const RoleHome = () => {
   const loginType = localStorage.getItem('loginType');
-  if (loginType === 'faculty') return <FacultyDashboard />;
+  const role = localStorage.getItem('role');
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  if (loginType === 'faculty' || role === 'faculty') return <Navigate to="/faculty" replace />;
   return <Dashboard />;
+};
+
+const AdminRoute = () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  if (token) {
+    if (role === 'admin') {
+      return (
+        <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', flexDirection: 'column' }}>
+          <Topbar />
+          <div style={{ flex: 1, maxWidth: 1100, width: '100%', margin: '0 auto', padding: '32px 24px' }}>
+            <AdminSearch />
+          </div>
+          <Chatbot />
+        </div>
+      );
+    } else {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  return <Login adminOnly={true} />;
+};
+
+const FacultyRoute = () => {
+  const token = localStorage.getItem('token');
+  const loginType = localStorage.getItem('loginType');
+  const role = localStorage.getItem('role');
+
+  if (token) {
+    if (loginType === 'faculty' || role === 'faculty') {
+      return (
+        <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', flexDirection: 'column' }}>
+          <Topbar />
+          <div style={{ flex: 1, maxWidth: 1100, width: '100%', margin: '0 auto', padding: '32px 24px' }}>
+            <FacultyDashboard />
+          </div>
+          <Chatbot />
+        </div>
+      );
+    } else {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  return <Login facultyOnly={true} />;
 };
 
 function Topbar() {
@@ -41,7 +100,18 @@ function Topbar() {
   const loginType = localStorage.getItem('loginType');
   const role = localStorage.getItem('role');
   const name = localStorage.getItem('name');
-  const logout = () => { localStorage.clear(); navigate('/login'); };
+  const logout = () => {
+    const r = localStorage.getItem('role');
+    const lt = localStorage.getItem('loginType');
+    localStorage.clear();
+    if (r === 'admin') {
+      navigate('/admin');
+    } else if (lt === 'faculty' || r === 'faculty') {
+      navigate('/faculty');
+    } else {
+      navigate('/login');
+    }
+  };
   const isFaculty = loginType === 'faculty';
   const activePath = stripBase(pathname);
 
@@ -51,11 +121,12 @@ function Topbar() {
     { to: '/achievements', label: 'Achievements' },
   ];
   const facultyLinks = [
-    { to: '/', label: 'Dashboard' },
+    ...(role === 'admin'
+      ? [{ to: '/admin', label: 'Dashboard' }]
+      : [{ to: '/', label: 'Dashboard' }]),
     { to: '/section-report', label: 'Reports' },
     { to: '/achievement-report', label: 'Achievements' },
     { to: '/dept-events', label: 'Dept Events' },
-    ...(role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
   ];
   const links = isFaculty ? facultyLinks : studentLinks;
   const accent = isFaculty ? '#059669' : '#1e40af';
@@ -114,6 +185,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/admin" element={<AdminRoute />} />
+        <Route path="/faculty" element={<FacultyRoute />} />
         <Route path="/*" element={
           <PrivateRoute>
             <div style={{ minHeight: '100vh', background: '#f0f4f8', display: 'flex', flexDirection: 'column' }}>
@@ -129,7 +202,6 @@ export default function App() {
                   <Route path="/achievement-dashboard" element={<AchievementDashboard />} />
                   <Route path="/my-achievements" element={<FacultyMyAchievements />} />
                   <Route path="/dept-events" element={<DeptEvents />} />
-                  <Route path="/admin" element={<AdminSearch />} />
                 </Routes>
               </div>
               <Chatbot />

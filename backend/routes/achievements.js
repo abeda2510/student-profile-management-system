@@ -244,7 +244,7 @@ router.get('/ranking/department', protect, facultyOrAdmin, async (req, res) => {
 // Faculty: achievement report with filters
 router.get('/faculty-report', protect, async (req, res) => {
   try {
-    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
@@ -258,7 +258,17 @@ router.get('/faculty-report', protect, async (req, res) => {
       const students = await Student.find(studentFilter).select('regNumber name branch section currentYear');
       const regNumbers = students.map(s => s.regNumber);
       achFilter.regNumber = { $in: regNumbers };
-      const achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+      let achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+
+      if (minCertificates) {
+        const minVal = parseInt(minCertificates);
+        if (!isNaN(minVal) && minVal > 0) {
+          const counts = {};
+          achievements.forEach(a => { counts[a.regNumber] = (counts[a.regNumber] || 0) + 1; });
+          achievements = achievements.filter(a => counts[a.regNumber] >= minVal);
+        }
+      }
+
       const studentMap = {};
       students.forEach(s => { studentMap[s.regNumber] = s; });
       return res.json(achievements.map(a => ({
@@ -270,7 +280,17 @@ router.get('/faculty-report', protect, async (req, res) => {
       })));
     }
 
-    const achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+    let achievements = await Achievement.find(achFilter).sort({ createdAt: -1 });
+
+    if (minCertificates) {
+      const minVal = parseInt(minCertificates);
+      if (!isNaN(minVal) && minVal > 0) {
+        const counts = {};
+        achievements.forEach(a => { counts[a.regNumber] = (counts[a.regNumber] || 0) + 1; });
+        achievements = achievements.filter(a => counts[a.regNumber] >= minVal);
+      }
+    }
+
     const regNumbers = [...new Set(achievements.map(a => a.regNumber))];
     const students = await Student.find({ regNumber: { $in: regNumbers } }).select('regNumber name branch section currentYear');
     const studentMap = {};
@@ -292,7 +312,7 @@ router.get('/faculty-report', protect, async (req, res) => {
 router.get('/faculty-report/excel', protect, async (req, res) => {
   try {
     const ExcelJS = require('exceljs');
-    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
@@ -307,7 +327,17 @@ router.get('/faculty-report/excel', protect, async (req, res) => {
       const regNumbers = students.map(s => s.regNumber);
       if (regNumbers.length) achFilter.regNumber = { $in: regNumbers };
     }
-    const achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+    let achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+
+    if (minCertificates) {
+      const minVal = parseInt(minCertificates);
+      if (!isNaN(minVal) && minVal > 0) {
+        const counts = {};
+        achievements.forEach(a => { counts[a.regNumber] = (counts[a.regNumber] || 0) + 1; });
+        achievements = achievements.filter(a => counts[a.regNumber] >= minVal);
+      }
+    }
+
     if (!students.length) {
       const regs = [...new Set(achievements.map(a => a.regNumber))];
       students = await Student.find({ regNumber: { $in: regs } }).select('regNumber name branch section currentYear');
@@ -357,7 +387,7 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     const axios = require('axios');
     const path = require('path');
     const fs = require('fs');
-    const { academicYear, currentYear, activityType, activityTypes, branch, section } = req.query;
+    const { academicYear, currentYear, activityType, activityTypes, branch, section, minCertificates } = req.query;
     const achFilter = {};
     if (academicYear) achFilter.academicYear = academicYear;
     if (activityType) achFilter.activityType = activityType;
@@ -372,7 +402,17 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
       const regNumbers = students.map(s => s.regNumber);
       if (regNumbers.length) achFilter.regNumber = { $in: regNumbers };
     }
-    const achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+    let achievements = await Achievement.find(achFilter).sort({ regNumber: 1 });
+
+    if (minCertificates) {
+      const minVal = parseInt(minCertificates);
+      if (!isNaN(minVal) && minVal > 0) {
+        const counts = {};
+        achievements.forEach(a => { counts[a.regNumber] = (counts[a.regNumber] || 0) + 1; });
+        achievements = achievements.filter(a => counts[a.regNumber] >= minVal);
+      }
+    }
+
     if (!students.length) {
       const regs = [...new Set(achievements.map(a => a.regNumber))];
       students = await Student.find({ regNumber: { $in: regs } }).select('regNumber name branch section');

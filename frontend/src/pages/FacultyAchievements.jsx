@@ -55,6 +55,7 @@ const empty = { activityType:'', title:'', description:'', issuingOrg:'', academ
 
 // ── Report Tab ───────────────────────────────────────────────────────────────
 function ReportTab() {
+  const role = localStorage.getItem('role');
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [customType, setCustomType] = useState('');
@@ -67,12 +68,15 @@ function ReportTab() {
   const [xlLoading, setXlLoading] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [counselleesOnly, setCounselleesOnly] = useState(true);
+  const [counselleesOnly, setCounselleesOnly] = useState(role === 'admin' ? false : true);
   const [myStudentRegs, setMyStudentRegs] = useState([]);
+  const [minCertificates, setMinCertificates] = useState('');
 
   useEffect(() => {
-    api.get('/faculty/my-students').then(r => setMyStudentRegs(r.data.map(s => s.regNumber))).catch(() => {});
-  }, []);
+    if (role !== 'admin') {
+      api.get('/faculty/my-students').then(r => setMyStudentRegs(r.data.map(s => s.regNumber))).catch(() => {});
+    }
+  }, [role]);
 
   const toggleType = (type) => setSelectedTypes(s => s.includes(type) ? s.filter(x => x !== type) : [...s, type]);
 
@@ -83,6 +87,7 @@ function ReportTab() {
       if (academicYear) params.append('academicYear', academicYear);
       if (branch) params.append('branch', branch);
       if (currentYear) params.append('currentYear', currentYear);
+      if (minCertificates) params.append('minCertificates', minCertificates);
       const typesToFetch = selectedTypes.length > 0 ? [...selectedTypes] : (showOther && customType.trim() ? [] : [...(selectedCat?.types || [])]);
       if (showOther && customType.trim()) typesToFetch.push(customType.trim());
       typesToFetch.forEach(t => params.append('activityTypes', t));
@@ -98,6 +103,7 @@ function ReportTab() {
     if (academicYear) params.append('academicYear', academicYear);
     if (branch) params.append('branch', branch);
     if (currentYear) params.append('currentYear', currentYear);
+    if (minCertificates) params.append('minCertificates', minCertificates);
     const typesToFetch = selectedTypes.length > 0 ? [...selectedTypes] : (showOther && customType.trim() ? [] : [...(selectedCat?.types || [])]);
     if (showOther && customType.trim()) { typesToFetch.length = 0; typesToFetch.push(customType.trim()); }
     typesToFetch.forEach(t => params.append('activityTypes', t));
@@ -133,7 +139,7 @@ function ReportTab() {
     setZipLoading(false);
   };
 
-  const reset = () => { setSelectedCat(null); setSelectedTypes([]); setCustomType(''); setShowOther(false); setAchievements([]); setFetched(false); };
+  const reset = () => { setSelectedCat(null); setSelectedTypes([]); setCustomType(''); setShowOther(false); setAchievements([]); setFetched(false); setMinCertificates(''); };
 
   return (
     <div>
@@ -186,7 +192,7 @@ function ReportTab() {
             {showOther && <input value={customType} onChange={e => setCustomType(e.target.value)} placeholder="Enter custom activity type..."
               style={{ marginTop: 10, padding: '9px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', width: 280 }} />}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
             {[['Academic Year', academicYear, setAcademicYear, Array.from({length: new Date().getFullYear()-2018},(_,i)=>{ const y=2019+i; const l=`${y}-${String(y+1).slice(2)}`; return [l,l]; }), 'All Years'],
               ['Year of Study', currentYear, setCurrentYear, ['1','2','3','4'].map(v=>[v,v]), 'All'],
               ['Branch', branch, setBranch, BRANCHES.map(b=>[b,b]), 'All Branches']
@@ -200,13 +206,20 @@ function ReportTab() {
                 </select>
               </div>
             ))}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 5 }}>Min Certificates</label>
+              <input type="number" min="1" value={minCertificates} onChange={e => setMinCertificates(e.target.value)} placeholder="e.g. 2"
+                style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-              <input type="checkbox" checked={counselleesOnly} onChange={e => setCounselleesOnly(e.target.checked)} style={{ accentColor: selectedCat.color, width: 15, height: 15 }} />
-              My Counsellees Only
-            </label>
-          </div>
+          {role !== 'admin' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                <input type="checkbox" checked={counselleesOnly} onChange={e => setCounselleesOnly(e.target.checked)} style={{ accentColor: selectedCat.color, width: 15, height: 15 }} />
+                My Counsellees Only
+              </label>
+            </div>
+          )}
           <button onClick={fetchAchievements} disabled={loading}
             style={{ background: loading ? '#94a3b8' : selectedCat.color, color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
             {loading ? 'Fetching...' : 'Fetch Achievements'}
@@ -459,6 +472,7 @@ function MyAchievementsTab() {
 // ── Combined Page ────────────────────────────────────────────────────────────
 export default function FacultyAchievements() {
   const [tab, setTab] = useState('report');
+  const role = localStorage.getItem('role');
   const tabBtn = (key, label) => (
     <button onClick={() => setTab(key)} style={{
       padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -473,12 +487,14 @@ export default function FacultyAchievements() {
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>Achievements</h2>
-        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 10 }}>
-          {tabBtn('report', '📊 Achievement Reports')}
-          {tabBtn('mine', '🏅 My Achievements')}
-        </div>
+        {role !== 'admin' && (
+          <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 10 }}>
+            {tabBtn('report', '📊 Achievement Reports')}
+            {tabBtn('mine', '🏅 My Achievements')}
+          </div>
+        )}
       </div>
-      {tab === 'report' ? <ReportTab /> : <MyAchievementsTab />}
+      {role === 'admin' ? <ReportTab /> : (tab === 'report' ? <ReportTab /> : <MyAchievementsTab />)}
     </div>
   );
 }

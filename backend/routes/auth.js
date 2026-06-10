@@ -2,6 +2,7 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const https = require('https');
+const nodemailer = require('nodemailer');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 
@@ -53,6 +54,32 @@ function sendOTPEmail(to, otp, userName) {
   });
 }
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+function sendOTPNodeMailer(to, otp, userName) {
+  const mailOptions = {
+    from: `"Student Management System" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: 'Student Login Verification OTP',
+    html: `
+      <div style="font-family:sans-serif;padding:32px;max-width:500px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
+        <h2 style="color:#1e40af;text-align:center;margin-bottom:24px">Login Verification OTP</h2>
+        <p>Hi <strong>${userName}</strong>,</p>
+        <p>Use the following 6-digit One-Time Password (OTP) to complete your login. This OTP is valid for 10 minutes.</p>
+        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e40af;text-align:center;padding:20px;background:#eff6ff;border-radius:8px;margin:24px 0">${otp}</div>
+        <p style="color:#64748b;font-size:12px;text-align:center">If you did not request this OTP, please ignore this email.</p>
+      </div>
+    `
+  };
+  return transporter.sendMail(mailOptions);
+}
+
 // One-time admin setup route
 router.post('/setup-admin', async (req, res) => {
   try {
@@ -87,6 +114,73 @@ router.post('/student/register', async (req, res) => {
     res.status(201).json({ token: signToken(student, 'student'), role: 'student' });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+router.post('/student/send-otp', async (req, res) => {
+  try {
+    const { regNumber } = req.body;
+    if (!regNumber) return res.status(400).json({ message: 'Registration number is required' });
+
+    const student = await Student.findOne({ regNumber });
+    if (!student) return res.status(404).json({ message: 'Student with this registration number does not exist' });
+    if (!student.email) return res.status(400).json({ message: 'No email registered for this student. Contact admin.' });
+
+    const otp = generateOTP();
+    otpStore[student.email] = { 
+      otp, 
+      expires: Date.now() + 10 * 60 * 1000, 
+      regNumber: student.regNumber, 
+      purpose: 'student_login' 
+    };
+
+    try {
+      await sendOTPNodeMailer(student.email, otp, student.name);
+      const masked = student.email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
+      res.json({ message: 'OTP sent successfully', maskedEmail: masked });
+    } catch (err) {
+      console.error('Nodemailer error:', err.message);
+      res.status(500).json({ message: 'Failed to send email: ' + err.message });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/student/verify-otp', async (req, res) => {
+  try {
+    const { regNumber, otp } = req.body;
+    if (!regNumber || !otp) return res.status(400).json({ message: 'Registration number and OTP are required' });
+
+    const student = await Student.findOne({ regNumber });
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    if (!student.email) return res.status(400).json({ message: 'No email registered for this account' });
+
+    const record = otpStore[student.email];
+    if (!record || record.purpose !== 'student_login' || record.regNumber !== regNumber) {
+      return res.status(400).json({ message: 'No OTP requested for this account. Please request again.' });
+    }
+
+    if (Date.now() > record.expires) {
+      delete otpStore[student.email];
+      return res.status(400).json({ message: 'OTP expired. Please request a new one.' });
+    }
+
+    if (record.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    delete otpStore[student.email];
+
+    const token = signToken(student, student.role);
+    res.json({ 
+      token, 
+      role: student.role, 
+      regNumber: student.regNumber, 
+      name: student.name 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
