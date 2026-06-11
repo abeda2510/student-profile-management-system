@@ -73,6 +73,7 @@ const studentSchema = new mongoose.Schema({
     total: Number,
   }],
 }, { timestamps: true, collection: 'students' }); // → students collection
+studentSchema.index({ branch: 1, section: 1, name: 1 });
 
 studentSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

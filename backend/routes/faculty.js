@@ -100,7 +100,13 @@ router.get('/student/:regNumber/achievements', protect, facultyOnly, async (req,
 
 // List all students
 router.get('/students', protect, facultyOnly, async (req, res) => {
-  const students = await Student.find().select('-password').sort({ createdAt: -1 }).allowDiskUse();
+  let students;
+  try {
+    students = await Student.find().select('-password').sort({ createdAt: -1 });
+  } catch (err) {
+    students = await Student.find().select('-password');
+    sortStudentsByDate(students);
+  }
   res.json(students);
 });
 
@@ -172,6 +178,34 @@ async function fetchCodeChefStats(username) {
     console.error('CodeChef fetch error:', err.message);
     return null;
   }
+}
+function sortStudents(students) {
+  return students.sort((a, b) => {
+    const branchA = String(a.branch || '').toUpperCase();
+    const branchB = String(b.branch || '').toUpperCase();
+    if (branchA !== branchB) return branchA.localeCompare(branchB);
+
+    const secA = String(a.section || '').toUpperCase();
+    const secB = String(b.section || '').toUpperCase();
+    const numA = parseInt(secA, 10);
+    const numB = parseInt(secB, 10);
+    if (!isNaN(numA) && !isNaN(numB)) {
+      if (numA !== numB) return numA - numB;
+    } else {
+      if (secA !== secB) return secA.localeCompare(secB);
+    }
+
+    const nameA = String(a.name || '').toUpperCase();
+    const nameB = String(b.name || '').toUpperCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+function sortStudentsByDate(students) {
+  return students.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
 }
 function parseQueryArray(val) {
   if (!val) return [];
@@ -400,7 +434,13 @@ function buildFilter(query) {
 router.get('/section-report', protect, async (req, res) => {
   const docTypes = parseQueryArray(req.query.docType);
   if (!docTypes.length) return res.status(400).json({ message: 'Select at least one document type' });
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+  let students;
+  try {
+    students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  } catch (err) {
+    students = await Student.find(buildFilter(req.query)).select('-password');
+    sortStudents(students);
+  }
   
   // Expand admin doc types to sub-columns
   const Document = require('../models/Document');
@@ -454,7 +494,13 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
   };
   const docTypes = parseQueryArray(req.query.docType);
   const { admissionYear } = req.query;
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+  let students;
+  try {
+    students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  } catch (err) {
+    students = await Student.find(buildFilter(req.query)).select('-password');
+    sortStudents(students);
+  }
 
   const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
   res.setHeader('Content-Type', 'application/pdf');
@@ -554,7 +600,13 @@ router.get('/section-report/excel', protect, async (req, res) => {
   const sections = parseQueryArray(req.query.section);
   const { admissionYear } = req.query;
 
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+  let students;
+  try {
+    students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  } catch (err) {
+    students = await Student.find(buildFilter(req.query)).select('-password');
+    sortStudents(students);
+  }
 
   // For admin doc types, expand to sub-columns (CRT Performance ? CRT Performance - Aptitude, etc.)
   const Document = require('../models/Document');
@@ -731,7 +783,13 @@ router.get('/section-report/excel', protect, async (req, res) => {
 // GET CRT Report data
 router.get('/crt-report', protect, async (req, res) => {
   try {
-    const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+    let students;
+    try {
+      students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+    } catch (err) {
+      students = await Student.find(buildFilter(req.query)).select('-password');
+      sortStudents(students);
+    }
     const regNumbers = students.map(s => s.regNumber);
 
     const crtDocs = await Document.find({
@@ -779,7 +837,13 @@ router.get('/crt-report', protect, async (req, res) => {
 router.get('/crt-report/excel', protect, async (req, res) => {
   try {
     const ExcelJS = require('exceljs');
-    const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+    let students;
+    try {
+      students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+    } catch (err) {
+      students = await Student.find(buildFilter(req.query)).select('-password');
+      sortStudents(students);
+    }
     const regNumbers = students.map(s => s.regNumber);
 
     const crtDocs = await Document.find({

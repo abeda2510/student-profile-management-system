@@ -568,7 +568,17 @@ router.get('/search-range', protect, adminOnly, async (req, res) => {
 
 // Admin: list all students
 router.get('/', protect, adminOnly, async (req, res) => {
-  const students = await Student.find().select('-password').sort({ createdAt: -1 }).allowDiskUse();
+  let students;
+  try {
+    students = await Student.find().select('-password').sort({ createdAt: -1 });
+  } catch (err) {
+    students = await Student.find().select('-password');
+    students.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
   res.json(students);
 });
 
