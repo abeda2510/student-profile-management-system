@@ -16,7 +16,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/Chatbot';
 import CRTReport from './pages/CRTReport';
 
-const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
+import LOGO from './assets/logo.png';
 const ROUTER_BASE = import.meta.env.BASE_URL || '/';
 
 function stripBase(pathname) {

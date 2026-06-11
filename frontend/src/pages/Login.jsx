@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 
-const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
+import LOGO from '../assets/logo.png';
 
 const ROLES_CONFIG = {
   student: { label: 'Student', icon: '👨‍🎓', desc: 'Access your profile & achievements', color: '#1e40af', bg: '#dbeafe' },

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
-const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
+import LOGO from '../assets/logo.png';
 
 const s = {
   page: { minHeight: '100vh', background: '#dbeafe', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: "'Segoe UI', sans-serif" },
