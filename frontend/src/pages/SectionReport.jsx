@@ -520,7 +520,7 @@ export default function SectionReport() {
   // Bulk report states
   const [selItems, setSelItems] = useState([]);
   const [selDepts, setSelDepts] = useState({});
-  const [activeTab, setActiveTab] = useState('CSE');
+  const [activeTab, setActiveTab] = useState('');
   const [academicYear, setAcademicYear] = useState('');
   const [yearOfStudy, setYearOfStudy] = useState('');
   const [results, setResults] = useState(null);
@@ -582,6 +582,7 @@ export default function SectionReport() {
     setCgpaMin(''); setCgpaMax('');
     setLcSolvedMin(''); setLcSolvedMax(''); setLcEasyMin(''); setLcMedMin(''); setLcHardMin('');
     setCcRatingMin(''); setCcRatingMax('');
+    setActiveTab('');
   };
 
   // Build the shared advanced-filter URLSearchParams entries
@@ -749,7 +750,7 @@ export default function SectionReport() {
                 <option value="" disabled>-- Select Academic Year --</option>
                 <option value="all">All Academic Years</option>
                 {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
-                  const y = 2019 + i;
+                  const y = new Date().getFullYear() - i;
                   return <option key={y} value={y}>{y}-{String(y+1).slice(2)}</option>;
                 })}
               </select>

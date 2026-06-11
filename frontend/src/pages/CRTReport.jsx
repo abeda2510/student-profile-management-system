@@ -149,11 +149,6 @@ export default function CRTReport() {
 
         {/* Dept Checkboxes wrapping grid */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-          <span onClick={toggleAllDepts}
-            style={{ padding: '8px 16px', borderRadius: 10, border: `2.5px solid ${selDepts.length === DEPTS.length ? '#059669' : '#e2e8f0'}`, background: selDepts.length === DEPTS.length ? '#05966910' : '#fff', color: selDepts.length === DEPTS.length ? '#059669' : '#374151', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <input type="checkbox" checked={selDepts.length === DEPTS.length} readOnly style={{ accentColor: '#059669', width: 14, height: 14, cursor: 'pointer' }} />
-            <span>All Departments</span>
-          </span>
           {DEPTS.map(dept => {
             const selected = selDepts.includes(dept);
             const color = DEPT_COLORS[dept];
@@ -176,7 +171,7 @@ export default function CRTReport() {
                 style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #d1d5db', borderRadius: 9, fontSize: 13, fontWeight: 600, color: '#334155', background: '#fff', outline: 'none', cursor: 'pointer' }}>
                 <option value="">All Academic Years</option>
                 {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
-                  const y = 2019 + i;
+                  const y = new Date().getFullYear() - i;
                   return <option key={y} value={y}>{y}-{String(y+1).slice(2)}</option>;
                 })}
               </select>
