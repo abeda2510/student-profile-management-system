@@ -100,7 +100,7 @@ router.get('/student/:regNumber/achievements', protect, facultyOnly, async (req,
 
 // List all students
 router.get('/students', protect, facultyOnly, async (req, res) => {
-  const students = await Student.find().select('-password').sort({ createdAt: -1 });
+  const students = await Student.find().select('-password').sort({ createdAt: -1 }).allowDiskUse();
   res.json(students);
 });
 
@@ -292,10 +292,21 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
       : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
-  if (['INTERNSHIP', 'HACKATHON', 'RESEARCH_PUBLICATION', 'TECHNICAL_COMPETITION', 'WORKSHOP', 'NPTEL', 'CERTIFICATION'].includes(docType)) {
+  if (['INTERNSHIP', 'HACKATHON', 'RESEARCH_PUBLICATION', 'TECHNICAL_COMPETITION', 'WORKSHOP', 'NPTEL', 'CERTIFICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(docType)) {
+    let matchTypes = [docType];
+    if (docType === 'NPTEL') {
+      matchTypes = ['NPTEL', 'NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE'];
+    } else if (docType === 'CERTIFICATION') {
+      matchTypes = ['CERTIFICATION', 'AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING'];
+    } else if (docType === 'HACKATHON') {
+      matchTypes = ['HACKATHON', 'IDEATHON', 'GAMING HACKTHON'];
+    } else if (docType === 'TECHNICAL_COMPETITION') {
+      matchTypes = ['TECHNICAL_COMPETITION', 'TECHNICAL_COMPETITION WINNER', 'TECHNICAL_COMPETITION PARTICIPATION'];
+    }
+
     const achs = preloadedAchs
-      ? (preloadedAchs[st.regNumber] || []).filter(a => a.activityType === docType && a.status === 'APPROVED')
-      : await Achievement.find({ regNumber: st.regNumber, activityType: docType, status: 'APPROVED' });
+      ? (preloadedAchs[st.regNumber] || []).filter(a => matchTypes.includes(a.activityType) && a.status === 'APPROVED')
+      : await Achievement.find({ regNumber: st.regNumber, activityType: { $in: matchTypes }, status: 'APPROVED' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'MARK_MEMO') {
@@ -389,7 +400,7 @@ function buildFilter(query) {
 router.get('/section-report', protect, async (req, res) => {
   const docTypes = parseQueryArray(req.query.docType);
   if (!docTypes.length) return res.status(400).json({ message: 'Select at least one document type' });
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
   
   // Expand admin doc types to sub-columns
   const Document = require('../models/Document');
@@ -434,6 +445,8 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
     RESEARCH_PUBLICATION: 'Research Publication',
+    PATENT: 'Patent', JOURNAL_PAPER: 'Journal Paper',
+    CONFERENCE_PAPER: 'Conference Paper', BOOK: 'Book', BOOK_CHAPTER: 'Book Chapter',
     TECHNICAL_COMPETITION: 'Technical Competition',
     WORKSHOP: 'Workshop',
     NPTEL: 'NPTEL Certification',
@@ -441,7 +454,7 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
   };
   const docTypes = parseQueryArray(req.query.docType);
   const { admissionYear } = req.query;
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
 
   const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
   res.setHeader('Content-Type', 'application/pdf');
@@ -528,6 +541,8 @@ router.get('/section-report/excel', protect, async (req, res) => {
     CODECHEF: 'CodeChef', LINKEDIN: 'LinkedIn',
     INTERNSHIP: 'Internship', HACKATHON: 'Hackathon', MARK_MEMO: 'Mark Memo',
     RESEARCH_PUBLICATION: 'Research Publication',
+    PATENT: 'Patent', JOURNAL_PAPER: 'Journal Paper',
+    CONFERENCE_PAPER: 'Conference Paper', BOOK: 'Book', BOOK_CHAPTER: 'Book Chapter',
     TECHNICAL_COMPETITION: 'Technical Competition',
     WORKSHOP: 'Workshop',
     NPTEL: 'NPTEL Certification',
@@ -539,7 +554,7 @@ router.get('/section-report/excel', protect, async (req, res) => {
   const sections = parseQueryArray(req.query.section);
   const { admissionYear } = req.query;
 
-  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+  const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
 
   // For admin doc types, expand to sub-columns (CRT Performance ? CRT Performance - Aptitude, etc.)
   const Document = require('../models/Document');
@@ -711,6 +726,185 @@ router.get('/section-report/excel', protect, async (req, res) => {
   res.setHeader('Content-Disposition', 'attachment; filename="section_report.xlsx"');
   await wb.xlsx.write(res);
   res.end();
+});
+
+// GET CRT Report data
+router.get('/crt-report', protect, async (req, res) => {
+  try {
+    const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+    const regNumbers = students.map(s => s.regNumber);
+
+    const crtDocs = await Document.find({
+      regNumber: { $in: regNumbers },
+      uploadedBy: 'admin',
+      label: { $regex: /^(CRT|Semester Attendance)/i }
+    });
+
+    const docMap = {};
+    crtDocs.forEach(d => {
+      if (!docMap[d.regNumber]) docMap[d.regNumber] = {};
+      docMap[d.regNumber][d.label] = d.fileUrl || d.filename || d.filepath || '—';
+    });
+
+    const results = students.map(s => {
+      const docs = docMap[s.regNumber] || {};
+      let acadAttAvg = '—';
+      if (s.attendance && s.attendance.length > 0) {
+        const sum = s.attendance.reduce((acc, a) => acc + (a.present / (a.total || 1)) * 100, 0);
+        acadAttAvg = (sum / s.attendance.length).toFixed(1) + '%';
+      }
+
+      return {
+        regNumber: s.regNumber,
+        name: s.name,
+        branch: s.branch,
+        section: s.section,
+        crtAttendance: docs['CRT Attendance'] || '—',
+        aptitude: docs['CRT Performance - Aptitude'] || '—',
+        coding: docs['CRT Performance - Coding'] || '—',
+        communication: docs['CRT Performance - Communication'] || '—',
+        mockInterview: docs['CRT Performance - Mock Interview'] || '—',
+        overallPct: docs['CRT Performance - Overall %'] || '—',
+        academicAttendance: docs['Semester Attendance - Sem 1'] || acadAttAvg
+      };
+    });
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Generate Excel for CRT Report
+router.get('/crt-report/excel', protect, async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 }).allowDiskUse();
+    const regNumbers = students.map(s => s.regNumber);
+
+    const crtDocs = await Document.find({
+      regNumber: { $in: regNumbers },
+      uploadedBy: 'admin',
+      label: { $regex: /^(CRT|Semester Attendance)/i }
+    });
+
+    const docMap = {};
+    crtDocs.forEach(d => {
+      if (!docMap[d.regNumber]) docMap[d.regNumber] = {};
+      docMap[d.regNumber][d.label] = d.fileUrl || d.filename || d.filepath || '—';
+    });
+
+    const rows = students.map(s => {
+      const docs = docMap[s.regNumber] || {};
+      let acadAttAvg = '—';
+      if (s.attendance && s.attendance.length > 0) {
+        const sum = s.attendance.reduce((acc, a) => acc + (a.present / (a.total || 1)) * 100, 0);
+        acadAttAvg = (sum / s.attendance.length).toFixed(1) + '%';
+      }
+      return {
+        regNumber: s.regNumber,
+        name: s.name,
+        branch: s.branch,
+        section: s.section,
+        crtAttendance: docs['CRT Attendance'] || '—',
+        aptitude: docs['CRT Performance - Aptitude'] || '—',
+        coding: docs['CRT Performance - Coding'] || '—',
+        communication: docs['CRT Performance - Communication'] || '—',
+        mockInterview: docs['CRT Performance - Mock Interview'] || '—',
+        overallPct: docs['CRT Performance - Overall %'] || '—',
+        academicAttendance: docs['Semester Attendance - Sem 1'] || acadAttAvg
+      };
+    });
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Student Management System';
+    wb.created = new Date();
+
+    const grouped = {};
+    rows.forEach(r => {
+      const key = `${r.branch}_${r.section}`;
+      if (!grouped[key]) grouped[key] = { branch: r.branch, section: r.section, rows: [] };
+      grouped[key].rows.push(r);
+    });
+    const groups = Object.values(grouped);
+    if (groups.length === 0) groups.push({ branch: 'All', section: 'All', rows });
+
+    groups.forEach(group => {
+      const sheetName = `${group.branch}-${group.section}`.substring(0, 31);
+      const ws = wb.addWorksheet(sheetName);
+
+      ws.mergeCells('A1:L1');
+      const r1 = ws.getCell('A1');
+      r1.value = "Vignan's Foundation for Science, Technology & Research (Deemed to be University)";
+      r1.font = { bold: true, size: 12 };
+      r1.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(1).height = 20;
+
+      ws.mergeCells('A2:L2');
+      const r2 = ws.getCell('A2');
+      r2.value = `CRT & Academic Performance Report | Dept: ${group.branch} | Section: ${group.section}`;
+      r2.font = { bold: true, size: 11 };
+      r2.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(2).height = 18;
+
+      ws.addRow([]);
+
+      const headers = [
+        'S.No', 'Reg No', 'Name', 'Department', 'Section',
+        'CRT Attendance (%)', 'Aptitude', 'Coding', 'Communication', 'Mock Interview', 'Overall %', 'Academic Attendance (%)'
+      ];
+      const hRow = ws.addRow(headers);
+      hRow.height = 20;
+      hRow.eachCell(cell => {
+        cell.font = { bold: true, size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' }, bottom: { style: 'medium' },
+          left: { style: 'thin' }, right: { style: 'thin' },
+        };
+      });
+
+      ws.getColumn(1).width = 6;
+      ws.getColumn(2).width = 16;
+      ws.getColumn(3).width = 26;
+      ws.getColumn(4).width = 13;
+      ws.getColumn(5).width = 10;
+      ws.getColumn(6).width = 20;
+      ws.getColumn(7).width = 14;
+      ws.getColumn(8).width = 14;
+      ws.getColumn(9).width = 18;
+      ws.getColumn(10).width = 18;
+      ws.getColumn(11).width = 14;
+      ws.getColumn(12).width = 24;
+
+      group.rows.forEach((r, i) => {
+        const rowData = [
+          i + 1, r.regNumber, r.name, r.branch, r.section,
+          r.crtAttendance, r.aptitude, r.coding, r.communication, r.mockInterview, r.overallPct, r.academicAttendance
+        ];
+        const row = ws.addRow(rowData);
+        row.height = 16;
+        row.eachCell(cell => {
+          cell.font = { size: 10 };
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.border = {
+            top: { style: 'thin' }, bottom: { style: 'thin' },
+            left: { style: 'thin' }, right: { style: 'thin' },
+          };
+        });
+        row.getCell(3).alignment = { vertical: 'middle', horizontal: 'left' };
+      });
+
+      ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: headers.length } };
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="crt_performance_report.xlsx"');
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

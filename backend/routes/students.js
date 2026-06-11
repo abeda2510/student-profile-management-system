@@ -323,7 +323,7 @@ router.get('/count', protect, async (req, res) => {
 // Admin: dashboard stats aggregate
 router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
   try {
-    const [rawStats, certStats] = await Promise.all([
+    const [rawStats, certStats, pubStats] = await Promise.all([
       Student.aggregate([
         { $match: { role: 'student' } },
         {
@@ -337,8 +337,30 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
           }
         }
       ]),
+      // Certifications (non-publications)
       Achievement.aggregate([
-        { $match: { status: 'APPROVED' } },
+        { $match: { status: 'APPROVED', activityType: { $nin: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'] } } },
+        {
+          $lookup: {
+            from: 'students',
+            localField: 'regNumber',
+            foreignField: 'regNumber',
+            as: 'studentInfo'
+          }
+        },
+        { $unwind: '$studentInfo' },
+        {
+          $group: {
+            _id: {
+              branch: { $ifNull: [ '$studentInfo.branch', 'Unknown' ] }
+            },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      // Publications
+      Achievement.aggregate([
+        { $match: { status: 'APPROVED', activityType: { $in: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'] } } },
         {
           $lookup: {
             from: 'students',
@@ -365,6 +387,14 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
       const branch = String(item._id.branch || 'Unknown').trim().toUpperCase() || 'UNKNOWN';
       certificationsByBranch[branch] = item.count;
       totalCertifications += item.count;
+    });
+
+    const publicationsByBranch = {};
+    let totalPublications = 0;
+    pubStats.forEach(item => {
+      const branch = String(item._id.branch || 'Unknown').trim().toUpperCase() || 'UNKNOWN';
+      publicationsByBranch[branch] = item.count;
+      totalPublications += item.count;
     });
 
     let totalStudents = 0;
@@ -441,6 +471,8 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
       female: femaleCount,
       totalCertifications,
       certificationsByBranch,
+      totalPublications,
+      publicationsByBranch,
       departments: formattedDepartments
     });
   } catch (err) {
@@ -474,7 +506,8 @@ router.get('/search-range', protect, adminOnly, async (req, res) => {
 
       const students = await Student.find(filter)
         .select(`regNumber name branch section ${metric}`)
-        .sort({ [metric]: 1, name: 1 });
+        .sort({ [metric]: 1, name: 1 })
+        .allowDiskUse();
 
       return res.json({
         metric,
@@ -535,7 +568,7 @@ router.get('/search-range', protect, adminOnly, async (req, res) => {
 
 // Admin: list all students
 router.get('/', protect, adminOnly, async (req, res) => {
-  const students = await Student.find().select('-password').sort({ createdAt: -1 });
+  const students = await Student.find().select('-password').sort({ createdAt: -1 }).allowDiskUse();
   res.json(students);
 });
 

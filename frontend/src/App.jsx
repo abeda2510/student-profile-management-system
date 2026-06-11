@@ -14,6 +14,7 @@ import DeptEvents from './pages/DeptEvents';
 import AdminSearch from './pages/AdminSearch';
 import ForgotPassword from './pages/ForgotPassword';
 import Chatbot from './components/Chatbot';
+import CRTReport from './pages/CRTReport';
 
 const LOGO = 'https://vumoodle.in/pluginfile.php/2/course/section/122/LOGO.jpg';
 const ROUTER_BASE = import.meta.env.BASE_URL || '/';
@@ -31,7 +32,7 @@ const PrivateRoute = ({ children }) => {
   const { pathname } = useLocation();
   if (token) return children;
 
-  const facultyRoutes = ['/section-report', '/achievement-report', '/achievement-dashboard', '/my-achievements', '/dept-events'];
+  const facultyRoutes = ['/section-report', '/crt-report', '/achievement-report', '/achievement-dashboard', '/my-achievements', '/dept-events'];
   const isFacultyRoute = facultyRoutes.some(route => stripBase(pathname).startsWith(route));
   if (isFacultyRoute) {
     return <Navigate to="/faculty" replace />;
@@ -125,6 +126,7 @@ function Topbar() {
       ? [{ to: '/admin', label: 'Dashboard' }]
       : [{ to: '/', label: 'Dashboard' }]),
     { to: '/section-report', label: 'Reports' },
+    { to: '/crt-report', label: 'CRT' },
     { to: '/dept-events', label: 'Dept Events' },
   ];
   const links = isFaculty ? facultyLinks : studentLinks;
@@ -197,6 +199,7 @@ export default function App() {
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/section-report" element={<SectionReport />} />
+                  <Route path="/crt-report" element={<CRTReport />} />
                   <Route path="/achievement-report" element={<FacultyAchievements />} />
                   <Route path="/achievement-dashboard" element={<AchievementDashboard />} />
                   <Route path="/my-achievements" element={<FacultyMyAchievements />} />

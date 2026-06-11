@@ -5,9 +5,9 @@ import { ViewButton } from '../components/PreviewModal';
 const CATEGORIES = [
   {
     key: 'TECHNICAL', label: 'Technical', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
-    img: '🖥️', desc: 'Hackathons, Competitions, Workshops, Research',
+    img: '🖥️', desc: 'Hackathons, Competitions, Workshops, Projects',
     btnColor: '#1e40af',
-    types: ['HACKATHON', 'IDEATHON', 'TECHNICAL_COMPETITION', 'RESEARCH_PUBLICATION', 'INTERNSHIP', 'WORKSHOP', 'SEMINAR', 'PROJECT']
+    types: ['HACKATHON', 'IDEATHON', 'TECHNICAL_COMPETITION', 'INTERNSHIP', 'WORKSHOP', 'SEMINAR', 'PROJECT']
   },
   {
     key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706', bg: '#fffbeb', border: '#fde68a',
@@ -26,6 +26,12 @@ const CATEGORIES = [
     img: '📜', desc: 'Professional Certifications & Courses',
     btnColor: '#059669',
     types: ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING']
+  },
+  {
+    key: 'PUBLICATIONS', label: 'Publications', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
+    img: '📄', desc: 'Research papers, Patents, Books, Journals, Conferences',
+    btnColor: '#0369a1',
+    types: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER']
   },
 ];
 
@@ -110,27 +116,51 @@ export default function Achievements() {
       <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>My Achievements</h2>
       <p style={{ color: '#64748b', fontSize: 13, marginBottom: 24 }}>Track and showcase your academic and extracurricular achievements</p>
 
-      {/* 4 Category Cards */}
+      {/* 5 Category Cards */}
       {!selectedCat && (
         <>
           <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 20 }}>Choose a category to add achievement</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
-            {CATEGORIES.map(cat => (
-              <div key={cat.key}
-                style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 20, padding: '28px 20px 20px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${cat.color}22`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; }}>
-                <div style={{ fontSize: 52, marginBottom: 12, lineHeight: 1 }}>{cat.img}</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 8 }}>{cat.label}</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 18, minHeight: 36 }}>{cat.desc}</div>
-                <button onClick={() => selectCat(cat)}
-                  style={{ background: cat.btnColor, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                  + Add {cat.label}
-                </button>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 20, marginBottom: 32 }}>
+            {CATEGORIES.map(cat => {
+              const count = list.filter(a => {
+                const aCat = CATEGORIES.find(c => c.key === a.mainCategory) || CATEGORIES.find(c => c.types?.includes(a.activityType));
+                return aCat?.key === cat.key;
+              }).length;
+              return (
+                <div key={cat.key}
+                  style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 20, padding: '28px 20px 20px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', transition: 'all 0.2s', position: 'relative' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${cat.color}22`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; }}>
+                  {count > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      background: cat.color,
+                      color: '#fff',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 99,
+                      width: 22,
+                      height: 22,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: `0 2px 6px ${cat.color}44`
+                    }}>{count}</span>
+                  )}
+                  <div style={{ fontSize: 52, marginBottom: 12, lineHeight: 1 }}>{cat.img}</div>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: cat.color, marginBottom: 8 }}>{cat.label}</div>
+                  <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 18, minHeight: 36 }}>{cat.desc}</div>
+                  <button onClick={() => selectCat(cat)}
+                    style={{ background: cat.btnColor, color: '#fff', border: 'none', padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, width: '100%', transition: 'opacity 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                    + Add {cat.label}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -149,14 +179,35 @@ export default function Achievements() {
             <button onClick={closeAll} style={{ background: '#f1f5f9', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, color: '#64748b', fontWeight: 600 }}>← Back</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            {selectedCat.types.map(type => (
-              <button key={type} onClick={() => selectType(type)}
-                style={{ padding: '9px 18px', borderRadius: 99, border: `2px solid ${selectedCat.border}`, background: selectedCat.bg, color: selectedCat.color, fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = selectedCat.color; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = selectedCat.bg; e.currentTarget.style.color = selectedCat.color; }}>
-                {type.replace(/_/g, ' ')}
-              </button>
-            ))}
+            {selectedCat.types.map(type => {
+              const count = list.filter(a => a.activityType === type).length;
+              return (
+                <button key={type} onClick={() => selectType(type)}
+                  style={{ padding: '9px 18px', borderRadius: 99, border: `2px solid ${selectedCat.border}`, background: selectedCat.bg, color: selectedCat.color, fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = selectedCat.color; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = selectedCat.bg; e.currentTarget.style.color = selectedCat.color; }}>
+                  {type.replace(/_/g, ' ')}
+                  {count > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -6,
+                      background: '#ef4444',
+                      color: '#fff',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      borderRadius: '50%',
+                      width: 16,
+                      height: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 4px rgba(239,68,68,0.3)'
+                    }}>{count}</span>
+                  )}
+                </button>
+              );
+            })}
             {/* Other option */}
             <button onClick={() => setSelectedType('OTHER')}
               style={{ padding: '9px 18px', borderRadius: 99, border: `2px solid ${selectedType === 'OTHER' ? selectedCat.color : '#d1d5db'}`, background: selectedType === 'OTHER' ? selectedCat.bg : '#fff', color: selectedType === 'OTHER' ? selectedCat.color : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
@@ -243,6 +294,7 @@ export default function Achievements() {
           { key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706' },
           { key: 'NPTEL', label: 'NPTEL', color: '#7c3aed' },
           { key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669' },
+          { key: 'PUBLICATIONS', label: 'Publications', color: '#0369a1' },
           { key: 'OTHER', label: 'Other', color: '#64748b' },
         ];
         const grouped = {};

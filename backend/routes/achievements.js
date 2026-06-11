@@ -13,6 +13,7 @@ const facultyOrAdmin = (req, res, next) => {
 const POINTS_MAP = {
   'HACKATHON WINNER': 10, 'HACKATHON RUNNER': 7, 'HACKATHON PARTICIPATION': 5,
   'INTERNSHIP': 8, 'RESEARCH_PUBLICATION': 12,
+  'PATENT': 12, 'JOURNAL_PAPER': 12, 'CONFERENCE_PAPER': 10, 'BOOK': 12, 'BOOK_CHAPTER': 8,
   'TECHNICAL_COMPETITION WINNER': 10, 'TECHNICAL_COMPETITION PARTICIPATION': 4,
   'WORKSHOP': 3, 'SEMINAR': 2, 'CULTURAL': 3,
   'SPORTS WINNER': 8, 'SPORTS PARTICIPATION': 3, 'OTHER': 2,
@@ -457,6 +458,54 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
   } catch (err) {
     console.error('ZIP error:', err);
     if (!res.headersSent) res.status(500).json({ message: 'ZIP failed: ' + err.message });
+  }
+});
+
+// GET counts of achievements by type
+router.get('/counts-by-type', protect, facultyOrAdmin, async (req, res) => {
+  try {
+    const counts = await Achievement.aggregate([
+      { $group: { _id: '$activityType', count: { $sum: 1 } } }
+    ]);
+    const rawMap = {};
+    counts.forEach(c => {
+      if (c._id) rawMap[c._id.toUpperCase()] = c.count;
+    });
+
+    const map = {
+      INTERNSHIP: 0,
+      HACKATHON: 0,
+      RESEARCH_PUBLICATION: 0,
+      PATENT: 0,
+      JOURNAL_PAPER: 0,
+      CONFERENCE_PAPER: 0,
+      BOOK: 0,
+      BOOK_CHAPTER: 0,
+      TECHNICAL_COMPETITION: 0,
+      WORKSHOP: 0,
+      NPTEL: 0,
+      CERTIFICATION: 0
+    };
+
+    Object.entries(rawMap).forEach(([key, count]) => {
+      if (key.includes('HACKATHON') || key.includes('IDEATHON')) {
+        map.HACKATHON += count;
+      } else if (key.startsWith('NPTEL')) {
+        map.NPTEL += count;
+      } else if (['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING', 'CERTIFICATION'].some(x => key.includes(x))) {
+        map.CERTIFICATION += count;
+      } else if (key.includes('TECHNICAL_COMPETITION')) {
+        map.TECHNICAL_COMPETITION += count;
+      } else if (map[key] !== undefined) {
+        map[key] += count;
+      } else {
+        map[key] = count;
+      }
+    });
+
+    res.json(map);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 

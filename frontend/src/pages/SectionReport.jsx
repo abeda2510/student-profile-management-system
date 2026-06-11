@@ -50,19 +50,22 @@ const DOC_GROUPS = [
       { value: 'PAN_DOC', label: 'PAN Card' },
       { value: 'TENTH_MEMO', label: '10th Mark Memo' },
       { value: 'INTER_MEMO', label: 'Inter Mark Memo' },
+    ]
+  },
+  { key: 'achievements', label: 'Achievements', color: '#d97706', bg: '#fffbeb',
+    items: [
       { value: 'INTERNSHIP', label: 'Internships' },
       { value: 'HACKATHON', label: 'Hackathons' },
       { value: 'RESEARCH_PUBLICATION', label: 'Research Publications' },
+      { value: 'PATENT', label: 'Patents' },
+      { value: 'JOURNAL_PAPER', label: 'Journal Papers' },
+      { value: 'CONFERENCE_PAPER', label: 'Conference Papers' },
+      { value: 'BOOK', label: 'Books' },
+      { value: 'BOOK_CHAPTER', label: 'Book Chapters' },
       { value: 'TECHNICAL_COMPETITION', label: 'Technical Competitions' },
       { value: 'WORKSHOP', label: 'Workshops' },
       { value: 'NPTEL', label: 'NPTEL Certifications' },
       { value: 'CERTIFICATION', label: 'Other Certifications' },
-    ]
-  },
-  { key: 'performance', label: 'Performance', color: '#059669', bg: '#f0fdf4',
-    items: [
-      { value: 'CRT_PERFORMANCE', label: 'CRT Performance' },
-      { value: 'ATTENDANCE', label: 'Attendance' },
     ]
   },
 ];
@@ -445,7 +448,7 @@ function IndividualReport({ onBack }) {
                   {achs.map((a, i) => (
                     <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                       <div style={{ width: 40, height: 40, borderRadius: 10, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                        {a.activityType === 'INTERNSHIP' ? '💼' : a.activityType === 'HACKATHON' ? '⚡' : a.activityType === 'RESEARCH_PUBLICATION' ? '📄' : '🏅'}
+                        {a.activityType === 'INTERNSHIP' ? '💼' : a.activityType === 'HACKATHON' ? '⚡' : ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(a.activityType) ? '📄' : '🏅'}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{a.title}</div>
@@ -527,6 +530,7 @@ export default function SectionReport() {
   const [myStudents, setMyStudents] = useState([]);
   const [error, setError] = useState('');
   const [adminDocTypes, setAdminDocTypes] = useState([]);
+  const [achCounts, setAchCounts] = useState({});
 
   // Advanced filters
   const [cgpaMin, setCgpaMin] = useState('');
@@ -542,7 +546,15 @@ export default function SectionReport() {
   useEffect(() => {
     api.get('/students/count').then(r => setTotalStudents(r.data.count)).catch(() => {});
     api.get('/faculty/my-students').then(r => setMyStudents(r.data)).catch(() => {});
-    api.get('/documents/admin-types').then(r => setAdminDocTypes(r.data)).catch(() => {});
+    api.get('/documents/admin-types').then(r => {
+      const filtered = (r.data || []).filter(t => 
+        !t.label.toUpperCase().includes('CRT') && 
+        !t.label.toUpperCase().includes('ATTENDANCE') && 
+        !t.label.toUpperCase().includes('PERFORMANCE')
+      );
+      setAdminDocTypes(filtered);
+    }).catch(() => {});
+    api.get('/achievements/counts-by-type').then(r => setAchCounts(r.data || {})).catch(() => {});
   }, []);
 
   const toggleItem = (val) => setSelItems(s => s.includes(val) ? s.filter(x => x !== val) : [...s, val]);
@@ -810,7 +822,7 @@ export default function SectionReport() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, borderBottom:'1px solid #f1f5f9', paddingBottom:8 }}>
             <div>
               <h3 style={{ fontWeight:800, fontSize:16, color:'#0f172a', margin:0 }}>1. Select Departments</h3>
-              <p style={{ color:'#64748b', fontSize:12, margin:'2px 0 0 0', fontWeight:500 }}>Select branches and sections</p>
+              <p style={{ color:'#64748b', fontSize:12, margin:'2px 0 0 0', fontWeight:500 }}>Select branches / departments</p>
             </div>
             <button type="button" onClick={toggleAllDepts} style={{ fontSize:11, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>
               {Object.keys(selDepts).length === DEPTS.length ? 'Clear All' : 'Select All'}
@@ -821,19 +833,26 @@ export default function SectionReport() {
             <label style={{ display:'block', fontSize:11, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>Department</label>
             <select value={activeTab || ''} onChange={e => {
               const dept = e.target.value;
-              if (dept) { if (!selDepts[dept]) toggleDept(dept); setActiveTab(dept); }
+              if (dept === 'ALL') {
+                toggleAllDepts();
+                setActiveTab('CSE');
+              } else if (dept) { 
+                if (!selDepts[dept]) toggleDept(dept); 
+                setActiveTab(dept); 
+              }
             }} className="wizard-select">
               <option value="" disabled>-- Select Department --</option>
-              {DEPTS.map(dept => <option key={dept} value={dept}>{dept} {selDepts[dept] ? '✓' : ''}</option>)}
+              <option value="ALL">{`All Departments ${Object.keys(selDepts).length === DEPTS.length ? '\u2713' : ''}`}</option>
+              {DEPTS.map(dept => <option key={dept} value={dept}>{`${dept} ${selDepts[dept] ? '\u2713' : ''}`}</option>)}
             </select>
           </div>
 
           {Object.keys(selDepts).length > 0 && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:18 }}>
               {Object.keys(selDepts).map(dept => (
-                <span key={dept} onClick={() => setActiveTab(dept)}
+                <span key={dept}
                   style={{ display:'inline-flex', alignItems:'center', gap:6, background: activeTab===dept ? '#d1fae5' : '#f1f5f9', border:`1.5px solid ${activeTab===dept ? '#059669' : '#cbd5e1'}`, color: activeTab===dept ? '#065f46' : '#475569', padding:'5px 12px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
-                  <span>{dept} ({selDepts[dept]?.length || 0} sec)</span>
+                  <span>{dept}</span>
                   <button type="button" onClick={e => { e.stopPropagation(); toggleDept(dept); if (activeTab===dept) { const r=Object.keys(selDepts).filter(x=>x!==dept); setActiveTab(r.length>0?r[0]:'CSE'); } }}
                     style={{ background:'none', border:'none', color:'#ef4444', fontWeight:900, cursor:'pointer', fontSize:13, padding:0 }}>✕</button>
                 </span>
@@ -841,29 +860,7 @@ export default function SectionReport() {
             </div>
           )}
 
-          {activeTab && (
-            <div style={{ background:'#f8fafc', borderRadius:12, padding:'16px 14px', border:'1px solid #e2e8f0', textAlign:'left' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                <span style={{ fontSize:12, fontWeight:800, color:'#334155', textTransform:'uppercase', letterSpacing:'0.3px' }}>2. Sections for {activeTab}</span>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button type="button" onClick={() => setSelDepts(d => ({ ...d, [activeTab]: [...DEPT_SECTIONS[activeTab]] }))} style={{ fontSize:11, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>All</button>
-                  <span style={{ color:'#cbd5e1', fontSize:11 }}>|</span>
-                  <button type="button" onClick={() => setSelDepts(d => { const n={...d}; delete n[activeTab]; return n; })} style={{ fontSize:11, color:'#ef4444', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Clear</button>
-                </div>
-              </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {DEPT_SECTIONS[activeTab].map(sec => {
-                  const secSel = (selDepts[activeTab]||[]).includes(sec);
-                  return (
-                    <span key={sec} onClick={() => toggleSection(activeTab, sec)}
-                      style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:`1.5px solid ${secSel?'#059669':'#cbd5e1'}`, background:secSel?'#d1fae5':'#fff', color:secSel?'#065f46':'#475569', transition:'all 0.15s', display:'inline-block' }}>
-                      Sec {sec}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     );
@@ -906,11 +903,14 @@ export default function SectionReport() {
                   <button onClick={() => toggleGroupAll(group)} style={{ fontSize:11, color:group.color, background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
                 </div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                  {group.items.map(item => (
-                    <span key={item.value} onClick={() => toggleItem(item.value)} style={chip(selItems.includes(item.value), group.color)}>
-                      {item.label}
-                    </span>
-                  ))}
+                  {group.items.map(item => {
+                    const count = group.key === 'achievements' ? (achCounts[item.value.toUpperCase()] || 0) : null;
+                    return (
+                      <span key={item.value} onClick={() => toggleItem(item.value)} style={chip(selItems.includes(item.value), group.color)}>
+                        {item.label} {count !== null && <span style={{ opacity: 0.6, fontSize: 10 }}>({count})</span>}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1012,52 +1012,39 @@ export default function SectionReport() {
         <div style={{ position:'sticky', top:20 }}>
           {/* Dept selector */}
           <div style={{ background:'#fff', borderRadius:14, padding:16, border:'1px solid #e2e8f0', marginBottom:14 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12, borderBottom:'1px solid #f1f5f9', paddingBottom:8 }}>
-              <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>Departments &amp; Sections</div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>Departments</div>
               <button type="button" onClick={toggleAllDepts} style={{ fontSize:11, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>
                 {Object.keys(selDepts).length === DEPTS.length ? 'Clear All' : 'Select All'}
               </button>
             </div>
             <div style={{ marginBottom:12 }}>
-              <select value={activeTab || ''} onChange={e => { const d=e.target.value; if(d){if(!selDepts[d])toggleDept(d);setActiveTab(d);} }}
+              <select value={activeTab || ''} onChange={e => {
+                const d=e.target.value;
+                if (d === 'ALL') {
+                  toggleAllDepts();
+                  setActiveTab('CSE');
+                } else if (d) {
+                  if(!selDepts[d]) toggleDept(d);
+                  setActiveTab(d);
+                }
+              }}
                 style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #d1d5db', borderRadius:8, fontSize:13, fontWeight:600, color:'#334155', background:'#fff', outline:'none', cursor:'pointer' }}>
                 <option value="" disabled>-- Select Department --</option>
-                {DEPTS.map(dept => <option key={dept} value={dept}>{dept} {selDepts[dept] ? '✓' : ''}</option>)}
+                <option value="ALL">{`All Departments ${Object.keys(selDepts).length === DEPTS.length ? '\u2713' : ''}`}</option>
+                {DEPTS.map(dept => <option key={dept} value={dept}>{`${dept} ${selDepts[dept] ? '\u2713' : ''}`}</option>)}
               </select>
             </div>
             {Object.keys(selDepts).length > 0 && (
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:12 }}>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {Object.keys(selDepts).map(dept => (
-                  <span key={dept} onClick={() => setActiveTab(dept)}
+                  <span key={dept}
                     style={{ display:'inline-flex', alignItems:'center', gap:4, background:activeTab===dept?'#d1fae5':'#f1f5f9', border:`1.5px solid ${activeTab===dept?'#059669':'#cbd5e1'}`, color:activeTab===dept?'#065f46':'#475569', padding:'3px 8px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
-                    <span>{dept} ({selDepts[dept]?.length || 0})</span>
+                    <span>{dept}</span>
                     <button type="button" onClick={e => { e.stopPropagation(); toggleDept(dept); if(activeTab===dept){const r=Object.keys(selDepts).filter(x=>x!==dept);setActiveTab(r.length>0?r[0]:'CSE');} }}
                       style={{ background:'none', border:'none', color:'#ef4444', fontWeight:900, cursor:'pointer', fontSize:11, padding:0 }}>✕</button>
                   </span>
                 ))}
-              </div>
-            )}
-            {activeTab && (
-              <div style={{ background:'#f8fafc', borderRadius:12, padding:'12px 14px', border:'1px solid #e2e8f0' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                  <span style={{ fontSize:11, fontWeight:800, color:'#334155', textTransform:'uppercase' }}>Sections for {activeTab}</span>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button type="button" onClick={() => setSelDepts(d => ({ ...d, [activeTab]: [...DEPT_SECTIONS[activeTab]] }))} style={{ fontSize:10, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>All</button>
-                    <span style={{ color:'#cbd5e1', fontSize:10 }}>|</span>
-                    <button type="button" onClick={() => setSelDepts(d => { const n={...d}; delete n[activeTab]; return n; })} style={{ fontSize:10, color:'#ef4444', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Clear</button>
-                  </div>
-                </div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {DEPT_SECTIONS[activeTab].map(sec => {
-                    const secSel = (selDepts[activeTab]||[]).includes(sec);
-                    return (
-                      <span key={sec} onClick={() => toggleSection(activeTab, sec)}
-                        style={{ padding:'4px 10px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:`1.5px solid ${secSel?'#059669':'#cbd5e1'}`, background:secSel?'#d1fae5':'#fff', color:secSel?'#065f46':'#475569', transition:'all 0.15s', display:'inline-block' }}>
-                        Sec {sec}
-                      </span>
-                    );
-                  })}
-                </div>
               </div>
             )}
           </div>

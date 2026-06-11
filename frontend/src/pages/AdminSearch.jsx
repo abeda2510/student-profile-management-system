@@ -2,185 +2,31 @@ import React, { useState, useEffect } from 'react';
 import api, { viewUrl } from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
-// Reusable SVG Donut Chart Component
-function DonutChart({ male, female, size = 180, strokeWidth = 16 }) {
-  const total = male + female;
-  const radius = 70;
-  const circumference = 2 * Math.PI * radius; // ~439.82
 
-  const malePct = total > 0 ? (male / total) * 100 : 0;
-  const femalePct = total > 0 ? (female / total) * 100 : 0;
-
-  const items = [];
-  if (male > 0) items.push({ label: 'Male', value: male, color: '#3b82f6', pct: malePct });
-  if (female > 0) items.push({ label: 'Female', value: female, color: '#ec4899', pct: femalePct });
-
-  let accumulatedPercent = 0;
-
-  return (
-    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
-        {/* Background track circle */}
-        <circle cx={100} cy={100} r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
-        
-        {total === 0 ? (
-          <circle cx={100} cy={100} r={radius} fill="none" stroke="#cbd5e1" strokeWidth={strokeWidth} />
-        ) : (
-          items.map((item, index) => {
-            const strokeLength = (item.pct / 100) * circumference;
-            // Draw segment from accumulated offset
-            const strokeOffset = circumference - strokeLength - (accumulatedPercent / 100) * circumference;
-            accumulatedPercent += item.pct;
-
-            return (
-              <circle
-                key={index}
-                cx={100}
-                cy={100}
-                r={radius}
-                fill="none"
-                stroke={item.color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${strokeLength} ${circumference}`}
-                strokeDashoffset={strokeOffset}
-                strokeLinecap={items.length > 1 ? "round" : "butt"}
-                style={{
-                  transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              />
-            );
-          })
-        )}
-      </svg>
-      {/* Central absolute overlay text */}
-      <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <span style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>
-          {total.toLocaleString()}
-        </span>
-        <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>
-          Students
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// Reusable SVG Bar Chart Component (Horizontal layout for better department/section fit)
-function HorizontalBarChart({ data, width = 500, height = 300 }) {
-  const paddingLeft = 90;
-  const paddingRight = 40;
-  const paddingTop = 20;
-  const paddingBottom = 20;
-  
-  const chartWidth = width - paddingLeft - paddingRight;
-  const chartHeight = height - paddingTop - paddingBottom;
-  
-  const maxVal = Math.max(...data.map(d => d.value), 5);
-  const roundedMax = Math.ceil(maxVal / 10) * 10 || 10;
-  
-  const barHeight = Math.min(30, (chartHeight / data.length) * 0.6);
-  const spacing = (chartHeight - barHeight * data.length) / (data.length + 1 || 1);
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ overflow: 'visible' }}>
-      {/* Grid Lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-        const val = Math.round(roundedMax * ratio);
-        const x = paddingLeft + (chartWidth * ratio);
-        return (
-          <g key={i}>
-            <text x={x} y={height - paddingBottom + 14} textAnchor="middle" style={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}>
-              {val}
-            </text>
-            {ratio > 0 && (
-              <line
-                x1={x}
-                y1={paddingTop}
-                x2={x}
-                y2={height - paddingBottom}
-                stroke="#e2e8f0"
-                strokeWidth={1}
-                strokeDasharray="4 4"
-              />
-            )}
-          </g>
-        );
-      })}
-
-      {/* Bars */}
-      {data.map((item, idx) => {
-        const y = paddingTop + spacing + idx * (barHeight + spacing);
-        const barWidth = (item.value / roundedMax) * chartWidth;
-        const displayWidth = Math.max(barWidth, 2); // Ensure visible minimum width
-
-        // SVG custom path for rounded right corners
-        const drawHorizontalBar = (bx, by, bw, bh, r) => {
-          if (bw <= 0) return '';
-          if (r > bw) r = bw;
-          if (r > bh / 2) r = bh / 2;
-          return `
-            M ${bx},${by}
-            L ${bx + bw - r},${by}
-            Q ${bx + bw},${by} ${bx + bw},${by + r}
-            L ${bx + bw},${by + bh - r}
-            Q ${bx + bw},${by + bh} ${bx + bw - r},${by + bh}
-            L ${bx},${by + bh}
-            Z
-          `;
-        };
-
-        return (
-          <g key={idx} style={{ cursor: 'pointer' }} className="bar-group">
-            {/* Label */}
-            <text
-              x={paddingLeft - 12}
-              y={y + barHeight / 2 + 4}
-              textAnchor="end"
-              style={{ fontSize: 11, fontWeight: 700, fill: '#334155' }}
-            >
-              {item.label}
-            </text>
-            
-            {/* Bar Path */}
-            <path
-              d={drawHorizontalBar(paddingLeft, y, displayWidth, barHeight, 6)}
-              fill={item.color || '#4f46e5'}
-              style={{ transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            />
-
-            {/* Value Label */}
-            <text
-              x={paddingLeft + displayWidth + 8}
-              y={y + barHeight / 2 + 4}
-              textAnchor="start"
-              style={{ fontSize: 11, fontWeight: 700, fill: '#0f172a' }}
-            >
-              {item.value.toLocaleString()}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Axis Base Line */}
-      <line
-        x1={paddingLeft}
-        y1={paddingTop}
-        x2={paddingLeft}
-        y2={height - paddingBottom}
-        stroke="#cbd5e1"
-        strokeWidth={1.5}
-      />
-    </svg>
-  );
-}
 
 export default function AdminSearch() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [selectedDept, setSelectedDept] = useState('');
   const [error, setError] = useState('');
-  const [achievements, setAchievements] = useState([]);
-  const [achLoading, setAchLoading] = useState(false);
+
+  // Modal states for certifications/publications list
+  const [modalType, setModalType] = useState(null); // 'certifications' | 'publications'
+  const [modalData, setModalData] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalSearch, setModalSearch] = useState('');
+
+  const handleCardClick = async (type) => {
+    setModalType(type);
+    setModalLoading(true);
+    try {
+      const { data } = await api.get('/achievements/faculty-report?status=APPROVED');
+      setModalData(data);
+    } catch (err) {
+      console.error(err);
+    }
+    setModalLoading(false);
+  };
 
   // Fetch aggregated statistics
   const fetchStats = async () => {
@@ -196,32 +42,14 @@ export default function AdminSearch() {
     setLoading(false);
   };
 
-  // Fetch achievements/certifications
-  const fetchAchievements = async (dept) => {
-    setAchLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (dept) params.append('branch', dept);
-      params.append('status', 'APPROVED');
-      const { data } = await api.get(`/achievements/faculty-report?${params}`);
-      setAchievements(data);
-    } catch (err) {
-      console.error('Failed to load achievements:', err);
-    }
-    setAchLoading(false);
-  };
+
 
   useEffect(() => {
     fetchStats();
   }, []);
 
-  useEffect(() => {
-    fetchAchievements(selectedDept);
-  }, [selectedDept]);
-
   const handleRefresh = async () => {
     await fetchStats();
-    await fetchAchievements(selectedDept);
   };
 
   if (loading) {
@@ -260,6 +88,10 @@ export default function AdminSearch() {
   const totalCerts = selectedDept
     ? (stats.certificationsByBranch?.[selectedDept] || 0)
     : (stats.totalCertifications || 0);
+
+  const totalPubs = selectedDept
+    ? (stats.publicationsByBranch?.[selectedDept] || 0)
+    : (stats.totalPublications || 0);
 
   const malePercent = totalCount > 0 ? ((maleCount / totalCount) * 100).toFixed(1) : '0.0';
   const femalePercent = totalCount > 0 ? ((femaleCount / totalCount) * 100).toFixed(1) : '0.0';
@@ -428,7 +260,7 @@ export default function AdminSearch() {
           </div>
 
           {/* Card 5: Certifications */}
-          <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}>
+          <div className="kpi-card" onClick={() => handleCardClick('certifications')} style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', cursor: 'pointer' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>Certifications Done</span>
               <span style={{ fontSize: 20 }}>📜</span>
@@ -438,128 +270,189 @@ export default function AdminSearch() {
               {selectedDept ? `Approved in ${selectedDept}` : 'University overall certifications'}
             </div>
           </div>
+
+          {/* Card 6: Publications */}
+          <div className="kpi-card" onClick={() => handleCardClick('publications')} style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>Publications Done</span>
+              <span style={{ fontSize: 20 }}>📄</span>
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 800 }}>{totalPubs.toLocaleString()}</div>
+            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8, fontWeight: 500 }}>
+              {selectedDept ? `Approved in ${selectedDept}` : 'University overall publications'}
+            </div>
+          </div>
         </div>
 
-        {/* Charts Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24, marginBottom: 32 }}>
-          {/* Card Left: Gender Split */}
-          <div className="grid-block" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ width: '100%', borderBottom: '1px solid #f1f5f9', paddingBottom: 14, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', margin: 0 }}>Gender Distribution</h3>
-              <p style={{ color: '#64748b', fontSize: 11, margin: '2px 0 0 0', fontWeight: 500 }}>
-                {selectedDept ? `${selectedDept} split details` : 'University gender breakdown'}
-              </p>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap', width: '100%', padding: '10px 0' }}>
-              <DonutChart male={maleCount} female={femaleCount} />
-              
-              {/* Legends list */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 140 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 3, background: '#3b82f6' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Male Students</span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
-                      {maleCount.toLocaleString()} <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>({malePercent}%)</span>
-                    </span>
+        {/* Modal Dialog */}
+        {modalType && (() => {
+          const isPublication = (item) => ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType);
+          
+          const rawFiltered = modalData.filter(item => {
+            const isPub = isPublication(item);
+            return modalType === 'publications' ? isPub : !isPub;
+          });
+
+          const deptFiltered = rawFiltered.filter(item => {
+            if (!selectedDept) return true;
+            return String(item.branch || '').toUpperCase() === selectedDept.toUpperCase();
+          });
+
+          const finalFiltered = deptFiltered.filter(item => {
+            if (!modalSearch) return true;
+            const query = modalSearch.toLowerCase();
+            return (
+              (item.regNumber && item.regNumber.toLowerCase().includes(query)) ||
+              (item.studentName && item.studentName.toLowerCase().includes(query)) ||
+              (item.title && item.title.toLowerCase().includes(query)) ||
+              (item.issuingOrg && item.issuingOrg.toLowerCase().includes(query))
+            );
+          });
+
+          return (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1000, animation: 'fadeIn 0.2s ease-out'
+            }}>
+              <div style={{
+                background: '#fff', borderRadius: 20, width: '90%', maxWidth: 950,
+                maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden',
+                border: '1px solid #e2e8f0'
+              }}>
+                {/* Header */}
+                <div style={{
+                  padding: '20px 24px', borderBottom: '1px solid #e2e8f0',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  background: '#f8fafc'
+                }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                      Approved {modalType === 'publications' ? 'Publications' : 'Certifications'}
+                      {selectedDept ? ` — ${selectedDept}` : ' (All Departments)'}
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#64748b', fontWeight: 500 }}>
+                      Showing {finalFiltered.length} records
+                    </p>
                   </div>
+                  <button
+                    onClick={() => { setModalType(null); setModalSearch(''); }}
+                    style={{
+                      background: '#f1f5f9', border: 'none', color: '#64748b',
+                      width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 'bold', transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 3, background: '#ec4899' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Female Students</span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
-                      {femaleCount.toLocaleString()} <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>({femalePercent}%)</span>
-                    </span>
-                  </div>
+                {/* Search Bar */}
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 12, background: '#fff' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by student name, reg no, or title..."
+                    value={modalSearch}
+                    onChange={e => setModalSearch(e.target.value)}
+                    style={{
+                      flex: 1, padding: '10px 16px', border: '1.5px solid #cbd5e1',
+                      borderRadius: 10, fontSize: 13, outline: 'none', transition: 'border-color 0.2s'
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#4f46e5'}
+                    onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                  />
+                </div>
+
+                {/* Table Content */}
+                <div style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '30vh' }}>
+                  {modalLoading ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', gap: 12 }}>
+                      <div className="spinner" style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', animation: 'spin 1s linear infinite' }} />
+                      <span style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>Loading records...</span>
+                    </div>
+                  ) : finalFiltered.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>📂</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#64748b' }}>No Records Found</div>
+                      <div style={{ fontSize: 13, marginTop: 4 }}>Try changing search query</div>
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>#</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Reg No</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Name</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Dept/Sec</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Type</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Title</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Issuing Org / Publisher</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Date</th>
+                          <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {finalFiltered.map((item, idx) => (
+                          <tr key={item._id} className="table-row">
+                            <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
+                            <td style={{ padding: '12px 8px', fontWeight: 600, color: '#0f172a' }}>{item.regNumber}</td>
+                            <td style={{ padding: '12px 8px', color: '#334155', fontWeight: 500 }}>{item.studentName}</td>
+                            <td style={{ padding: '12px 8px', color: '#475569' }}>
+                              <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                                {item.branch} - {item.section}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 8px', color: '#475569', fontWeight: 500 }}>
+                              {item.activityType}
+                            </td>
+                            <td style={{ padding: '12px 8px', color: '#0f172a', fontWeight: 500 }} title={item.title}>
+                              {item.title.length > 25 ? item.title.substring(0, 25) + '...' : item.title}
+                            </td>
+                            <td style={{ padding: '12px 8px', color: '#475569' }}>{item.issuingOrg || '—'}</td>
+                            <td style={{ padding: '12px 8px', color: '#64748b', whiteSpace: 'nowrap' }}>{item.date || '—'}</td>
+                            <td style={{ padding: '12px 8px' }}>
+                              {(item.certificateUrl || item.certificatePath) ? (
+                                <ViewButton
+                                  url={viewUrl(item.certificateUrl || item.certificatePath)}
+                                  label="View"
+                                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 700 }}
+                                />
+                              ) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                  padding: '16px 24px', borderTop: '1px solid #e2e8f0',
+                  display: 'flex', justifyContent: 'flex-end', background: '#f8fafc'
+                }}>
+                  <button
+                    onClick={() => { setModalType(null); setModalSearch(''); }}
+                    style={{
+                      background: '#64748b', color: '#fff', border: 'none',
+                      padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#475569'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#64748b'}
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Card Right: Department or Section Distribution */}
-          <div className="grid-block">
-            <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 14, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', margin: 0 }}>
-                {selectedDept ? `Section Enrollment - ${selectedDept}` : 'Student Distribution by Department'}
-              </h3>
-              <p style={{ color: '#64748b', fontSize: 11, margin: '2px 0 0 0', fontWeight: 500 }}>
-                {selectedDept ? 'Student counts across sections' : 'Student counts by department branch'}
-              </p>
-            </div>
-            
-            <div style={{ padding: '0 8px' }}>
-              <HorizontalBarChart data={barChartData} height={Math.max(240, barChartData.length * 36 + 40)} />
-            </div>
-          </div>
-        </div>
-
-        {/* Approved Certifications Card */}
-        <div className="grid-block" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', margin: 0 }}>
-                {selectedDept ? `Approved Certifications - ${selectedDept}` : 'Approved Certifications - University Overall'}
-              </h3>
-              <p style={{ color: '#64748b', fontSize: 11, margin: '2px 0 0 0', fontWeight: 500 }}>
-                List of student certificates and approved professional achievements
-              </p>
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, background: '#f0fdf4', color: '#16a34a', padding: '4px 12px', borderRadius: 99, border: '1.5px solid #bbf7d0' }}>
-              {achievements.length} Certifications
-            </div>
-          </div>
-
-          {achLoading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontWeight: 600 }}>
-              <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, borderRadius: '50%', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', animation: 'spin 1s linear infinite', marginRight: 12, verticalAlign: 'middle' }} />
-              Loading certifications data...
-            </div>
-          ) : achievements.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-              No approved certifications found.
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>#</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Reg No</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Name</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Department</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Certification Title</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Category</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Academic Year</th>
-                    <th style={{ padding: '14px 24px', fontWeight: 700 }}>Certificate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {achievements.map((ach, idx) => (
-                    <tr key={ach._id} className="table-row">
-                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{idx + 1}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 700, color: '#4f46e5' }}>{ach.regNumber}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 600, color: '#334155' }}>{ach.studentName || '—'}</td>
-                      <td style={{ padding: '14px 24px', color: '#475569' }}>{ach.branch || '—'}</td>
-                      <td style={{ padding: '14px 24px', fontWeight: 600, color: '#0f172a' }}>{ach.title}</td>
-                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{ach.activityType ? ach.activityType.replace(/_/g, ' ') : '—'}</td>
-                      <td style={{ padding: '14px 24px', color: '#64748b' }}>{ach.academicYear || '—'}</td>
-                      <td style={{ padding: '14px 24px' }}>
-                        {ach.certificateUrl || ach.certificatePath ? (
-                          <ViewButton url={viewUrl(ach.certificateUrl || ach.certificatePath)} label="View" />
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -5,9 +5,9 @@ import { ViewButton } from '../components/PreviewModal';
 // ── Shared ──────────────────────────────────────────────────────────────────
 const REPORT_CATS = [
   { key: 'TECHNICAL', label: 'Technical', icon: '💻', color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
-    desc: 'Hackathons, Competitions, Workshops, Research',
-    types: ['HACKATHON','IDEATHON','TECHNICAL_COMPETITION','RESEARCH_PUBLICATION','INTERNSHIP','WORKSHOP','SEMINAR','PROJECT'],
-    typeIcons: { HACKATHON:'⚡', IDEATHON:'💡', TECHNICAL_COMPETITION:'🏆', RESEARCH_PUBLICATION:'📄', INTERNSHIP:'💼', WORKSHOP:'🔧', SEMINAR:'🎤', PROJECT:'📁' }
+    desc: 'Hackathons, Competitions, Workshops, Projects',
+    types: ['HACKATHON','IDEATHON','TECHNICAL_COMPETITION','INTERNSHIP','WORKSHOP','SEMINAR','PROJECT'],
+    typeIcons: { HACKATHON:'⚡', IDEATHON:'💡', TECHNICAL_COMPETITION:'🏆', INTERNSHIP:'💼', WORKSHOP:'🔧', SEMINAR:'🎤', PROJECT:'📁' }
   },
   { key: 'NON_TECHNICAL', label: 'Non-Technical', icon: '🎭', color: '#d97706', bg: '#fffbeb', border: '#fde68a',
     desc: 'Cultural, Sports, Social Activities',
@@ -23,6 +23,11 @@ const REPORT_CATS = [
     desc: 'Professional Certifications & Courses',
     types: ['AWS','GOOGLE','MICROSOFT','CISCO','COURSERA','UDEMY','LINKEDIN_LEARNING'],
     typeIcons: { AWS:'☁️', GOOGLE:'🔍', MICROSOFT:'🪟', CISCO:'🌐', COURSERA:'📖', UDEMY:'🎯', LINKEDIN_LEARNING:'💼' }
+  },
+  { key: 'PUBLICATIONS', label: 'Publications', icon: '📄', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
+    desc: 'Research papers, Patents, Books, Journals, Conferences',
+    types: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'],
+    typeIcons: { RESEARCH_PUBLICATION:'📄', PATENT:'💡', JOURNAL_PAPER:'📰', CONFERENCE_PAPER:'🎤', BOOK:'📚', BOOK_CHAPTER:'📖' }
   },
 ];
 
@@ -144,7 +149,7 @@ function ReportTab() {
   return (
     <div>
       {!selectedCat && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 20, marginBottom: 32 }}>
           {REPORT_CATS.map(cat => (
             <div key={cat.key}
               style={{ background: cat.bg, border: `2px solid ${cat.border}`, borderRadius: 20, padding: '28px 20px 20px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', transition: 'all 0.2s' }}

@@ -1,4 +1,4 @@
-﻿const router = require('express').Router();
+const router = require('express').Router();
 const axios = require('axios');
 const Student = require('../models/Student');
 const { protect } = require('../middleware/auth');
@@ -43,7 +43,8 @@ router.get('/report', protect, facultyOnly, async (req, res) => {
 
   const students = await Student.find(filter)
     .select('regNumber name branch section leetCode cgpa')
-    .sort({ name: 1 });
+    .sort({ name: 1 })
+    .allowDiskUse();
 
   const results = await Promise.all(
     students.map(async (st) => ({
@@ -70,7 +71,7 @@ router.get('/report/multi', protect, facultyOnly, async (req, res) => {
   if (branches.length) filter.branch = { $in: branches };
   if (sections.length) filter.section = { $in: sections };
 
-  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 });
+  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 }).allowDiskUse();
 
   let results = await Promise.all(students.map(async st => ({
     regNumber: st.regNumber, name: st.name,
@@ -97,7 +98,8 @@ router.get('/report/pdf', protect, facultyOnly, async (req, res) => {
 
   const students = await Student.find(filter)
     .select('regNumber name branch section leetCode cgpa')
-    .sort({ name: 1 });
+    .sort({ name: 1 })
+    .allowDiskUse();
 
   let rows = await Promise.all(
     students.map(async (st) => ({
@@ -270,7 +272,7 @@ router.get('/report/excel', protect, facultyOnly, async (req, res) => {
   if (branches.length) filter.branch = { $in: branches };
   if (sections.length) filter.section = { $in: sections };
 
-  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 });
+  const students = await Student.find(filter).select('regNumber name branch section leetCode cgpa').sort({ branch:1, section:1, name:1 }).allowDiskUse();
 
   let rows = await Promise.all(students.map(async st => ({
     regNumber: st.regNumber, name: st.name,
