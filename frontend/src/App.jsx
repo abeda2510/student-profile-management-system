@@ -30,8 +30,12 @@ function stripBase(pathname) {
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const { pathname } = useLocation();
-  if (token) return children;
+  
+  if (token && token !== 'undefined' && token !== 'null') {
+    return children;
+  }
 
+  localStorage.clear();
   const facultyRoutes = ['/section-report', '/crt-report', '/achievement-report', '/achievement-dashboard', '/my-achievements', '/dept-events'];
   const isFacultyRoute = facultyRoutes.some(route => stripBase(pathname).startsWith(route));
   if (isFacultyRoute) {

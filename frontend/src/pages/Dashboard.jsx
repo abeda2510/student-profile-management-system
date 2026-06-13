@@ -9,11 +9,18 @@ export default function Dashboard() {
   const [docs, setDocs] = useState([]);
   const [tab, setTab] = useState('profile');
   const [hoveredCard, setHoveredCard] = useState(null);
-  const name = localStorage.getItem('name');
+  const cachedName = localStorage.getItem('name');
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/students/me').then(r => setProfile(r.data)).catch(() => {});
+    api.get('/students/me')
+      .then(r => {
+        setProfile(r.data);
+        if (r.data && r.data.name) {
+          localStorage.setItem('name', r.data.name);
+        }
+      })
+      .catch(() => {});
     api.get('/achievements/me').then(r => setAchievements(r.data)).catch(() => {});
     api.get('/documents/me').then(r => setDocs(r.data)).catch(() => {});
   }, []);
@@ -160,7 +167,7 @@ export default function Dashboard() {
       {/* Welcome */}
       <div style={{ marginBottom: 28 }}>
         <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>
-          Welcome back, <span style={{ color: '#1e40af' }}>{name}</span> 👋
+          Welcome back, <span style={{ color: '#1e40af' }}>{profile?.name || cachedName || 'Student'}</span> 👋
         </h2>
         <p style={{ color: '#64748b', fontSize: 14 }}>Here's a summary of your academic profile.</p>
       </div>

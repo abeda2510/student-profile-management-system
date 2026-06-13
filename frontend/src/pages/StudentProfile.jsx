@@ -213,7 +213,14 @@ export default function StudentProfile() {
   const loadDocs = () => api.get('/documents/me').then(r => setDocs(r.data)).catch(() => {});
 
   useEffect(() => {
-    api.get('/students/me').then(r => setForm(r.data)).catch(() => {});
+    api.get('/students/me')
+      .then(r => {
+        setForm(r.data);
+        if (r.data && r.data.name) {
+          localStorage.setItem('name', r.data.name);
+        }
+      })
+      .catch(() => {});
     loadDocs();
   }, []);
 
@@ -234,7 +241,10 @@ export default function StudentProfile() {
       if (updates[`sem${i}Cgpa`]) updates[`sem${i}Cgpa`] = parseFloat(updates[`sem${i}Cgpa`]);
       if (updates[`sem${i}Sgpa`]) updates[`sem${i}Sgpa`] = parseFloat(updates[`sem${i}Sgpa`]);
     }
-    await api.put('/students/me', updates);
+    const res = await api.put('/students/me', updates);
+    if (res.data && res.data.name) {
+      localStorage.setItem('name', res.data.name);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
