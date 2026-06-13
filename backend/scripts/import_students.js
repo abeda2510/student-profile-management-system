@@ -25,16 +25,23 @@ setTimeout(async () => {
 
     console.log(`Read ${data.length} rows from sheet "${sheetName}".`);
 
+    // Fetch existing registration numbers from database
+    console.log('Fetching existing students from database for duplicate checking...');
+    const existingStudents = await Student.find({}, 'regNumber').lean();
+    const existingRegSet = new Set(existingStudents.map(s => String(s.regNumber || '').trim().toUpperCase()));
+    console.log(`Found ${existingRegSet.size} existing students in the database.`);
+
     let createdCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
 
-    // 2. Iterate and import registration numbers
+    const toCreateRegs = [];
+    const seenInSheet = new Set();
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      // Normalize column header key, matching 'Register No' or 'regNumber' or case variations
-      const rawReg = row['Register No'] || row['register no'] || row['regNumber'] || row['regNumber'] || Object.values(row)[0];
-
+      const rawReg = row['Register No'] || row['register no'] || row['regNumber'] || Object.values(row)[0];
+      
       if (!rawReg) {
         skippedCount++;
         continue;
@@ -47,26 +54,64 @@ setTimeout(async () => {
         continue;
       }
 
+      // Check duplicate within the same sheet
+      if (seenInSheet.has(regNumber)) {
+        skippedCount++;
+        continue;
+      }
+      seenInSheet.add(regNumber);
+
+      // Check if student already exists in DB
+      if (existingRegSet.has(regNumber)) {
+        skippedCount++;
+      } else {
+        toCreateRegs.push({ regNumber, rowIndex: i + 1 });
+      }
+    }
+
+    console.log(`Found ${toCreateRegs.length} new students to insert.`);
+
+    // 2. Process insertions in batches of 100
+    const BATCH_SIZE = 100;
+    const bcrypt = require('bcryptjs');
+
+    for (let i = 0; i < toCreateRegs.length; i += BATCH_SIZE) {
+      const batch = toCreateRegs.slice(i, i + BATCH_SIZE);
+      console.log(`Creating batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(toCreateRegs.length / BATCH_SIZE)} (students ${i + 1} to ${Math.min(i + BATCH_SIZE, toCreateRegs.length)})...`);
+      
       try {
-        // Check if student already exists
-        const existingStudent = await Student.findOne({ regNumber });
-        if (!existingStudent) {
-          // Schema requires 'name' and 'password'.
-          // Defaulting password to registration number (will be hashed by pre-save hook)
-          // Defaulting name to registration number as placeholder
-          await Student.create({
-            regNumber,
-            password: regNumber,
-            name: regNumber,
+        // Hash passwords in parallel
+        const docs = await Promise.all(batch.map(async (item) => {
+          const hashedPassword = await bcrypt.hash(item.regNumber, 10);
+          return {
+            regNumber: item.regNumber,
+            password: hashedPassword,
+            name: item.regNumber,
             role: 'student'
-          });
-          createdCount++;
-        } else {
-          skippedCount++;
+          };
+        }));
+
+        // Insert batch
+        await Student.insertMany(docs);
+        createdCount += docs.length;
+      } catch (batchErr) {
+        console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, batchErr.message);
+        // Fallback to sequential insertion for this batch to locate exact error and continue
+        for (const item of batch) {
+          try {
+            const hashedPassword = await bcrypt.hash(item.regNumber, 10);
+            await Student.create({
+              regNumber: item.regNumber,
+              password: hashedPassword,
+              name: item.regNumber,
+              role: 'student'
+            });
+            createdCount++;
+          } catch (singleErr) {
+            console.error(`Error importing row ${item.rowIndex} (${item.regNumber}):`, singleErr.message);
+            errorCount++;
+          }
         }
-      } catch (err) {
-        console.error(`Error importing row ${i + 1} (${regNumber}):`, err.message);
-        errorCount++;
       }
     }
 
