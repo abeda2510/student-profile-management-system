@@ -3,10 +3,11 @@
  * Populates admin custom documents for all 23,723 students in the database.
  */
 const mongoose = require('mongoose');
-require('dotenv').config({ path: 'c:/Users/banda/Desktop/student-profile-management-system/backend/.env' });
-require('c:/Users/banda/Desktop/student-profile-management-system/backend/db');
-const Document = require('c:/Users/banda/Desktop/student-profile-management-system/backend/models/Document');
-const Student = require('c:/Users/banda/Desktop/student-profile-management-system/backend/models/Student');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('../db');
+const Document = require('../models/Document');
+const Student = require('../models/Student');
 
 setTimeout(async () => {
   try {

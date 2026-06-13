@@ -1,12 +1,12 @@
 // node scripts/import_students.js [optional_excel_path]
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('../db');
 const Student = require('../models/Student');
 const XLSX = require('xlsx');
-const path = require('path');
 
 // Excel file path: use command line argument if provided, otherwise default
-const excelPath = process.argv[2] || '\\data\\projects\\docker-apps\\student-profile-management-system\\june3.xlsx';
+const excelPath = process.argv[2] || path.join(__dirname, '../../june3.xlsx');
 
 console.log(`Starting student registration import from: ${excelPath}`);
 
