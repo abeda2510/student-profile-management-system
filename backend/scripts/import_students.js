@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const path = require('path');
 
 // Excel file path: use command line argument if provided, otherwise default
-const excelPath = process.argv[2] || 'c:\\Users\\banda\\Desktop\\student-profile-management-system\\june3.xlsx';
+const excelPath = process.argv[2] || '\\data\\projects\\docker-apps\\student-profile-management-system\\june3.xlsx';
 
 console.log(`Starting student registration import from: ${excelPath}`);
 
@@ -34,7 +34,7 @@ setTimeout(async () => {
       const row = data[i];
       // Normalize column header key, matching 'Register No' or 'regNumber' or case variations
       const rawReg = row['Register No'] || row['register no'] || row['regNumber'] || row['regNumber'] || Object.values(row)[0];
-      
+
       if (!rawReg) {
         skippedCount++;
         continue;
@@ -75,7 +75,7 @@ setTimeout(async () => {
     console.log(`Skipped / Already exist: ${skippedCount}`);
     console.log(`Errors encountered: ${errorCount}`);
     console.log('----------------------\n');
-    
+
     console.log('Import operation completed successfully.');
     process.exit(0);
   } catch (err) {
