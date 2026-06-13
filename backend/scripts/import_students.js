@@ -87,6 +87,7 @@ setTimeout(async () => {
             regNumber: item.regNumber,
             password: hashedPassword,
             name: item.regNumber,
+            email: `${item.regNumber.toLowerCase()}@gmail.com`,
             role: 'student'
           };
         }));
@@ -104,6 +105,7 @@ setTimeout(async () => {
               regNumber: item.regNumber,
               password: hashedPassword,
               name: item.regNumber,
+              email: `${item.regNumber.toLowerCase()}@gmail.com`,
               role: 'student'
             });
             createdCount++;
