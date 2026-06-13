@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [achievements, setAchievements] = useState([]);
   const [docs, setDocs] = useState([]);
   const [tab, setTab] = useState('profile');
+  const [hoveredCard, setHoveredCard] = useState(null);
   const name = localStorage.getItem('name');
   const navigate = useNavigate();
 
@@ -19,13 +20,38 @@ export default function Dashboard() {
 
   const achCount = achievements.length;
 
+  const CATEGORY_TYPES = {
+    TECHNICAL: ['HACKATHON', 'IDEATHON', 'TECHNICAL_COMPETITION', 'INTERNSHIP', 'WORKSHOP', 'SEMINAR', 'PROJECT'],
+    NON_TECHNICAL: ['SPORTS', 'CULTURAL', 'DANCE', 'MUSIC', 'ART', 'VOLUNTEERING', 'NSS', 'NCC'],
+    NPTEL: ['NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE'],
+    CERTIFICATIONS: ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING'],
+    PUBLICATIONS: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER']
+  };
+
+  const getCategoryKey = (a) => {
+    if (a.mainCategory && ['TECHNICAL', 'NON_TECHNICAL', 'NPTEL', 'CERTIFICATIONS', 'PUBLICATIONS', 'OTHER'].includes(a.mainCategory)) return a.mainCategory;
+    for (const [cat, types] of Object.entries(CATEGORY_TYPES)) {
+      if (types.includes(a.activityType)) return cat;
+    }
+    return 'OTHER';
+  };
+
+  const publications = achievements.filter(a => getCategoryKey(a) === 'PUBLICATIONS');
+
+  const isFieldFilled = (val) => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'string' && val.trim() === '') return false;
+    return true;
+  };
+
   const checks = profile ? {
-    personal:  ['name','dob','gender','bloodGroup','nationality'].every(f => profile[f]),
-    contact:   ['email','phone','parentName','parentPhone'].every(f => profile[f]),
-    academic:  ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => profile[f]),
-    tenth:     ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => profile[f]),
-    inter:     ['interCollege','interBoard','interYear','interPercent'].every(f => profile[f]),
-    aadhaar:   docs.some(d => d.docType === 'AADHAAR' || d.docType === 'Aadhaar'),
+    personal:  ['name','dob','gender','bloodGroup','nationality','religion','caste'].every(f => isFieldFilled(profile[f])),
+    contact:   ['email','phone','address','parentName','parentPhone'].every(f => isFieldFilled(profile[f])),
+    academic:  ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => isFieldFilled(profile[f])),
+    tenth:     ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC'))),
+    inter:     ['interCollege','interBoard','interYear','interPercent','interGroup'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th'))),
+    documents: ['apaarId','aadhaarNumber'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'AADHAAR' || d.docType === 'Aadhaar'),
+    coding:    isFieldFilled(profile.linkedIn) || isFieldFilled(profile.leetCode) || isFieldFilled(profile.codeChef)
   } : {};
 
   const profileComplete = Object.values(checks).length > 0 && Object.values(checks).every(Boolean);
@@ -34,6 +60,85 @@ export default function Dashboard() {
     const vals = [1,2,3,4,5,6,7,8].map(i => parseFloat(profile[`sem${i}Cgpa`])).filter(v => !isNaN(v) && v > 0);
     return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : profile.cgpa || null;
   })() : null;
+
+  const cardsConfig = [
+    {
+      key: 'profile',
+      label: 'Profile Status',
+      icon: '👤',
+      color: '#4f46e5',
+      grad: 'linear-gradient(135deg, #818cf8, #4f46e5)',
+      shadow: 'rgba(79, 70, 229, 0.25)',
+      renderValue: () => {
+        const total = 7;
+        const passed = Object.values(checks).filter(Boolean).length;
+        const pct = Math.round((passed / total) * 100);
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', minWidth: 140 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: pct === 100 ? '#059669' : '#4f46e5', fontWeight: 800 }}>
+                {pct === 100 ? '✓ 100%' : `${pct}%`} Complete
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#059669' : 'linear-gradient(90deg, #818cf8, #4f46e5)', borderRadius: 3, transition: 'width 0.4s ease' }} />
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'attendance',
+      label: 'Attendance',
+      icon: '📅',
+      color: '#0d9488',
+      grad: 'linear-gradient(135deg, #2dd4bf, #0d9488)',
+      shadow: 'rgba(13, 148, 136, 0.25)',
+      renderValue: () => profile && profile.attendance?.length > 0 ? (() => {
+        const avg = (profile.attendance.reduce((s, a) => s + (a.present / (a.total || 1)) * 100, 0) / profile.attendance.length).toFixed(1);
+        return `${avg}% Avg`;
+      })() : '—'
+    },
+    {
+      key: 'crt',
+      label: 'CRT Performance',
+      icon: '🎯',
+      color: '#ea580c',
+      grad: 'linear-gradient(135deg, #fb923c, #ea580c)',
+      shadow: 'rgba(234, 88, 12, 0.25)',
+      renderValue: () => profile && profile.crtPerformance?.length > 0 ? (() => {
+        const avg = (profile.crtPerformance.reduce((s, p) => s + (p.score / (p.maxScore || 100)) * 100, 0) / profile.crtPerformance.length).toFixed(1);
+        return `${avg}% Avg`;
+      })() : '—'
+    },
+    {
+      key: 'achievements',
+      label: 'Achievements',
+      icon: '🏆',
+      color: '#7c3aed',
+      grad: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+      shadow: 'rgba(124, 58, 237, 0.25)',
+      renderValue: () => `${achCount} Approved`
+    },
+    {
+      key: 'cgpa',
+      label: 'Academic CGPA',
+      icon: '🎓',
+      color: '#059669',
+      grad: 'linear-gradient(135deg, #34d399, #059669)',
+      shadow: 'rgba(5, 150, 105, 0.25)',
+      renderValue: () => overallCgpa ? `${overallCgpa} CGPA` : '—'
+    },
+    {
+      key: 'publications',
+      label: 'Publications',
+      icon: '📄',
+      color: '#0284c7',
+      grad: 'linear-gradient(135deg, #38bdf8, #0284c7)',
+      shadow: 'rgba(2, 132, 199, 0.25)',
+      renderValue: () => `${publications.length} Published`
+    }
+  ];
 
   const tabBtn = (t, label) => (
     <button onClick={() => setTab(t)} style={{
@@ -67,137 +172,93 @@ export default function Dashboard() {
         gap: 20,
         marginBottom: 28
       }}>
-        {/* Card 1: Profile */}
-        <div onClick={() => setTab('profile')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'profile' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'profile' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'profile' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'profile') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'profile') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>👤</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Profile Status</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-              {profileComplete ? <span style={{ color: '#059669' }}>✓ Complete</span> : <span style={{ color: '#ef4444' }}>✗ Incomplete</span>}
-            </div>
-          </div>
-        </div>
+        {cardsConfig.map(card => {
+          const isActive = tab === card.key;
+          const isHovered = hoveredCard === card.key;
+          return (
+            <div
+              key={card.key}
+              onClick={() => setTab(card.key)}
+              onMouseEnter={() => setHoveredCard(card.key)}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                background: '#fff',
+                borderRadius: 16,
+                padding: '22px 20px',
+                border: '2px solid',
+                borderColor: isActive ? card.color : '#f1f5f9',
+                boxShadow: isActive 
+                  ? `0 10px 25px -5px ${card.shadow}, 0 8px 10px -6px ${card.shadow}`
+                  : isHovered 
+                    ? '0 12px 24px -10px rgba(0,0,0,0.08), 0 4px 12px -5px rgba(0,0,0,0.03)'
+                    : '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: isActive ? 'translateY(-4px)' : isHovered ? 'translateY(-2px)' : 'none',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Colored Indicator Line */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: card.grad,
+                opacity: isActive || isHovered ? 1 : 0.15,
+                transition: 'opacity 0.25s'
+              }} />
 
-        {/* Card 2: Attendance */}
-        <div onClick={() => setTab('attendance')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'attendance' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'attendance' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'attendance' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'attendance') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'attendance') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📅</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Attendance</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-              {profile && profile.attendance?.length > 0 ? (() => {
-                const avg = (profile.attendance.reduce((s, a) => s + (a.present / (a.total || 1)) * 100, 0) / profile.attendance.length).toFixed(1);
-                return `${avg}% Avg`;
-              })() : '—'}
-            </div>
-          </div>
-        </div>
+              {/* Premium Gradient Icon Block */}
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: card.grad,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                color: '#fff',
+                boxShadow: `0 4px 12px ${card.shadow}`,
+                transform: isHovered || isActive ? 'scale(1.08)' : 'scale(1)',
+                transition: 'transform 0.25s',
+                flexShrink: 0
+              }}>
+                {card.icon}
+              </div>
 
-        {/* Card 3: CRT Performance */}
-        <div onClick={() => setTab('crt')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'crt' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'crt' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'crt' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'crt') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'crt') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🎯</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CRT Performance</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-              {profile && profile.crtPerformance?.length > 0 ? (() => {
-                const avg = (profile.crtPerformance.reduce((s, p) => s + (p.score / (p.maxScore || 100)) * 100, 0) / profile.crtPerformance.length).toFixed(1);
-                return `${avg}% Avg`;
-              })() : '—'}
+              <div>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: isActive ? card.color : '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  transition: 'color 0.25s'
+                }}>
+                  {card.label}
+                </div>
+                <div style={{
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  marginTop: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}>
+                  {card.renderValue()}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Card 4: Achievements */}
-        <div onClick={() => setTab('achievements')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'achievements' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'achievements' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'achievements' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'achievements') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'achievements') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef9c3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Achievements</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-              {achCount} Approved
-            </div>
-          </div>
-        </div>
-
-        {/* Card 5: CGPA */}
-        <div onClick={() => setTab('cgpa')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'cgpa' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'cgpa' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'cgpa' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'cgpa') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'cgpa') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🎓</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic CGPA</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-              {overallCgpa ? `${overallCgpa} CGPA` : '—'}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 6: Docs */}
-        <div onClick={() => setTab('docs')}
-          style={{
-            background: '#fff', borderRadius: 14, padding: '20px 24px',
-            border: '1.5px solid',
-            borderColor: tab === 'docs' ? '#1e40af' : '#e8edf3',
-            boxShadow: tab === 'docs' ? '0 0 0 2px #1e40af, 0 8px 20px rgba(30, 64, 175, 0.1)' : '0 1px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, transition: 'all 0.2s',
-            transform: tab === 'docs' ? 'translateY(-2px)' : 'none'
-          }}
-          onMouseEnter={e => { if (tab !== 'docs') e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)'; }}
-          onMouseLeave={e => { if (tab !== 'docs') e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📂</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Documents</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-              {docs.length} Uploaded
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {/* Detailed Info Card */}
@@ -211,7 +272,7 @@ export default function Dashboard() {
           {tab === 'crt' && '🎯 CRT Performance Details'}
           {tab === 'achievements' && '🏆 Approved Achievements'}
           {tab === 'cgpa' && '🎓 Semester-wise Grade Breakdown'}
-          {tab === 'docs' && '📂 My Uploaded Documents'}
+          {tab === 'publications' && '📄 My Publications & Patents'}
         </h3>
 
         {/* Profile Tab */}
@@ -245,40 +306,71 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Docs Tab */}
-        {tab === 'docs' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {docs.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 24 }}>No documents uploaded yet.</div>}
-            {docs.map(d => {
-              const fileUrl = d.fileUrl || d.filepath || '';
+        {/* Publications Tab */}
+        {tab === 'publications' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 10 }}>
+              <span style={{ fontSize: 13, color: '#64748b' }}>Showcasing your research papers, patents, books, and journal publications.</span>
+              <button 
+                onClick={() => navigate('/achievements')} 
+                style={{ 
+                  background: '#0369a1', 
+                  color: '#fff', 
+                  border: 'none', 
+                  padding: '8px 16px', 
+                  borderRadius: 8, 
+                  fontSize: 12, 
+                  fontWeight: 700, 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#025a87'}
+                onMouseLeave={e => e.currentTarget.style.background = '#0369a1'}
+              >
+                + Add Publication
+              </button>
+            </div>
+            {publications.length === 0 && (
+              <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 32, background: '#f8fafc', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
+                No publications found. Click "+ Add Publication" to register one.
+              </div>
+            )}
+            {publications.map(p => {
+              const sc = STATUS_COLORS[p.status] || STATUS_COLORS.PENDING;
               return (
-                <div key={d._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0' }}>
-                  <div>
-                    <span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, marginRight: 10 }}>{d.docType}</span>
-                    <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{d.label || d.filename || '—'}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {fileUrl && <ViewButton url={fileUrl} label="View" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700 }} />}
-                    {fileUrl && (
-                      <button onClick={async () => {
-                        try {
-                          const res = await fetch(fileUrl);
-                          const blob = await res.blob();
-                          const ext = fileUrl.split('?')[0].split('.').pop() || 'pdf';
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `${d.docType || 'document'}_${d.label || d.filename || 'file'}.${ext}`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        } catch { alert('Download failed'); }
-                      }} style={{ background: '#f0fdf4', color: '#059669', border: 'none', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>⬇ Download</button>
-                    )}
-                    <button onClick={async () => {
-                      if (!confirm('Delete this document?')) return;
-                      await api.delete(`/documents/${d._id}`);
-                      setDocs(prev => prev.filter(x => x._id !== d._id));
-                    }} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                <div key={p._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '14px 18px', border: '1px solid #e2e8f0', borderLeft: '4px solid #0369a1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', marginBottom: 4 }}>{p.title}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
+                          {p.activityType.replace(/_/g, ' ')}
+                        </span>
+                        {p.academicYear && <span style={{ background: '#f0fdf4', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{p.academicYear}</span>}
+                        <span style={{ ...sc, borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{p.status}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        {p.issuingOrg && <span>🏢 {p.issuingOrg} &nbsp;</span>}
+                        {p.date && <span>📅 {p.date}</span>}
+                      </div>
+                      {p.description && <div style={{ fontSize: 12, color: '#475569', marginTop: 8, fontStyle: 'italic' }}>{p.description}</div>}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                      <ViewButton url={viewUrl(p.certificateUrl || p.certificatePath)} label="📎 View File" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700 }} />
+                      <button 
+                        onClick={async () => {
+                          if (!confirm('Delete this publication?')) return;
+                          await api.delete(`/achievements/${p._id}`);
+                          setAchievements(prev => prev.filter(x => x._id !== p._id));
+                        }} 
+                        style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -287,30 +379,139 @@ export default function Dashboard() {
         )}
 
         {/* Achievements Tab */}
-        {tab === 'achievements' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {achievements.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 24 }}>No achievements yet.</div>}
-            {achievements.map(a => {
-              const sc = STATUS_COLORS[a.status] || STATUS_COLORS.PENDING;
-              return (
-                <div key={a._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>{a.title}</div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {a.activityType && <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.activityType.replace(/_/g,' ')}</span>}
-                        {a.academicYear && <span style={{ background: '#f0fdf4', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.academicYear}</span>}
-                        {a.position && <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.position}</span>}
-                        <span style={{ ...sc, borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{a.status}</span>
-                      </div>
+        {tab === 'achievements' && (() => {
+          const categoriesList = [
+            { key: 'TECHNICAL', label: 'Technical', color: '#1e40af', bg: '#eff6ff' },
+            { key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706', bg: '#fffbeb' },
+            { key: 'NPTEL', label: 'NPTEL', color: '#7c3aed', bg: '#f5f3ff' },
+            { key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669', bg: '#f0fdf4' },
+            { key: 'PUBLICATIONS', label: 'Publications', color: '#0369a1', bg: '#f0f9ff' },
+            { key: 'OTHER', label: 'Other', color: '#64748b', bg: '#f8fafc' },
+          ];
+
+          const categoryCounts = {
+            TECHNICAL: 0,
+            NON_TECHNICAL: 0,
+            NPTEL: 0,
+            CERTIFICATIONS: 0,
+            PUBLICATIONS: 0,
+            OTHER: 0,
+          };
+          achievements.forEach(a => {
+            const key = getCategoryKey(a);
+            categoryCounts[key]++;
+          });
+
+          let accumulatedPercent = 0;
+          const donutSlices = categoriesList
+            .map(cat => {
+              const count = categoryCounts[cat.key];
+              if (count === 0) return null;
+              const percent = (count / achCount) * 100;
+              const slice = {
+                key: cat.key,
+                color: cat.color,
+                label: cat.label,
+                count,
+                percent,
+                accumulatedPercent,
+              };
+              accumulatedPercent += percent;
+              return slice;
+            })
+            .filter(Boolean);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Graphical View */}
+              {achCount > 0 && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 24,
+                  background: '#f8fafc',
+                  borderRadius: 14,
+                  padding: '24px',
+                  border: '1px solid #e2e8f0',
+                  alignItems: 'center',
+                }}>
+                  {/* Left: Donut Chart */}
+                  <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: '0 auto' }}>
+                    <svg width="140" height="140" viewBox="0 0 140 140">
+                      <circle cx="70" cy="70" r="50" fill="transparent" stroke="#e2e8f0" strokeWidth="12" />
+                      {donutSlices.map(slice => (
+                        <circle
+                          key={slice.key}
+                          cx="70"
+                          cy="70"
+                          r="50"
+                          fill="transparent"
+                          stroke={slice.color}
+                          strokeWidth="12"
+                          strokeDasharray={`${(slice.percent / 100) * 314.16} 314.16`}
+                          strokeDashoffset={- (slice.accumulatedPercent / 100) * 314.16}
+                          transform="rotate(-90 70 70)"
+                          strokeLinecap="round"
+                          style={{ transition: 'stroke-dashoffset 0.5s ease, stroke-dasharray 0.5s ease' }}
+                        />
+                      ))}
+                    </svg>
+                    <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{achCount}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</span>
                     </div>
-                    <ViewButton url={viewUrl(a.certificateUrl || a.certificatePath)} label="📎 View" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 10 }} />
+                  </div>
+
+                  {/* Right: Legend & Progress Bars */}
+                  <div style={{ flex: 1, minWidth: 260, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
+                    {categoriesList.map(cat => {
+                      const count = categoryCounts[cat.key];
+                      const percent = achCount > 0 ? Math.round((count / achCount) * 100) : 0;
+                      return (
+                        <div key={cat.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#334155' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: cat.color }} />
+                              {cat.label}
+                            </div>
+                            <span style={{ fontWeight: 700, color: '#0f172a' }}>{count} ({percent}%)</span>
+                          </div>
+                          <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: `${percent}%`, height: '100%', background: cat.color, borderRadius: 3, transition: 'width 0.5s ease' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+
+              {/* Achievements List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {achievements.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 24 }}>No achievements yet.</div>}
+                {achievements.map(a => {
+                  const sc = STATUS_COLORS[a.status] || STATUS_COLORS.PENDING;
+                  return (
+                    <div key={a._id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>{a.title}</div>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {a.activityType && <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.activityType.replace(/_/g,' ')}</span>}
+                            {a.academicYear && <span style={{ background: '#f0fdf4', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.academicYear}</span>}
+                            {a.position && <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{a.position}</span>}
+                            <span style={{ ...sc, borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{a.status}</span>
+                          </div>
+                        </div>
+                        <ViewButton url={viewUrl(a.certificateUrl || a.certificatePath)} label="📎 View" style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 10 }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Attendance Tab */}
         {tab === 'attendance' && profile && (

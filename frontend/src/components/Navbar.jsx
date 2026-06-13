@@ -13,12 +13,14 @@ export default function Navbar() {
     const r = localStorage.getItem('role');
     const lt = localStorage.getItem('loginType');
     localStorage.clear();
+    const routerBase = import.meta.env.BASE_URL || '/';
+    const base = routerBase.endsWith('/') ? routerBase : routerBase + '/';
     if (r === 'admin') {
-      navigate('/admin');
+      window.location.href = base + 'admin';
     } else if (lt === 'faculty' || r === 'faculty') {
-      navigate('/faculty');
+      window.location.href = base + 'faculty';
     } else {
-      navigate('/login');
+      window.location.href = base + 'login';
     }
   };
 

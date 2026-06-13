@@ -185,6 +185,17 @@ export default function StudentProfile() {
   const [saved, setSaved] = useState(false);
   const [docs, setDocs] = useState([]);
   const [showResumeBuilder, setShowResumeBuilder] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
+
+  const steps = [
+    { number: 1, key: 'personal', label: 'Personal', icon: '👤' },
+    { number: 2, key: 'contact', label: 'Contact', icon: '📞' },
+    { number: 3, key: 'academic', label: 'Academic', icon: '🎓' },
+    { number: 4, key: 'tenth', label: '10th / SSC', icon: '📚' },
+    { number: 5, key: 'inter', label: 'Inter / 12th', icon: '🏫' },
+    { number: 6, key: 'documents', label: 'ID & Docs', icon: '🪪' },
+    { number: 7, key: 'coding', label: 'Coding & Social', icon: '💻' }
+  ];
 
   // Disable copy-paste on the entire page
   useEffect(() => {
@@ -215,7 +226,7 @@ export default function StudentProfile() {
   };
 
   const save = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const { _id, __v, createdAt, updatedAt, ...updates } = form;
     const nums = ['cgpa','admissionYear','currentYear','currentSemester','tenthYear','tenthPercent','interYear','interPercent','leetCodeSolved','leetCodeEasy','leetCodeMedium','leetCodeHard','codeChefRating','codeChefStars','codeChefRank'];
     nums.forEach(k => { if (updates[k]) updates[k] = parseFloat(updates[k]); });
@@ -226,6 +237,37 @@ export default function StudentProfile() {
     await api.put('/students/me', updates);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const isFieldFilled = (val) => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'string' && val.trim() === '') return false;
+    return true;
+  };
+
+  const getStepStatus = (key) => {
+    if (!form) return false;
+    switch(key) {
+      case 'personal':
+        return ['name','dob','gender','bloodGroup','nationality','religion','caste'].every(f => isFieldFilled(form[f]));
+      case 'contact':
+        return ['email','phone','address','parentName','parentPhone'].every(f => isFieldFilled(form[f]));
+      case 'academic':
+        return ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => isFieldFilled(form[f]));
+      case 'tenth':
+        return ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => isFieldFilled(form[f])) && 
+               docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC')));
+      case 'inter':
+        return ['interCollege','interBoard','interYear','interPercent','interGroup'].every(f => isFieldFilled(form[f])) && 
+               docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th')));
+      case 'documents':
+        return ['apaarId','aadhaarNumber'].every(f => isFieldFilled(form[f])) && 
+               docs.some(d => d.docType === 'AADHAAR' || d.docType === 'Aadhaar');
+      case 'coding':
+        return isFieldFilled(form.linkedIn) || isFieldFilled(form.leetCode) || isFieldFilled(form.codeChef);
+      default:
+        return false;
+    }
   };
 
   const overallCgpa = (() => {
@@ -268,262 +310,456 @@ export default function StudentProfile() {
         </div>
       </div>
 
+      {/* Stepper Wizard Track */}
+      <div style={{
+        background: '#fff',
+        borderRadius: 14,
+        padding: '24px 20px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06)',
+        border: '1px solid #e8edf3',
+        marginBottom: 24,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Background connector line */}
+        <div style={{
+          position: 'absolute',
+          top: 42,
+          left: '5%',
+          right: '5%',
+          height: 3,
+          background: '#e2e8f0',
+          zIndex: 1
+        }} />
+
+        {/* Foreground dynamic progress connector line */}
+        <div style={{
+          position: 'absolute',
+          top: 42,
+          left: '5%',
+          width: `${((activeStep - 1) / (steps.length - 1)) * 90}%`,
+          height: 3,
+          background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+          zIndex: 1,
+          transition: 'width 0.4s ease'
+        }} />
+
+        {steps.map((s) => {
+          const isCompleted = getStepStatus(s.key);
+          const isActive = activeStep === s.number;
+          
+          let circleBg = '#f1f5f9';
+          let borderStyle = '2.5px solid #cbd5e1';
+          let textColor = '#64748b';
+          
+          if (isCompleted) {
+            circleBg = '#10b981';
+            borderStyle = '2.5px solid #10b981';
+            textColor = '#fff';
+          } else if (isActive) {
+            circleBg = '#3b82f6';
+            borderStyle = '2.5px solid #3b82f6';
+            textColor = '#fff';
+          }
+
+          return (
+            <div
+              key={s.number}
+              onClick={() => setActiveStep(s.number)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                flex: 1,
+                zIndex: 2,
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+            >
+              {/* Circle */}
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: circleBg,
+                border: borderStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 14,
+                color: textColor,
+                boxShadow: isActive ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : 'none',
+                transition: 'all 0.3s ease',
+                transform: isActive ? 'scale(1.1)' : 'scale(1)',
+              }}>
+                {isCompleted ? '✓' : s.number}
+              </div>
+              
+              {/* Label */}
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                fontWeight: isActive || isCompleted ? 700 : 500,
+                color: isActive ? '#3b82f6' : isCompleted ? '#10b981' : '#64748b',
+                textAlign: 'center',
+                transition: 'color 0.3s'
+              }}>
+                {s.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       <form onSubmit={save} onCopy={e => e.preventDefault()} onCut={e => e.preventDefault()} onPaste={e => e.preventDefault()}>
 
         {/* Personal Details */}
-        <SectionCard icon="👤" title="Personal Details" bg="#eff6ff">
-          <div style={grid2}>
-            <Field label="Full Name" value={form.name} onChange={v => set('name', v)} />
-            <Field label="Date of Birth" value={form.dob} onChange={v => set('dob', v)} type="date" />
-            <SelectF label="Gender" value={form.gender} onChange={v => set('gender', v)} options={['Male','Female','Other']} />
-            <Field label="Blood Group" value={form.bloodGroup} onChange={v => set('bloodGroup', v)} placeholder="e.g. O+" />
-            <Field label="Nationality" value={form.nationality} onChange={v => set('nationality', v)} />
-            <Field label="Religion" value={form.religion} onChange={v => set('religion', v)} />
-            <Field label="Caste" value={form.caste} onChange={v => set('caste', v)} />
-          </div>
-        </SectionCard>
+        {activeStep === 1 && (
+          <SectionCard icon="👤" title="Personal Details" bg="#eff6ff">
+            <div style={grid2}>
+              <Field label="Full Name" value={form.name} onChange={v => set('name', v)} />
+              <Field label="Date of Birth" value={form.dob} onChange={v => set('dob', v)} type="date" />
+              <SelectF label="Gender" value={form.gender} onChange={v => set('gender', v)} options={['Male','Female','Other']} />
+              <Field label="Blood Group" value={form.bloodGroup} onChange={v => set('bloodGroup', v)} placeholder="e.g. O+" />
+              <Field label="Nationality" value={form.nationality} onChange={v => set('nationality', v)} />
+              <Field label="Religion" value={form.religion} onChange={v => set('religion', v)} />
+              <Field label="Caste" value={form.caste} onChange={v => set('caste', v)} />
+            </div>
+          </SectionCard>
+        )}
 
         {/* Contact Details */}
-        <SectionCard icon="📞" title="Contact Details" bg="#f0fdf4">
-          <div style={grid2}>
-            <Field label="Email Address" value={form.email} onChange={v => set('email', v)} type="email" />
-            <Field label="Phone Number" value={form.phone} onChange={v => set('phone', v)} />
-            <Field label="Address" value={form.address} onChange={v => set('address', v)} span={2} />
-            <Field label="Parent / Guardian Name" value={form.parentName} onChange={v => set('parentName', v)} />
-            <Field label="Parent Phone" value={form.parentPhone} onChange={v => set('parentPhone', v)} />
-          </div>
-        </SectionCard>
+        {activeStep === 2 && (
+          <SectionCard icon="📞" title="Contact Details" bg="#f0fdf4">
+            <div style={grid2}>
+              <Field label="Email Address" value={form.email} onChange={v => set('email', v)} type="email" />
+              <Field label="Phone Number" value={form.phone} onChange={v => set('phone', v)} />
+              <Field label="Address" value={form.address} onChange={v => set('address', v)} span={2} />
+              <Field label="Parent / Guardian Name" value={form.parentName} onChange={v => set('parentName', v)} />
+              <Field label="Parent Phone" value={form.parentPhone} onChange={v => set('parentPhone', v)} />
+            </div>
+          </SectionCard>
+        )}
 
         {/* Academic Details */}
-        <SectionCard icon="🎓" title="Academic Details" bg="#faf5ff">
-          <div style={grid2}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Category</label>
-              <select value={form.admissionCategory || ''} onChange={e => set('admissionCategory', e.target.value)}
-                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
-                <option value="">Select...</option>
-                {CATEGORIES.map(o => <option key={o} value={o}>{o.replace('_', ' ')}</option>)}
-              </select>
-              {form.admissionCategory === 'OTHER' && (
-                <input placeholder="Specify category..." value={form.admissionCategoryOther || ''}
-                  onChange={e => set('admissionCategoryOther', e.target.value)}
-                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', marginTop: 6 }} />
+        {activeStep === 3 && (
+          <SectionCard icon="🎓" title="Academic Details" bg="#faf5ff">
+            <div style={grid2}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Category</label>
+                <select value={form.admissionCategory || ''} onChange={e => set('admissionCategory', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                  <option value="">Select...</option>
+                  {CATEGORIES.map(o => <option key={o} value={o}>{o.replace('_', ' ')}</option>)}
+                </select>
+                {form.admissionCategory === 'OTHER' && (
+                  <input placeholder="Specify category..." value={form.admissionCategoryOther || ''}
+                    onChange={e => set('admissionCategoryOther', e.target.value)}
+                    style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', marginTop: 6 }} />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Year</label>
+                <select value={form.admissionYear || ''} onChange={e => set('admissionYear', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                  <option value="">Select...</option>
+                  {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
+                    const y = 2019 + i;
+                    return <option key={y} value={`${y}-${String(y+1).slice(2)}`}>{y}-{String(y+1).slice(2)}</option>;
+                  })}
+                </select>
+              </div>
+              <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
+              <Field label="Section" value={form.section} onChange={v => set('section', v)} />
+              <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
+              <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
+            </div>
+
+            {/* Semester CGPA & SGPA inline */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semester-wise CGPA & SGPA</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {[1,2,3,4,5,6,7,8].map(sem => {
+                  const completedSems = (parseInt(form.currentYear) || 0) * 2;
+                  const isCompleted = sem <= completedSems;
+                  return (
+                    <div key={sem} style={{ background: isCompleted ? '#f8fafc' : '#f1f5f9', borderRadius: 10, padding: '10px 12px', border: `1px solid ${isCompleted ? '#e2e8f0' : '#e8edf3'}`, opacity: isCompleted ? 1 : 0.45 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>Sem {sem}</div>
+                      {isCompleted ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div>
+                            <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CGPA</label>
+                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
+                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>SGPA</label>
+                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
+                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                          </div>
+                          <div style={{ marginTop: 4 }}>
+                            <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Mark Memo</label>
+                            {docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`)).map(d => (
+                              <SemMemoView key={d._id} doc={d} onDelete={() => deleteDoc(d._id)} />
+                            ))}
+                            <SemUpload sem={sem} onUploaded={loadDocs} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '4px 0' }}>Not yet</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {overallCgpa && (
+                <div style={{ marginTop: 12, background: 'linear-gradient(135deg,#1e40af,#0369a1)', borderRadius: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Overall CGPA</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{overallCgpa}</div>
+                </div>
               )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Admission Year</label>
-              <select value={form.admissionYear || ''} onChange={e => set('admissionYear', e.target.value)}
-                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
-                <option value="">Select...</option>
-                {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
-                  const y = 2019 + i;
-                  return <option key={y} value={`${y}-${String(y+1).slice(2)}`}>{y}-{String(y+1).slice(2)}</option>;
-                })}
-              </select>
-            </div>
-            <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
-            <Field label="Section" value={form.section} onChange={v => set('section', v)} />
-            <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
-            <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
-          </div>
-
-          {/* Semester CGPA & SGPA inline */}
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semester-wise CGPA & SGPA</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-              {[1,2,3,4,5,6,7,8].map(sem => {
-                const completedSems = (parseInt(form.currentYear) || 0) * 2;
-                const isCompleted = sem <= completedSems;
-                return (
-                  <div key={sem} style={{ background: isCompleted ? '#f8fafc' : '#f1f5f9', borderRadius: 10, padding: '10px 12px', border: `1px solid ${isCompleted ? '#e2e8f0' : '#e8edf3'}`, opacity: isCompleted ? 1 : 0.45 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>Sem {sem}</div>
-                    {isCompleted ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div>
-                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CGPA</label>
-                          <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
-                            style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>SGPA</label>
-                          <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
-                            style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
-                        </div>
-                        <div style={{ marginTop: 4 }}>
-                          <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Mark Memo</label>
-                          {docs.filter(d => d.docType === 'MARK_MEMO' && d.label?.toLowerCase().includes(`sem ${sem}`)).map(d => (
-                            <SemMemoView key={d._id} doc={d} onDelete={() => deleteDoc(d._id)} />
-                          ))}
-                          <SemUpload sem={sem} onUploaded={loadDocs} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '4px 0' }}>Not yet</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {overallCgpa && (
-              <div style={{ marginTop: 12, background: 'linear-gradient(135deg,#1e40af,#0369a1)', borderRadius: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Overall CGPA</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{overallCgpa}</div>
-              </div>
-            )}
-          </div>
-        </SectionCard>
+          </SectionCard>
+        )}
 
         {/* 10th Details */}
-        <SectionCard icon="📚" title="10th / SSC Details" bg="#fff7ed">
-          <div style={grid2}>
-            <Field label="School Name" value={form.tenthSchool} onChange={v => set('tenthSchool', v)} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
-              <select value={['SSC','CBSE','ICSE','OTHER'].includes(form.tenthBoard) ? form.tenthBoard : (form.tenthBoard ? 'OTHER' : '')}
-                onChange={e => set('tenthBoard', e.target.value)}
-                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
-                <option value="">Select...</option>
-                <option value="SSC">SSC</option>
-                <option value="CBSE">CBSE</option>
-                <option value="ICSE">ICSE</option>
-                <option value="OTHER">Other</option>
-              </select>
-              {(form.tenthBoard === 'OTHER' || (form.tenthBoard && !['SSC','CBSE','ICSE','OTHER',''].includes(form.tenthBoard))) && (
-                <input placeholder="Enter board name" value={form.tenthBoard === 'OTHER' ? '' : form.tenthBoard}
+        {activeStep === 4 && (
+          <SectionCard icon="📚" title="10th / SSC Details" bg="#fff7ed">
+            <div style={grid2}>
+              <Field label="School Name" value={form.tenthSchool} onChange={v => set('tenthSchool', v)} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
+                <select value={['SSC','CBSE','ICSE','OTHER'].includes(form.tenthBoard) ? form.tenthBoard : (form.tenthBoard ? 'OTHER' : '')}
                   onChange={e => set('tenthBoard', e.target.value)}
-                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
-              )}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                  <option value="">Select...</option>
+                  <option value="SSC">SSC</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                {(form.tenthBoard === 'OTHER' || (form.tenthBoard && !['SSC','CBSE','ICSE','OTHER',''].includes(form.tenthBoard))) && (
+                  <input placeholder="Enter board name" value={form.tenthBoard === 'OTHER' ? '' : form.tenthBoard}
+                    onChange={e => set('tenthBoard', e.target.value)}
+                    style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+                )}
+              </div>
+              <Field label="Year of Passing" value={form.tenthYear} onChange={v => set('tenthYear', v)} type="number" placeholder="e.g. 2021" />
+              <Field label="Percentage / GPA" value={form.tenthPercent} onChange={v => set('tenthPercent', v)} type="number" placeholder="e.g. 92.5" />
             </div>
-            <Field label="Year of Passing" value={form.tenthYear} onChange={v => set('tenthYear', v)} type="number" placeholder="e.g. 2021" />
-            <Field label="Percentage / GPA" value={form.tenthPercent} onChange={v => set('tenthPercent', v)} type="number" placeholder="e.g. 92.5" />
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <InlineUpload docType="MARK_MEMO" label="10th Mark Memo / Certificate"
-              docs={docs.filter(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC')))}
-              onUploaded={loadDocs} onDelete={deleteDoc} />
-          </div>
-        </SectionCard>
+            <div style={{ marginTop: 16 }}>
+              <InlineUpload docType="MARK_MEMO" label="10th Mark Memo / Certificate"
+                docs={docs.filter(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC')))}
+                onUploaded={loadDocs} onDelete={deleteDoc} />
+            </div>
+          </SectionCard>
+        )}
 
         {/* Inter Details */}
-        <SectionCard icon="🏫" title="Intermediate / 12th Details" bg="#f0fdf4">
-          <div style={grid2}>
-            <Field label="College Name" value={form.interCollege} onChange={v => set('interCollege', v)} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
-              <select value={['TSBIE','APBIE','CBSE','ICSE','OTHER'].includes(form.interBoard) ? form.interBoard : (form.interBoard ? 'OTHER' : '')}
-                onChange={e => set('interBoard', e.target.value)}
-                style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
-                <option value="">Select...</option>
-                <option value="TSBIE">TSBIE</option>
-                <option value="APBIE">APBIE</option>
-                <option value="CBSE">CBSE</option>
-                <option value="ICSE">ICSE</option>
-                <option value="OTHER">Other</option>
-              </select>
-              {(form.interBoard === 'OTHER' || (form.interBoard && !['TSBIE','APBIE','CBSE','ICSE','OTHER',''].includes(form.interBoard))) && (
-                <input placeholder="Enter board name" value={form.interBoard === 'OTHER' ? '' : form.interBoard}
+        {activeStep === 5 && (
+          <SectionCard icon="🏫" title="Intermediate / 12th Details" bg="#f0fdf4">
+            <div style={grid2}>
+              <Field label="College Name" value={form.interCollege} onChange={v => set('interCollege', v)} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Board</label>
+                <select value={['TSBIE','APBIE','CBSE','ICSE','OTHER'].includes(form.interBoard) ? form.interBoard : (form.interBoard ? 'OTHER' : '')}
                   onChange={e => set('interBoard', e.target.value)}
-                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
-              )}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                  <option value="">Select...</option>
+                  <option value="TSBIE">TSBIE</option>
+                  <option value="APBIE">APBIE</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                {(form.interBoard === 'OTHER' || (form.interBoard && !['TSBIE','APBIE','CBSE','ICSE','OTHER',''].includes(form.interBoard))) && (
+                  <input placeholder="Enter board name" value={form.interBoard === 'OTHER' ? '' : form.interBoard}
+                    onChange={e => set('interBoard', e.target.value)}
+                    style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+                )}
+              </div>
+              <Field label="Year of Passing" value={form.interYear} onChange={v => set('interYear', v)} type="number" placeholder="e.g. 2023" />
+              <Field label="Percentage / GPA" value={form.interPercent} onChange={v => set('interPercent', v)} type="number" placeholder="e.g. 95.0" />
+              <Field label="Group / Stream" value={form.interGroup} onChange={v => set('interGroup', v)} placeholder="e.g. MPC, BiPC" />
             </div>
-            <Field label="Year of Passing" value={form.interYear} onChange={v => set('interYear', v)} type="number" placeholder="e.g. 2023" />
-            <Field label="Percentage / GPA" value={form.interPercent} onChange={v => set('interPercent', v)} type="number" placeholder="e.g. 95.0" />
-            <Field label="Group / Stream" value={form.interGroup} onChange={v => set('interGroup', v)} placeholder="e.g. MPC, BiPC" />
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <InlineUpload docType="MARK_MEMO" label="Inter Mark Memo / Certificate"
-              docs={docs.filter(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th')))}
-              onUploaded={loadDocs} onDelete={deleteDoc} />
-          </div>
-        </SectionCard>
+            <div style={{ marginTop: 16 }}>
+              <InlineUpload docType="MARK_MEMO" label="Inter Mark Memo / Certificate"
+                docs={docs.filter(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th')))}
+                onUploaded={loadDocs} onDelete={deleteDoc} />
+            </div>
+          </SectionCard>
+        )}
 
         {/* ID Details + Documents */}
-        <SectionCard icon="🪪" title="ID Details & Documents" bg="#fdf4ff">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {activeStep === 6 && (
+          <SectionCard icon="🪪" title="ID Details & Documents" bg="#fdf4ff">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* APAAR / ABC ID */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🎓 APAAR / ABC ID</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>APAAR / ABC ID Number</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input value={form.apaarId || ''} onChange={e => { set('apaarId', e.target.value); set('abcId', e.target.value); }} placeholder="Enter ID number"
-                    style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
-                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
-                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-                  <CopyButton value={form.apaarId} />
+              {/* APAAR / ABC ID */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🎓 APAAR / ABC ID</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>APAAR / ABC ID Number</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input value={form.apaarId || ''} onChange={e => { set('apaarId', e.target.value); set('abcId', e.target.value); }} placeholder="Enter ID number"
+                      style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
+                      onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                    <CopyButton value={form.apaarId} />
+                  </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <InlineUpload docType="APAAR_ABC" label="Upload APAAR / ABC ID Document"
+                    docs={docs.filter(d => d.docType === 'APAAR_ABC')} onUploaded={loadDocs} onDelete={deleteDoc} />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <InlineUpload docType="APAAR_ABC" label="Upload APAAR / ABC ID Document"
-                  docs={docs.filter(d => d.docType === 'APAAR_ABC')} onUploaded={loadDocs} onDelete={deleteDoc} />
-              </div>
-            </div>
 
-            {/* Aadhaar */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🪪 Aadhaar Card</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Aadhaar Number</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input value={form.aadhaarNumber || ''} onChange={e => set('aadhaarNumber', e.target.value)} placeholder="XXXX XXXX XXXX"
-                    style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
-                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
-                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-                  <CopyButton value={form.aadhaarNumber} />
+              {/* Aadhaar */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>🪪 Aadhaar Card</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Aadhaar Number</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input value={form.aadhaarNumber || ''} onChange={e => set('aadhaarNumber', e.target.value)} placeholder="XXXX XXXX XXXX"
+                      style={{ flex: 1, padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
+                      onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                    <CopyButton value={form.aadhaarNumber} />
+                  </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <InlineUpload docType="AADHAAR" label="Upload Aadhaar Card"
+                    docs={docs.filter(d => d.docType === 'AADHAAR')} onUploaded={loadDocs} onDelete={deleteDoc} />
                 </div>
               </div>
-              <div style={{ marginTop: 12 }}>
-                <InlineUpload docType="AADHAAR" label="Upload Aadhaar Card"
-                  docs={docs.filter(d => d.docType === 'AADHAAR')} onUploaded={loadDocs} onDelete={deleteDoc} />
+
+              {/* PAN */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>💳 PAN Card</div>
+                <InlineUpload docType="PAN" label="Upload PAN Card"
+                  docs={docs.filter(d => d.docType === 'PAN')} onUploaded={loadDocs} onDelete={deleteDoc} />
+              </div>
+
+              {/* Other */}
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>📁 Other Documents</div>
+                <InlineUpload docType="OTHER" label="Upload Other Documents"
+                  docs={docs.filter(d => d.docType === 'OTHER')} onUploaded={loadDocs} onDelete={deleteDoc} />
               </div>
             </div>
-
-            {/* PAN */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>💳 PAN Card</div>
-              <InlineUpload docType="PAN" label="Upload PAN Card"
-                docs={docs.filter(d => d.docType === 'PAN')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            </div>
-
-            {/* Other */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>📁 Other Documents</div>
-              <InlineUpload docType="OTHER" label="Upload Other Documents"
-                docs={docs.filter(d => d.docType === 'OTHER')} onUploaded={loadDocs} onDelete={deleteDoc} />
-            </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
+        )}
 
         {/* Coding Profiles */}
-        <SectionCard icon="💻" title="Coding & Social Profiles" bg="#f0fdf4">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              { label: 'LinkedIn', key: 'linkedIn', placeholder: 'https://linkedin.com/in/username', img: 'https://cdn-icons-png.flaticon.com/512/174/174857.png', color: '#0a66c2' },
-              { label: 'LeetCode Username', key: 'leetCode', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ffa116' },
-              { label: 'CodeChef Username', key: 'codeChef', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638' },
-            ].map(({ label, key, placeholder, img, color }) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #e2e8f0' }}>
-                  <img src={img} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
+        {activeStep === 7 && (
+          <SectionCard icon="💻" title="Coding & Social Profiles" bg="#f0fdf4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[
+                { label: 'LinkedIn', key: 'linkedIn', placeholder: 'https://linkedin.com/in/username', img: 'https://cdn-icons-png.flaticon.com/512/174/174857.png', color: '#0a66c2' },
+                { label: 'LeetCode Username', key: 'leetCode', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-leetcode-3521542-2944960.png', color: '#ffa116' },
+                { label: 'CodeChef Username', key: 'codeChef', placeholder: 'Enter username', img: 'https://cdn.iconscout.com/icon/free/png-512/free-codechef-3521498-2944921.png', color: '#5b4638' },
+              ].map(({ label, key, placeholder, img, color }) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #e2e8f0' }}>
+                    <img src={img} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</label>
+                    <input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder}
+                      style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }}
+                      onFocus={e => e.target.style.borderColor = color}
+                      onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+                  </div>
                 </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</label>
-                  <input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder}
-                    style={{ padding: '10px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit' }}
-                    onFocus={e => e.target.style.borderColor = color}
-                    onBlur={e => e.target.style.borderColor = '#d1d5db'} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
+              ))}
+            </div>
+          </SectionCard>
+        )}
 
-        {/* Save button bottom */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginBottom: 40 }}>
-          {saved && <span style={{ background: '#d1fae5', color: '#065f46', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700 }}>✓ Saved!</span>}
-          <button className="btn-primary" type="submit" style={{ padding: '12px 32px', fontSize: 15 }}>💾 Save Profile</button>
+        {/* Navigation & Action Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 40 }}>
+          {/* Left: Back button */}
+          {activeStep > 1 ? (
+            <button
+              type="button"
+              onClick={() => setActiveStep(activeStep - 1)}
+              style={{
+                background: '#f1f5f9',
+                color: '#374151',
+                border: '1.5px solid #d1d5db',
+                padding: '11px 24px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+            >
+              ← Back
+            </button>
+          ) : <div />}
+
+          {/* Right: Next / Save Button Group */}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {saved && (
+              <span style={{ background: '#d1fae5', color: '#065f46', padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+                ✓ Saved!
+              </span>
+            )}
+            
+            <button
+              type="button"
+              onClick={save}
+              style={{
+                background: '#059669',
+                color: '#fff',
+                border: 'none',
+                padding: '11px 24px',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#047857'}
+              onMouseLeave={e => e.currentTarget.style.background = '#059669'}
+            >
+              💾 Save Profile
+            </button>
+
+            {activeStep < 7 && (
+              <button
+                type="button"
+                onClick={() => setActiveStep(activeStep + 1)}
+                style={{
+                  background: '#3b82f6',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '11px 24px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
+                onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
+              >
+                Next →
+              </button>
+            )}
+          </div>
         </div>
+
       </form>
     </div>
   );

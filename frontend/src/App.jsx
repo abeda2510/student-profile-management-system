@@ -105,12 +105,13 @@ function Topbar() {
     const r = localStorage.getItem('role');
     const lt = localStorage.getItem('loginType');
     localStorage.clear();
+    const base = ROUTER_BASE.endsWith('/') ? ROUTER_BASE : ROUTER_BASE + '/';
     if (r === 'admin') {
-      navigate('/admin');
+      window.location.href = base + 'admin';
     } else if (lt === 'faculty' || r === 'faculty') {
-      navigate('/faculty');
+      window.location.href = base + 'faculty';
     } else {
-      navigate('/login');
+      window.location.href = base + 'login';
     }
   };
   const isFaculty = loginType === 'faculty';
