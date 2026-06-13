@@ -22,6 +22,7 @@ const studentSchema = new mongoose.Schema({
     enum: ['VSAT', 'EAMCET', 'JEE', 'MANAGEMENT', 'NRI', 'OTHER']
   },
   admissionYear: Number,
+  academicYear: String,
   branch: String,
   section: String,
   currentSemester: Number,

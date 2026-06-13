@@ -54,7 +54,7 @@ export default function Dashboard() {
   const checks = profile ? {
     personal:  ['name','dob','gender','bloodGroup','nationality','religion','caste'].every(f => isFieldFilled(profile[f])),
     contact:   ['email','phone','address','parentName','parentPhone'].every(f => isFieldFilled(profile[f])),
-    academic:  ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => isFieldFilled(profile[f])),
+    academic:  ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory','academicYear'].every(f => isFieldFilled(profile[f])),
     tenth:     ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC'))),
     inter:     ['interCollege','interBoard','interYear','interPercent','interGroup'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('Inter') || d.label?.includes('12th'))),
     documents: ['apaarId','aadhaarNumber'].every(f => isFieldFilled(profile[f])) && docs.some(d => d.docType === 'AADHAAR' || d.docType === 'Aadhaar'),
@@ -290,7 +290,8 @@ export default function Dashboard() {
                 ['Reg. Number', profile.regNumber], ['Branch', profile.branch],
                 ['Email', profile.email], ['Phone', profile.phone],
                 ['Section', profile.section], ['Current Year', profile.currentYear],
-                ['Admission Year', profile.admissionYear], ['Admission Category', profile.admissionCategory],
+                ['Academic Year', profile.academicYear], ['Admission Year', profile.admissionYear],
+                ['Admission Category', profile.admissionCategory],
                 ['Date of Birth', profile.dob], ['Gender', profile.gender],
                 ['Blood Group', profile.bloodGroup], ['Nationality', profile.nationality],
                 ['Parent Name', profile.parentName], ['Parent Phone', profile.parentPhone],

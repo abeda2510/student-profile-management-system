@@ -172,8 +172,8 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
     sectionTitle('Academic Details');
     row2col('Admission Category', student.admissionCategory, 'Admission Year', student.admissionYear);
     row2col('Branch', student.branch, 'Current Year', student.currentYear);
-    row2col('Current Semester', student.currentSemester, 'CGPA', student.cgpa);
-    row1col('APAAR ID', student.apaarId);
+    row2col('Current Semester', student.currentSemester, 'Academic Year', student.academicYear);
+    row2col('CGPA', student.cgpa, 'APAAR ID', student.apaarId);
     y += 4;
 
     // ── EDUCATION ────────────────────────────────────────────

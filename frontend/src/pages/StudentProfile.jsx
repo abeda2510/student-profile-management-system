@@ -263,7 +263,7 @@ export default function StudentProfile() {
       case 'contact':
         return ['email','phone','address','parentName','parentPhone'].every(f => isFieldFilled(form[f]));
       case 'academic':
-        return ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory'].every(f => isFieldFilled(form[f]));
+        return ['branch','section','currentYear','currentSemester','admissionYear','admissionCategory','academicYear'].every(f => isFieldFilled(form[f]));
       case 'tenth':
         return ['tenthSchool','tenthBoard','tenthYear','tenthPercent'].every(f => isFieldFilled(form[f])) && 
                docs.some(d => d.docType === 'MARK_MEMO' && (d.label?.includes('10th') || d.label?.includes('SSC')));
@@ -477,9 +477,21 @@ export default function StudentProfile() {
                 <select value={form.admissionYear || ''} onChange={e => set('admissionYear', e.target.value)}
                   style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
                   <option value="">Select...</option>
-                  {Array.from({ length: new Date().getFullYear() - 2018 }, (_, i) => {
-                    const y = 2019 + i;
-                    return <option key={y} value={`${y}-${String(y+1).slice(2)}`}>{y}-{String(y+1).slice(2)}</option>;
+                  {Array.from({ length: new Date().getFullYear() - 2017 }, (_, i) => {
+                    const y = 2018 + i;
+                    return <option key={y} value={y}>{y}</option>;
+                  })}
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Academic Year</label>
+                <select value={form.academicYear || ''} onChange={e => set('academicYear', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}>
+                  <option value="">Select...</option>
+                  {Array.from({ length: new Date().getFullYear() - 2017 }, (_, i) => {
+                    const y = 2018 + i;
+                    const val = `${y}-${String(y+1).slice(2)}`;
+                    return <option key={val} value={val}>{val}</option>;
                   })}
                 </select>
               </div>
