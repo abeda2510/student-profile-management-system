@@ -37,11 +37,14 @@ const proxyHandler = async (req, res) => {
 };
 app.get('/spm/proxy-pdf', proxyHandler);
 
-// Rate limiting
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false, message: { message: 'Too many requests, please try again later.' } });
+// Trust proxy (necessary if behind a reverse proxy/load balancer like Heroku, Render, Nginx, etc.)
+app.set('trust proxy', 1);
+
+// Rate limiting (adjusted limits to accommodate 150+ concurrent users/classrooms sharing a NAT IP)
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10000, standardHeaders: true, legacyHeaders: false, message: { message: 'Too many requests, please try again later.' } });
 app.use('/spm/', limiter);
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { message: 'Too many login attempts, please try again later.' } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 1000, message: { message: 'Too many login attempts, please try again later.' } });
 app.use('/spm/auth/', authLimiter);
 
 app.use(express.json({ limit: '2mb' }));
