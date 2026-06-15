@@ -477,9 +477,19 @@ router.get('/section-report', protect, async (req, res) => {
 
   const results = [];
   for (const st of students) {
+    const studentData = [];
+    let hasAnyData = false;
     for (const dt of expandedDocTypes) {
-      results.push(await getStudentDocData(st, dt, preloadedDocs, preloadedAchs));
+      const r = await getStudentDocData(st, dt, preloadedDocs, preloadedAchs);
+      if (r.data && r.data !== '—' && r.data !== '' && r.data !== '-') {
+        hasAnyData = true;
+      }
+      studentData.push(r);
     }
+    if (!hasAnyData) {
+      continue;
+    }
+    results.push(...studentData);
   }
   res.json(results);
 });
@@ -579,20 +589,29 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
     preloadedAchs[key].push(a);
   });
 
+  let rowIndex = 1;
   for (let i = 0; i < students.length; i++) {
     const st = students[i];
-    const rowData = [i + 1, st.regNumber, st.name, st.branch, st.section];
+    const rowData = [rowIndex, st.regNumber, st.name, st.branch, st.section];
+    let hasAnyData = false;
     for (const dt of docTypes) {
       const r = await getStudentDocData(st, dt, preloadedDocs, preloadedAchs);
+      if (r.data && r.data !== '—' && r.data !== '' && r.data !== '-') {
+        hasAnyData = true;
+      }
       rowData.push(r.data && r.data !== '—' ? r.data : 'Missing');
     }
+    if (!hasAnyData) {
+      continue;
+    }
+    rowData[0] = rowIndex++;
     if (y + ROW_H > doc.page.height - 30) {
       doc.addPage({ layout: 'landscape' });
       y = 30;
       drawRow(headers, y, true, false);
       y += ROW_H;
     }
-    drawRow(rowData, y, false, i % 2 === 1);
+    drawRow(rowData, y, false, rowIndex % 2 === 1);
     y += ROW_H;
   }
 
@@ -669,9 +688,16 @@ router.get('/section-report/excel', protect, async (req, res) => {
   const rows = [];
   for (const st of students) {
     const row = { regNumber: st.regNumber, name: st.name, branch: st.branch, section: st.section };
+    let hasAnyData = false;
     for (const dt of finalDocTypes) {
       const r = await getStudentDocData(st, dt, preloadedDocs, preloadedAchs);
+      if (r.data && r.data !== '—' && r.data !== '' && r.data !== '-') {
+        hasAnyData = true;
+      }
       row[dt] = r.data && r.data !== '—' ? r.data : '';
+    }
+    if (!hasAnyData) {
+      continue;
     }
     rows.push(row);
   }

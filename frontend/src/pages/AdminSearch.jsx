@@ -102,7 +102,7 @@ function PieChart({ maleCount, femaleCount }) {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   return (
-    <div style={{ position: 'relative', width: 150, height: 150, margin: '20px auto 16px' }}>
+    <div style={{ position: 'relative', width: 150, height: 150, margin: 0 }}>
       <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', borderRadius: '50%' }}>
         {/* Female Slice - Pink */}
         <circle
@@ -372,6 +372,7 @@ export default function AdminSearch() {
   const [events, setEvents] = useState([]);
   const [selectedDept, setSelectedDept] = useState('');
   const [error, setError] = useState('');
+  const [showMoreEvents, setShowMoreEvents] = useState(false);
 
   // Modal states for details lists
   const [modalType, setModalType] = useState(null); // 'certifications' | 'publications' | 'events'
@@ -578,25 +579,26 @@ export default function AdminSearch() {
     { label: 'Detained (<60%)', value: attStatsSource.detained, color: '#ef4444' }
   ];
 
-  // --- DEPT EVENTS BREAKDOWN ---
-  let workshops = 0, fdps = 0, guestLectures = 0, hackathons = 0;
+  // --- DEPT EVENTS BREAKDOWN (DYNAMIC) ---
+  const eventCounts = {};
   filteredEvents.forEach(ev => {
-    const type = (ev.eventType || '').toLowerCase();
-    const name = (ev.eventName || '').toLowerCase();
-    if (type.includes('workshop') || name.includes('workshop')) workshops++;
-    else if (type.includes('fdp') || name.includes('fdp') || type.includes('faculty development') || name.includes('faculty development')) fdps++;
-    else if (type.includes('guest') || name.includes('guest') || type.includes('lecture') || name.includes('lecture') || type.includes('talk') || name.includes('talk')) guestLectures++;
-    else if (type.includes('hackathon') || name.includes('hackathon') || type.includes('ideathon') || name.includes('ideathon')) hackathons++;
-    else workshops++;
+    let type = ev.eventType ? ev.eventType.trim() : 'Other';
+    // Normalize casing: capitalize first letter of each word
+    type = type.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    eventCounts[type] = (eventCounts[type] || 0) + 1;
   });
 
-  const totalEvents = workshops + fdps + guestLectures + hackathons;
-  const eventsData = [
-    { label: 'Workshops', value: workshops, color: '#3b82f6' },
-    { label: 'FDPs', value: fdps, color: '#ec4899' },
-    { label: 'Guest Lectures', value: guestLectures, color: '#f59e0b' },
-    { label: 'Hackathons', value: hackathons, color: '#06b6d4' }
-  ];
+  const sortedCategories = Object.entries(eventCounts)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+
+  const colorsList = ['#3b82f6', '#ec4899', '#f59e0b', '#06b6d4', '#10b981', '#8b5cf6', '#ef4444', '#64748b'];
+  const eventsData = sortedCategories.map((item, idx) => ({
+    ...item,
+    color: colorsList[idx % colorsList.length]
+  }));
+
+  const totalEvents = filteredEvents.length;
 
   // Helper percentages for legends
   const formatPercent = (val, tot) => {
@@ -686,7 +688,7 @@ export default function AdminSearch() {
       </div>
 
       {/* --- DEMOGRAPHICS TOP ROW --- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20, marginBottom: 28 }}>
         {/* Card 1.1: Total Strength */}
         <div className="dash-card" style={{
           background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
@@ -747,7 +749,7 @@ export default function AdminSearch() {
               </div>
             </div>
           </div>
-          <div style={{ flexShrink: 0, width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flexShrink: 0, width: 150, height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <PieChart maleCount={maleCount} femaleCount={femaleCount} />
           </div>
         </div>
@@ -919,7 +921,7 @@ export default function AdminSearch() {
             </div>
             <DonutChart data={eventsData} centerIcon={<CalendarIcon size={20} color="#f43f5e" />} />
             <div style={{ marginTop: 12 }}>
-              {eventsData.map((slice, idx) => (
+              {eventsData.slice(0, 4).map((slice, idx) => (
                 <div key={idx} className="legend-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: slice.color }} />
@@ -928,6 +930,73 @@ export default function AdminSearch() {
                   <span style={{ fontWeight: 600, color: '#0f172a' }}>{slice.value} ({formatPercent(slice.value, totalEvents)})</span>
                 </div>
               ))}
+
+              {eventsData.length > 4 && (
+                <div style={{ position: 'relative', marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowMoreEvents(!showMoreEvents); }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
+                      background: '#fff',
+                      color: '#475569',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#f43f5e'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                  >
+                    <span>More Categories ({eventsData.length - 4})</span>
+                    <span>{showMoreEvents ? '▲' : '▼'}</span>
+                  </button>
+
+                  {showMoreEvents && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: '#fff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        zIndex: 50,
+                        maxHeight: '150px',
+                        overflowY: 'auto',
+                        marginTop: '4px',
+                        padding: '6px 0'
+                      }}
+                    >
+                      {eventsData.slice(4).map((slice, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          borderBottom: idx === eventsData.length - 5 ? 'none' : '1px solid #f8fafc'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: slice.color }} />
+                            <span style={{ color: '#475569', fontWeight: 500 }}>{slice.label}</span>
+                          </div>
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{slice.value} ({formatPercent(slice.value, totalEvents)})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ background: '#fff5f5', padding: '10px 16px', borderTop: '1px solid #ffe4e6', color: '#f43f5e', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>

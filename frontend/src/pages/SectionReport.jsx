@@ -523,6 +523,7 @@ export default function SectionReport() {
 
   // Bulk report states
   const [selItems, setSelItems] = useState([]);
+  const resultsRef = useRef(null);
   const [selDepts, setSelDepts] = useState({});
   const [activeTab, setActiveTab] = useState('');
   const [academicYear, setAcademicYear] = useState('');
@@ -535,6 +536,7 @@ export default function SectionReport() {
   const [error, setError] = useState('');
   const [adminDocTypes, setAdminDocTypes] = useState([]);
   const [achCounts, setAchCounts] = useState({});
+  const [onlyWithUploads, setOnlyWithUploads] = useState(true);
 
   // Advanced filters
   const [cgpaMin, setCgpaMin] = useState('');
@@ -612,9 +614,13 @@ export default function SectionReport() {
       selItems.forEach(d => params.append('docType', d));
       if (academicYear && academicYear !== 'all') params.append('admissionYear', academicYear);
       if (yearOfStudy && yearOfStudy !== 'all') params.append('currentYear', yearOfStudy);
+      params.append('onlyWithUploads', onlyWithUploads ? 'true' : 'false');
       appendAdvancedFilters(params);
       const { data } = await api.get(`/faculty/section-report?${params}`);
       setResults(data);
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (e) { setError('Failed: ' + (e.response?.data?.message || e.message)); }
     setLoading(false);
   };
@@ -629,6 +635,7 @@ export default function SectionReport() {
       selItems.forEach(d => params.append('docType', d));
       if (academicYear && academicYear !== 'all') params.append('admissionYear', academicYear);
       if (yearOfStudy && yearOfStudy !== 'all') params.append('currentYear', yearOfStudy);
+      params.append('onlyWithUploads', onlyWithUploads ? 'true' : 'false');
       appendAdvancedFilters(params);
       const res = await fetch(`${baseUrl}/faculty/section-report/excel?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       const blob = await res.blob();
@@ -642,6 +649,14 @@ export default function SectionReport() {
   const uniqueStudents = results ? [...new Map(results.map(r => [r.regNumber, r])).values()] : [];
   const actualCols = results ? [...new Set(results.map(r => r.docType))] : selItems;
   const hasSelectedDept = Object.keys(selDepts).length > 0;
+
+  // Selection rows context check
+  const selectedStandardGroups = DOC_GROUPS.filter(g => 
+    g.items.some(item => selItems.includes(item.value))
+  );
+  const hasSelectedAdminDocs = adminDocTypes.some(t => selItems.includes(t.label));
+  const totalActiveRowsCount = selectedStandardGroups.length + (hasSelectedAdminDocs ? 1 : 0);
+  const showTopRight = totalActiveRowsCount > 1 || totalActiveRowsCount === 0;
 
   /* ── Mode Selection Screen ── */
   if (mode === 'selection') {
@@ -899,19 +914,48 @@ export default function SectionReport() {
           <div style={{ background:'#fff', borderRadius:14, padding:'20px 24px', border:'1px solid #e2e8f0', marginBottom:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
               <div style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>Document Types</div>
-              <button onClick={toggleAllItems} style={{ fontSize:12, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {showTopRight && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={fetchReport} disabled={loading}
+                      style={{ background: '#059669', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      {loading ? 'Fetching...' : 'Fetch Report'}
+                    </button>
+                    <button onClick={downloadExcel} disabled={xlLoading}
+                      style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      {xlLoading ? 'Downloading...' : 'Download Excel'}
+                    </button>
+                  </div>
+                )}
+                <button onClick={toggleAllItems} style={{ fontSize:12, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+              </div>
             </div>
             {DOC_GROUPS.map(group => (
               <div key={group.key} style={{ marginBottom:14, padding:'12px 16px', background:group.bg, borderRadius:10, border:`1px solid ${group.color}22` }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                   <span style={{ fontWeight:700, fontSize:13, color:group.color }}>{group.label}</span>
-                  <button onClick={() => toggleGroupAll(group)} style={{ fontSize:11, color:group.color, background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {totalActiveRowsCount === 1 && selectedStandardGroups[0]?.key === group.key && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={(e) => { e.stopPropagation(); fetchReport(); }} disabled={loading}
+                          style={{ background: '#059669', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                          {loading ? 'Fetching...' : 'Fetch'}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); downloadExcel(); }} disabled={xlLoading}
+                          style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                          {xlLoading ? 'Downloading...' : 'Download'}
+                        </button>
+                      </div>
+                    )}
+                    <button onClick={() => toggleGroupAll(group)} style={{ fontSize:11, color:group.color, background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+                  </div>
                 </div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                   {group.items.map(item => {
                     const count = (group.key === 'achievements' || group.key === 'certifications') ? (achCounts[item.value.toUpperCase()] || 0) : null;
+                    const isSelected = selItems.includes(item.value);
                     return (
-                      <span key={item.value} onClick={() => toggleItem(item.value)} style={chip(selItems.includes(item.value), group.color)}>
+                      <span key={item.value} onClick={() => toggleItem(item.value)} style={chip(isSelected, group.color)}>
                         {item.label} {count !== null && <span style={{ opacity: 0.6, fontSize: 10 }}>({count})</span>}
                       </span>
                     );
@@ -932,11 +976,25 @@ export default function SectionReport() {
                 <div style={{ marginBottom:14, padding:'12px 16px', background:'#fffbeb', borderRadius:10, border:'1px solid #fde68a22' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                     <span style={{ fontWeight:700, fontSize:13, color:'#d97706' }}>📂 Admin Documents</span>
-                    <button onClick={() => {
-                      const vals = parentWithCount.map(t => t.label);
-                      const allSel = vals.every(v => selItems.includes(v));
-                      setSelItems(s => allSel ? s.filter(x => !vals.includes(x)) : [...new Set([...s, ...vals])]);
-                    }} style={{ fontSize:11, color:'#d97706', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {totalActiveRowsCount === 1 && hasSelectedAdminDocs && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={(e) => { e.stopPropagation(); fetchReport(); }} disabled={loading}
+                            style={{ background: '#059669', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                            {loading ? 'Fetching...' : 'Fetch'}
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); downloadExcel(); }} disabled={xlLoading}
+                            style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                            {xlLoading ? 'Downloading...' : 'Download'}
+                          </button>
+                        </div>
+                      )}
+                      <button onClick={() => {
+                        const vals = parentWithCount.map(t => t.label);
+                        const allSel = vals.every(v => selItems.includes(v));
+                        setSelItems(s => allSel ? s.filter(x => !vals.includes(x)) : [...new Set([...s, ...vals])]);
+                      }} style={{ fontSize:11, color:'#d97706', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
+                    </div>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {parentWithCount.map(t => (
@@ -958,7 +1016,7 @@ export default function SectionReport() {
               docMapByReg[x.regNumber][x.docType] = x;
             });
             return (
-              <div style={{ background:'#fff', borderRadius:14, border:'1px solid #e2e8f0', overflow:'hidden', marginBottom:16 }}>
+              <div ref={resultsRef} style={{ background:'#fff', borderRadius:14, border:'1px solid #e2e8f0', overflow:'hidden', marginBottom:16 }}>
                 <div style={{ padding:'14px 20px', fontWeight:700, fontSize:13, borderBottom:'1px solid #e2e8f0', color:'#0f172a' }}>
                   {uniqueStudents.length} students fetched &nbsp;·&nbsp; {actualCols.length} columns
                 </div>
@@ -1135,16 +1193,12 @@ export default function SectionReport() {
             );
           })()}
 
-          <button onClick={fetchReport} disabled={loading}
-            style={{ width:'100%', background:loading?'#94a3b8':'#059669', color:'#fff', border:'none', padding:12, borderRadius:10, cursor:'pointer', fontWeight:700, fontSize:14, marginBottom:8, boxShadow:'0 2px 6px rgba(5,150,105,0.15)' }}>
-            {loading ? 'Fetching...' : 'Fetch Report'}
-          </button>
-          {results && (
-            <button onClick={downloadExcel} disabled={xlLoading}
-              style={{ width:'100%', background:xlLoading?'#94a3b8':'#1e40af', color:'#fff', border:'none', padding:12, borderRadius:10, cursor:'pointer', fontWeight:700, fontSize:14, marginBottom:8, boxShadow:'0 2px 6px rgba(30,64,175,0.15)' }}>
-              {xlLoading ? 'Generating...' : 'Download Excel'}
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+            <input type="checkbox" id="onlyWithUploads" checked={onlyWithUploads} onChange={e => setOnlyWithUploads(e.target.checked)} style={{ cursor: 'pointer', width: 16, height: 16 }} />
+            <label htmlFor="onlyWithUploads" style={{ fontSize: 12, fontWeight: 700, color: '#374151', cursor: 'pointer', userSelect: 'none' }}>Only show students with uploads</label>
+          </div>
+
+          {/* Remove bottom sidebar fetch/download buttons since they are now repositioned */}
         </div>
       </div>
     </div>

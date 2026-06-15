@@ -16,13 +16,13 @@ const SectionCard = ({ icon, title, bg = '#eff6ff', children }) => (
   </div>
 );
 
-const Field = ({ label, value, onChange, type = 'text', placeholder = '', span = 1 }) => (
+const Field = ({ label, value, onChange, type = 'text', placeholder = '', span = 1, readOnly = false }) => (
   <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
     <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{label}</label>
-    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a', transition: 'border-color 0.15s' }}
-      onFocus={e => e.target.style.borderColor = '#3b82f6'}
-      onBlur={e => e.target.style.borderColor = '#d1d5db'} />
+    <input type={type} value={value || ''} onChange={e => onChange && onChange(e.target.value)} placeholder={placeholder} readOnly={readOnly} disabled={readOnly}
+      style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, background: readOnly ? '#f1f5f9' : '#fff', outline: 'none', fontFamily: 'inherit', color: '#0f172a', transition: 'border-color 0.15s' }}
+      onFocus={e => !readOnly && (e.target.style.borderColor = '#3b82f6')}
+      onBlur={e => !readOnly && (e.target.style.borderColor = '#d1d5db')} />
   </div>
 );
 
@@ -449,6 +449,7 @@ export default function StudentProfile() {
         {activeStep === 1 && (
           <SectionCard icon="👤" title="Personal Details" bg="#eff6ff">
             <div style={grid2}>
+              <Field label="Register No" value={form.regNumber} readOnly={true} />
               <Field label="Full Name" value={form.name} onChange={v => set('name', v)} />
               <Field label="Date of Birth" value={form.dob} onChange={v => set('dob', v)} type="date" />
               <SelectF label="Gender" value={form.gender} onChange={v => set('gender', v)} options={['Male','Female','Other']} />

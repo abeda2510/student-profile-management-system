@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import { ViewButton } from '../components/PreviewModal';
 
-const EVENT_TYPES = ['Workshop', 'Seminar', 'Hackathon', 'Conference', 'Cultural', 'Sports', 'Technical Fest', 'Guest Lecture', 'Webinar', 'Other'];
 const YEARS = Array.from({ length: 8 }, (_, i) => { const y = 2020 + i; return `${y}-${y + 1}`; });
 
 const DOC_FIELDS = [
@@ -22,8 +21,22 @@ export default function DeptEvents() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState(null);
+  const [eventTypes, setEventTypes] = useState(['Workshop', 'Seminar', 'Hackathon', 'Conference', 'Cultural', 'Sports', 'Technical Fest', 'Guest Lecture', 'Webinar', 'Other']);
 
-  const load = () => api.get('/dept-events').then(r => setEvents(r.data)).catch(() => {});
+  const load = () => api.get('/dept-events').then(r => {
+    setEvents(r.data);
+    if (r.data && Array.isArray(r.data)) {
+      const loadedTypes = r.data.map(ev => ev.eventType).filter(Boolean);
+      setEventTypes(prev => {
+        const set = new Set([...prev]);
+        set.delete('Other');
+        loadedTypes.forEach(t => set.add(t));
+        const updated = Array.from(set);
+        updated.push('Other');
+        return updated;
+      });
+    }
+  }).catch(() => {});
   useEffect(() => { load(); }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -40,12 +53,33 @@ export default function DeptEvents() {
     e.preventDefault();
     if (!form.employeeId || !form.coordinatorName || !form.eventName || !form.year)
       return setError('Employee ID, Coordinator Name, Event Name and Year are required');
+
+    const finalEventType = form.eventType;
+
     setSubmitting(true); setError('');
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      Object.entries(form).forEach(([k, v]) => {
+        if (v) {
+          fd.append(k, v);
+        }
+      });
       DOC_FIELDS.forEach(({ key }) => { if (files[key]) fd.append(key, files[key]); });
       await api.post('/dept-events', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+      if (finalEventType && !eventTypes.includes(finalEventType)) {
+        setEventTypes(prev => {
+          const updated = [...prev];
+          const otherIdx = updated.indexOf('Other');
+          if (otherIdx !== -1) {
+            updated.splice(otherIdx, 0, finalEventType);
+          } else {
+            updated.push(finalEventType);
+          }
+          return updated;
+        });
+      }
+
       setForm(empty); setFiles({}); setShowForm(false); load();
     } catch (err) { setError(err.response?.data?.message || err.message); }
     setSubmitting(false);
@@ -112,10 +146,35 @@ export default function DeptEvents() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Event Type</label>
-                <select value={form.eventType} onChange={e => set('eventType', e.target.value)}
+                <select value={form.eventType} onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'Other') {
+                    const name = prompt('Enter new event type:');
+                    if (name && name.trim()) {
+                      const trimmed = name.trim();
+                      if (!eventTypes.includes(trimmed)) {
+                        setEventTypes(prev => {
+                          const updated = [...prev];
+                          const otherIdx = updated.indexOf('Other');
+                          if (otherIdx !== -1) {
+                            updated.splice(otherIdx, 0, trimmed);
+                          } else {
+                            updated.push(trimmed);
+                          }
+                          return updated;
+                        });
+                      }
+                      set('eventType', trimmed);
+                    } else {
+                      set('eventType', '');
+                    }
+                  } else {
+                    set('eventType', val);
+                  }
+                }}
                   style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
                   <option value="">Select type...</option>
-                  {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {eventTypes.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
 
