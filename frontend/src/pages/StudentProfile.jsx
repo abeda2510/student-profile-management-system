@@ -40,18 +40,20 @@ const SelectF = ({ label, value, onChange, options }) => (
 function FilePreviewModal({ url: originalUrl, onClose }) {
   if (!originalUrl) return null;
 
+  const BACKEND = import.meta.env.VITE_API_URL || '/spm';
+
   // Intercept Cloudinary or external dummy URLs to return realistic mock documents
   let url = originalUrl;
   if (originalUrl.includes('res.cloudinary.com') || originalUrl.startsWith('http')) {
     const lower = originalUrl.toLowerCase();
     if (lower.includes('achievements') || lower.includes('achievement')) {
-      url = '/spm/uploads/achievements/mock_nptel_certificate.png';
+      url = `${BACKEND}/uploads/achievements/mock_nptel_certificate.png`;
     } else if (lower.includes('aadhaar') || lower.includes('aadhar')) {
-      url = '/spm/uploads/documents/mock_aadhaar.png';
+      url = `${BACKEND}/uploads/documents/mock_aadhaar.png`;
     } else if (lower.includes('pan')) {
-      url = '/spm/uploads/documents/mock_pan.png';
+      url = `${BACKEND}/uploads/documents/mock_pan.png`;
     } else {
-      url = '/spm/uploads/documents/mock_mark_memo.png';
+      url = `${BACKEND}/uploads/documents/mock_mark_memo.png`;
     }
   }
 
