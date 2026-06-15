@@ -11,6 +11,8 @@ const deptEventSchema = new mongoose.Schema({
   eventType: { type: String }, // Workshop, Seminar, Hackathon, etc.
   year: { type: String, required: true },
   date: String,
+  fromDate: String,
+  toDate: String,
   venue: String,
   description: String,
   outcome: String,

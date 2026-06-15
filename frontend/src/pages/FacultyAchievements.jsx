@@ -14,15 +14,10 @@ const REPORT_CATS = [
     types: ['SPORTS','CULTURAL','DANCE','MUSIC','ART','VOLUNTEERING','NSS','NCC'],
     typeIcons: { SPORTS:'⚽', CULTURAL:'🎨', DANCE:'💃', MUSIC:'🎵', ART:'🖼️', VOLUNTEERING:'🤝', NSS:'🌿', NCC:'🎖️' }
   },
-  { key: 'NPTEL', label: 'NPTEL', icon: '🎓', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe',
-    desc: 'NPTEL Course Certifications',
-    types: ['NPTEL_ELITE','NPTEL_SILVER','NPTEL_GOLD','NPTEL_COURSE'],
-    typeIcons: { NPTEL_ELITE:'🥇', NPTEL_SILVER:'🥈', NPTEL_GOLD:'🥉', NPTEL_COURSE:'📚' }
-  },
   { key: 'CERTIFICATIONS', label: 'Certifications', icon: '📜', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0',
     desc: 'Professional Certifications & Courses',
-    types: ['AWS','GOOGLE','MICROSOFT','CISCO','COURSERA','UDEMY','LINKEDIN_LEARNING'],
-    typeIcons: { AWS:'☁️', GOOGLE:'🔍', MICROSOFT:'🪟', CISCO:'🌐', COURSERA:'📖', UDEMY:'🎯', LINKEDIN_LEARNING:'💼' }
+    types: ['NPTEL_ELITE','NPTEL_SILVER','NPTEL_GOLD','NPTEL_COURSE','AWS','GOOGLE','MICROSOFT','CISCO','COURSERA','UDEMY','LINKEDIN_LEARNING'],
+    typeIcons: { NPTEL_ELITE:'🥇', NPTEL_SILVER:'🥈', NPTEL_GOLD:'🥉', NPTEL_COURSE:'📚', AWS:'☁️', GOOGLE:'🔍', MICROSOFT:'🪟', CISCO:'🌐', COURSERA:'📖', UDEMY:'🎯', LINKEDIN_LEARNING:'💼' }
   },
   { key: 'PUBLICATIONS', label: 'Publications', icon: '📄', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
     desc: 'Research papers, Patents, Books, Journals, Conferences',
@@ -59,7 +54,7 @@ const YEARS = Array.from({length:8},(_,i)=>{ const y=2020+i; return `${y}-${y+1}
 const empty = { activityType:'', title:'', description:'', issuingOrg:'', academicYear:'', date:'', position:'' };
 
 // ── Report Tab ───────────────────────────────────────────────────────────────
-function ReportTab() {
+function ReportTab({ dynamicTypes = [] }) {
   const role = localStorage.getItem('role');
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedTypes, setSelectedTypes] = useState([]);
@@ -185,12 +180,19 @@ function ReportTab() {
               </button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {selectedCat.types.map(type => (
-                <span key={type} onClick={() => toggleType(type)}
-                  style={{ padding: '6px 14px', borderRadius: 99, border: `1.5px solid ${selectedTypes.includes(type) ? selectedCat.color : '#e2e8f0'}`, background: selectedTypes.includes(type) ? selectedCat.bg : '#fff', color: selectedTypes.includes(type) ? selectedCat.color : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {selectedCat.typeIcons?.[type]} {type.replace(/_/g, ' ')}
-                </span>
-              ))}
+              {(() => {
+                const defaults = [...(selectedCat?.types || [])];
+                const custom = dynamicTypes
+                  .filter(t => t.mainCategory === selectedCat?.key && !defaults.includes(t.activityType))
+                  .map(t => t.activityType);
+                const allTypes = [...defaults, ...custom];
+                return allTypes.map(type => (
+                  <span key={type} onClick={() => toggleType(type)}
+                    style={{ padding: '6px 14px', borderRadius: 99, border: `1.5px solid ${selectedTypes.includes(type) ? selectedCat.color : '#e2e8f0'}`, background: selectedTypes.includes(type) ? selectedCat.bg : '#fff', color: selectedTypes.includes(type) ? selectedCat.color : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {selectedCat.typeIcons?.[type] || '🏅'} {type.replace(/_/g, ' ')}
+                  </span>
+                ));
+              })()}
               <span onClick={() => setShowOther(!showOther)}
                 style={{ padding: '5px 14px', borderRadius: 99, border: `1.5px solid ${showOther ? '#374151' : '#e2e8f0'}`, background: showOther ? '#f1f5f9' : '#fff', color: '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Other</span>
             </div>
@@ -478,6 +480,12 @@ function MyAchievementsTab() {
 export default function FacultyAchievements() {
   const [tab, setTab] = useState('report');
   const role = localStorage.getItem('role');
+  const [dynamicTypes, setDynamicTypes] = useState([]);
+
+  useEffect(() => {
+    api.get('/achievements/activity-types').then(r => setDynamicTypes(r.data || [])).catch(() => {});
+  }, []);
+
   const tabBtn = (key, label) => (
     <button onClick={() => setTab(key)} style={{
       padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -490,7 +498,7 @@ export default function FacultyAchievements() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>Achievements</h2>
         {role !== 'admin' && (
           <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 10 }}>
@@ -499,7 +507,7 @@ export default function FacultyAchievements() {
           </div>
         )}
       </div>
-      {role === 'admin' ? <ReportTab /> : (tab === 'report' ? <ReportTab /> : <MyAchievementsTab />)}
+      {role === 'admin' ? <ReportTab dynamicTypes={dynamicTypes} /> : (tab === 'report' ? <ReportTab dynamicTypes={dynamicTypes} /> : <MyAchievementsTab />)}
     </div>
   );
 }

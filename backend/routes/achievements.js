@@ -19,6 +19,22 @@ const POINTS_MAP = {
   'SPORTS WINNER': 8, 'SPORTS PARTICIPATION': 3, 'OTHER': 2,
 };
 
+// Get all unique activityTypes and their mainCategory (accessible by any authenticated user)
+router.get('/activity-types', protect, async (req, res) => {
+  try {
+    const results = await Achievement.aggregate([
+      { $group: { _id: { activityType: '$activityType', mainCategory: '$mainCategory' } } }
+    ]);
+    const types = results.map(r => ({
+      activityType: r._id.activityType,
+      mainCategory: r._id.mainCategory
+    })).filter(t => t.activityType);
+    res.json(types);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── Student: add achievement ─────────────────────────────
 router.post('/', protect, uploadAchievement.single('certificate'), async (req, res) => {
   try {
@@ -481,13 +497,8 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
 router.get('/counts-by-type', protect, facultyOrAdmin, async (req, res) => {
   try {
     const counts = await Achievement.aggregate([
-      { $group: { _id: '$activityType', count: { $sum: 1 } } }
+      { $group: { _id: { activityType: '$activityType', mainCategory: '$mainCategory' }, count: { $sum: 1 } } }
     ]);
-    const rawMap = {};
-    counts.forEach(c => {
-      if (c._id) rawMap[c._id.toUpperCase()] = c.count;
-    });
-
     const map = {
       INTERNSHIP: 0,
       HACKATHON: 0,
@@ -503,19 +514,23 @@ router.get('/counts-by-type', protect, facultyOrAdmin, async (req, res) => {
       CERTIFICATION: 0
     };
 
-    Object.entries(rawMap).forEach(([key, count]) => {
+    counts.forEach(c => {
+      const key = String(c._id.activityType || '').toUpperCase();
+      const mainCat = String(c._id.mainCategory || '').toUpperCase();
+      const count = c.count;
+
       if (key.includes('HACKATHON') || key.includes('IDEATHON')) {
         map.HACKATHON += count;
       } else if (key.startsWith('NPTEL')) {
         map.NPTEL += count;
-      } else if (['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING', 'CERTIFICATION'].some(x => key.includes(x))) {
+      } else if (mainCat === 'CERTIFICATIONS' || ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING', 'CERTIFICATION'].some(x => key.includes(x))) {
         map.CERTIFICATION += count;
       } else if (key.includes('TECHNICAL_COMPETITION')) {
         map.TECHNICAL_COMPETITION += count;
       } else if (map[key] !== undefined) {
         map[key] += count;
       } else {
-        map[key] = count;
+        map[key] = (map[key] || 0) + count;
       }
     });
 

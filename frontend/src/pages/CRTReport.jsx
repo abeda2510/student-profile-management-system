@@ -53,6 +53,7 @@ export default function CRTReport() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState('');
 
   const toggleDept = (dept) => {
@@ -111,6 +112,28 @@ export default function CRTReport() {
       setError('Failed to generate Excel report');
     }
     setExcelLoading(false);
+  };
+
+  const downloadPdf = async () => {
+    setPdfLoading(true); setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
+      const res = await fetch(`${baseUrl}/faculty/crt-report/pdf?${buildParams()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `crt_report.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to generate PDF report');
+    }
+    setPdfLoading(false);
   };
 
   const getAttendancePill = (val) => {
@@ -192,10 +215,16 @@ export default function CRTReport() {
               {loading ? 'Fetching...' : 'Fetch Report'}
             </button>
             {results && results.length > 0 && (
-              <button onClick={downloadExcel} disabled={excelLoading}
-                style={{ background: excelLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 9, cursor: excelLoading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, boxShadow: '0 2px 6px rgba(30,64,175,0.15)' }}>
-                {excelLoading ? 'Generating...' : '📊 Download Excel'}
-              </button>
+              <>
+                <button onClick={downloadExcel} disabled={excelLoading}
+                  style={{ background: excelLoading ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 9, cursor: excelLoading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, boxShadow: '0 2px 6px rgba(30,64,175,0.15)' }}>
+                  {excelLoading ? 'Generating...' : '📊 Download Excel'}
+                </button>
+                <button onClick={downloadPdf} disabled={pdfLoading}
+                  style={{ background: pdfLoading ? '#94a3b8' : '#dc2626', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 9, cursor: pdfLoading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, boxShadow: '0 2px 6px rgba(220,38,38,0.15)' }}>
+                  {pdfLoading ? 'Generating...' : '📄 Download PDF'}
+                </button>
+              </>
             )}
             {(selDepts.length > 0 || academicYear || yearOfStudy) && (
               <button onClick={() => { setSelDepts([]); setAcademicYear(''); setYearOfStudy(''); setResults(null); setError(''); }}

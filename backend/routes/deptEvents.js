@@ -56,7 +56,7 @@ router.get('/', protect, facultyOnly, async (req, res) => {
 // POST create event with document uploads
 router.post('/', protect, facultyOnly, upload.fields(DOC_FIELDS), async (req, res) => {
   try {
-    const { employeeId, coordinatorName, eventName, eventType, year, date, venue, description, outcome, budget } = req.body;
+    const { employeeId, coordinatorName, eventName, eventType, year, date, fromDate, toDate, venue, description, outcome, budget } = req.body;
     if (!employeeId || !coordinatorName || !eventName || !year)
       return res.status(400).json({ message: 'Employee ID, coordinator name, event name and year are required' });
 
@@ -75,7 +75,7 @@ router.post('/', protect, facultyOnly, upload.fields(DOC_FIELDS), async (req, re
     }
 
     const event = await DeptEvent.create({
-      employeeId, coordinatorName, eventName, eventType, year, date, venue,
+      employeeId, coordinatorName, eventName, eventType, year, date, fromDate, toDate, venue,
       description, outcome, budget: budget ? parseFloat(budget) : undefined,
       department: faculty?.department,
       createdBy: req.user.id,
@@ -137,20 +137,20 @@ router.get('/report/excel', protect, adminOnly, async (req, res) => {
     const ws = wb.addWorksheet('Department Events');
 
     // Title rows
-    ws.mergeCells('A1:L1');
+    ws.mergeCells('A1:M1');
     ws.getCell('A1').value = "Vignan's Foundation for Science, Technology & Research (Deemed to be University)";
     ws.getCell('A1').font = { bold: true, size: 13 };
     ws.getCell('A1').alignment = { horizontal: 'center' };
     ws.getRow(1).height = 22;
 
-    ws.mergeCells('A2:L2');
+    ws.mergeCells('A2:M2');
     ws.getCell('A2').value = `Department Events Report${year ? ' — Academic Year: ' + year : ' — All Years'}`;
     ws.getCell('A2').font = { bold: true, size: 11, color: { argb: 'FF1e40af' } };
     ws.getCell('A2').alignment = { horizontal: 'center' };
 
     ws.addRow([]);
 
-    const headers = ['S.No', 'Employee ID', 'Coordinator', 'Department', 'Event Name', 'Event Type', 'Academic Year', 'Date', 'Venue', 'Budget (₹)', 'Description', 'Outcome'];
+    const headers = ['S.No', 'Employee ID', 'Coordinator', 'Department', 'Event Name', 'Event Type', 'Academic Year', 'From Date', 'To Date', 'Venue', 'Budget (₹)', 'Description', 'Outcome'];
     const hRow = ws.addRow(headers);
     hRow.eachCell(cell => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -160,13 +160,13 @@ router.get('/report/excel', protect, adminOnly, async (req, res) => {
     });
     hRow.height = 20;
 
-    const colWidths = [6, 14, 20, 14, 28, 16, 14, 12, 18, 12, 36, 36];
+    const colWidths = [6, 14, 20, 14, 28, 16, 14, 12, 12, 18, 12, 36, 36];
     colWidths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
     events.forEach((ev, i) => {
       const row = ws.addRow([
         i + 1, ev.employeeId, ev.coordinatorName, ev.department || '—',
-        ev.eventName, ev.eventType || '—', ev.year, ev.date || '—',
+        ev.eventName, ev.eventType || '—', ev.year, ev.fromDate || ev.date || '—', ev.toDate || '—',
         ev.venue || '—', ev.budget || '—', ev.description || '—', ev.outcome || '—',
       ]);
       row.height = 16;

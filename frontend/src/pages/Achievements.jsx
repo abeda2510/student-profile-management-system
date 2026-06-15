@@ -16,16 +16,10 @@ const CATEGORIES = [
     types: ['SPORTS', 'CULTURAL', 'DANCE', 'MUSIC', 'ART', 'VOLUNTEERING', 'NSS', 'NCC']
   },
   {
-    key: 'NPTEL', label: 'NPTEL', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe',
-    img: '🎓', desc: 'NPTEL Course Certifications',
-    btnColor: '#7c3aed',
-    types: ['NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE']
-  },
-  {
     key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0',
     img: '📜', desc: 'Professional Certifications & Courses',
     btnColor: '#059669',
-    types: ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING']
+    types: ['NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE', 'AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING']
   },
 ];
 
@@ -52,9 +46,11 @@ export default function Achievements() {
   const [form, setForm] = useState(empty);
   const [submitting, setSubmitting] = useState(false);
   const [listTab, setListTab] = useState('TECHNICAL');
+  const [dynamicTypes, setDynamicTypes] = useState([]);
 
   const load = () => {
     api.get('/achievements/me').then(r => setList(r.data));
+    api.get('/achievements/activity-types').then(r => setDynamicTypes(r.data || [])).catch(() => {});
   };
   useEffect(() => { load(); }, []);
 
@@ -64,8 +60,22 @@ export default function Achievements() {
     setSelectedCat(cat);
     setSelectedType('');
     setCustomType('');
-    setShowForm(false);
-    setForm(empty);
+    setForm({ ...empty, mainCategory: cat.key });
+    
+    if (cat.key === 'CERTIFICATIONS' || cat.key === 'NON_TECHNICAL') {
+      setShowForm(true);
+    } else {
+      setShowForm(false);
+    }
+  };
+
+  const getOptionsForCategory = (catKey) => {
+    const cat = CATEGORIES.find(c => c.key === catKey);
+    const defaults = cat ? [...cat.types] : [];
+    const custom = dynamicTypes
+      .filter(t => t.mainCategory === catKey && !defaults.includes(t.activityType))
+      .map(t => t.activityType);
+    return [...defaults, ...custom];
   };
 
   const selectType = (type) => {
@@ -84,11 +94,11 @@ export default function Achievements() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.activityType) return alert('Please select activity type');
     setSubmitting(true);
     try {
-      const actType = selectedType === 'OTHER' ? customType : selectedType;
       const fd = new FormData();
-      Object.entries({ ...form, activityType: actType, mainCategory: selectedCat.key }).forEach(([k, v]) => {
+      Object.entries({ ...form, mainCategory: selectedCat.key }).forEach(([k, v]) => {
         if (v && k !== 'certificate') fd.append(k, v);
       });
       if (form.certificate) fd.append('certificate', form.certificate);
@@ -232,10 +242,40 @@ export default function Achievements() {
             <button onClick={closeAll} style={{ background: '#f1f5f9', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, color: '#64748b', fontWeight: 600 }}>← Back</button>
           </div>
           <div style={{ background: selectedCat.bg, border: `1px solid ${selectedCat.border}`, borderRadius: 8, padding: '8px 14px', marginBottom: 18, fontSize: 13, color: selectedCat.color, fontWeight: 600 }}>
-            {selectedCat.icon} {selectedCat.label} → {(selectedType === 'OTHER' ? customType : selectedType).replace(/_/g, ' ')}
+            {selectedCat.icon} {selectedCat.label}
+            {form.activityType ? ` → ${form.activityType.replace(/_/g, ' ')}` : ''}
           </div>
           <form onSubmit={submit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px', marginBottom: 12 }}>
+              {(selectedCat.key === 'CERTIFICATIONS' || selectedCat.key === 'NON_TECHNICAL') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: 'span 2' }}>
+                  <select value={form.activityType || ''} onChange={e => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      const custom = prompt('Enter custom type:');
+                      if (custom && custom.trim()) {
+                        const trimmed = custom.trim();
+                        const key = trimmed.toUpperCase().replace(/\s+/g, '_');
+                        if (!dynamicTypes.some(t => t.activityType === key && t.mainCategory === selectedCat.key)) {
+                          setDynamicTypes(prev => [...prev, { activityType: key, mainCategory: selectedCat.key }]);
+                        }
+                        set('activityType', key);
+                      } else {
+                        set('activityType', '');
+                      }
+                    } else {
+                      set('activityType', val);
+                    }
+                  }} required
+                    style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: '#fff' }}>
+                    <option value="">Select Activity Type *</option>
+                    {getOptionsForCategory(selectedCat.key).map(t => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              )}
               <input placeholder="Title *" value={form.title} onChange={e => set('title', e.target.value)} required
                 style={{ padding: '12px 16px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               <input placeholder="Issuing Organization *" value={form.issuingOrg} onChange={e => set('issuingOrg', e.target.value)} required
@@ -286,7 +326,6 @@ export default function Achievements() {
         const tabs = [
           { key: 'TECHNICAL', label: 'Technical', color: '#1e40af' },
           { key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706' },
-          { key: 'NPTEL', label: 'NPTEL', color: '#7c3aed' },
           { key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669' },
           { key: 'OTHER', label: 'Other', color: '#64748b' },
         ];

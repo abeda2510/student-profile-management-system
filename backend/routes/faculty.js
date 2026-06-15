@@ -343,8 +343,27 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
     }
 
     const achs = preloadedAchs
-      ? (preloadedAchs[regKey] || []).filter(a => matchTypes.includes(a.activityType) && a.status === 'APPROVED')
-      : await Achievement.find({ regNumber: regQuery, activityType: { $in: matchTypes }, status: 'APPROVED' });
+      ? (preloadedAchs[regKey] || []).filter(a => {
+          if (a.status !== 'APPROVED') return false;
+          if (docType === 'CERTIFICATION') {
+            return (matchTypes.includes(a.activityType) || a.mainCategory === 'CERTIFICATIONS') &&
+                   !a.activityType.startsWith('NPTEL') && a.activityType !== 'NPTEL';
+          }
+          return matchTypes.includes(a.activityType);
+        })
+      : await Achievement.find({
+          regNumber: regQuery,
+          status: 'APPROVED',
+          $or: [
+            { activityType: { $in: matchTypes } },
+            ...(docType === 'CERTIFICATION' ? [
+              {
+                mainCategory: 'CERTIFICATIONS',
+                activityType: { $nin: ['NPTEL', 'NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE'] }
+              }
+            ] : [])
+          ]
+        });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'MARK_MEMO') {
@@ -1019,6 +1038,118 @@ router.get('/crt-report/excel', protect, async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="crt_performance_report.xlsx"');
     await wb.xlsx.write(res);
     res.end();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Generate PDF for CRT Report
+router.get('/crt-report/pdf', protect, async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    let students;
+    try {
+      students = await Student.find(buildFilter(req.query)).select('-password').sort({ branch: 1, section: 1, name: 1 });
+    } catch (err) {
+      students = await Student.find(buildFilter(req.query)).select('-password');
+      sortStudents(students);
+    }
+    const regNumbers = students.map(s => s.regNumber);
+
+    const crtDocs = await Document.find({
+      regNumber: { $in: regNumbers },
+      uploadedBy: 'admin',
+      label: { $regex: /^(CRT|Semester Attendance)/i }
+    });
+
+    const docMap = {};
+    crtDocs.forEach(d => {
+      if (!docMap[d.regNumber]) docMap[d.regNumber] = {};
+      docMap[d.regNumber][d.label] = d.fileUrl || d.filename || d.filepath || '—';
+    });
+
+    const rows = students.map(s => {
+      const docs = docMap[s.regNumber] || {};
+      let acadAttAvg = '—';
+      if (s.attendance && s.attendance.length > 0) {
+        const sum = s.attendance.reduce((acc, a) => acc + (a.present / (a.total || 1)) * 100, 0);
+        acadAttAvg = (sum / s.attendance.length).toFixed(1) + '%';
+      }
+      return {
+        regNumber: s.regNumber,
+        name: s.name,
+        branch: s.branch,
+        section: s.section,
+        crtAttendance: docs['CRT Attendance'] || '—',
+        aptitude: docs['CRT Performance - Aptitude'] || '—',
+        coding: docs['CRT Performance - Coding'] || '—',
+        communication: docs['CRT Performance - Communication'] || '—',
+        mockInterview: docs['CRT Performance - Mock Interview'] || '—',
+        overallPct: docs['CRT Performance - Overall %'] || '—',
+        academicAttendance: docs['Semester Attendance - Sem 1'] || acadAttAvg
+      };
+    });
+
+    const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="crt_performance_report.pdf"');
+    doc.pipe(res);
+
+    const PAGE_W = doc.page.width - 60; // 781.89
+    const colWidths = [25, 70, 110, 35, 25, 80, 65, 65, 70, 70, 65, 100];
+    const headers = [
+      'S.No', 'Reg No', 'Name', 'Dept', 'Sec',
+      'CRT Att (%)', 'Aptitude', 'Coding', 'Comm.', 'Mock Int.', 'Overall %', 'Acad. Att (%)'
+    ];
+    const ROW_H = 20;
+
+    const drawRow = (rowData, y, isHeader, shade) => {
+      let x = 30;
+      rowData.forEach((cell, i) => {
+        const w = colWidths[i];
+        if (isHeader) {
+          doc.rect(x, y, w, ROW_H).fillAndStroke('#1e40af', '#1e40af');
+          doc.fillColor('#ffffff').fontSize(7).font('Helvetica-Bold')
+            .text(String(cell), x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false, align: 'center' });
+        } else {
+          doc.rect(x, y, w, ROW_H).fillAndStroke(shade ? '#f1f5f9' : '#ffffff', '#cbd5e1');
+          doc.fillColor('#0f172a').fontSize(7).font('Helvetica')
+            .text(String(cell ?? ''), x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false, align: i === 2 ? 'left' : 'center' });
+        }
+        x += w;
+      });
+    };
+
+    // Draw Title
+    doc.fontSize(12).font('Helvetica-Bold')
+      .text("Vignan's Foundation for Science, Technology & Research (Deemed to be University)", 30, 20, { align: 'center', width: PAGE_W });
+    doc.fontSize(9).font('Helvetica')
+      .text(`CRT & Academic Performance Report  |  Generated: ${new Date().toLocaleString()}`, 30, 36, { align: 'center', width: PAGE_W });
+
+    let y = 52;
+    drawRow(headers, y, true, false);
+    y += ROW_H;
+
+    let rowIndex = 1;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const rowData = [
+        rowIndex, r.regNumber, r.name, r.branch, r.section,
+        r.crtAttendance, r.aptitude, r.coding, r.communication, r.mockInterview, r.overallPct, r.academicAttendance
+      ];
+      
+      if (y + ROW_H > doc.page.height - 30) {
+        doc.addPage({ layout: 'landscape' });
+        y = 30;
+        drawRow(headers, y, true, false);
+        y += ROW_H;
+      }
+      drawRow(rowData, y, false, rowIndex % 2 === 1);
+      rowIndex++;
+      y += ROW_H;
+    }
+
+    doc.end();
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

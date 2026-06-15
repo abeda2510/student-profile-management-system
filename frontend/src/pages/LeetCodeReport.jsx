@@ -26,6 +26,7 @@ export default function LeetCodeReport() {
   const [rows, setRows] = useState(null);
   const [loading, setLoading] = useState(false);
   const [excelLoad, setExcelLoad] = useState(false);
+  const [pdfLoad, setPdfLoad] = useState(false);
   const [error, setError] = useState("");
 
   const toggleDept = dept => {
@@ -98,6 +99,24 @@ export default function LeetCodeReport() {
     finally { setExcelLoad(false); }
   };
 
+  const downloadPdf = async () => {
+    setPdfLoad(true); setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const params = buildParams();
+      const res = await window.fetch((import.meta.env.VITE_API_URL || '/spm') + "/leetcode/report/pdf?" + params, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "leetcode_report.pdf"; a.click();
+      URL.revokeObjectURL(url);
+    } catch { setError("Failed to generate PDF."); }
+    finally { setPdfLoad(false); }
+  };
+
   const withStats = rows ? rows.filter(r => r.stats) : [];
   const avgSolved = withStats.length ? Math.round(withStats.reduce((s,r)=>s+r.stats.total,0)/withStats.length) : 0;
   const cgpaRows = rows ? rows.filter(r => r.cgpa) : [];
@@ -164,10 +183,16 @@ export default function LeetCodeReport() {
             {loading ? "Fetching..." : "Fetch Stats"}
           </button>
           {rows && rows.length > 0 && (
-            <button onClick={downloadExcel} disabled={excelLoad}
-              style={{ background: excelLoad ? "#94a3b8" : "#059669", color:"#fff", border:"none", padding:"10px 22px", borderRadius:9, cursor: excelLoad ? "not-allowed" : "pointer", fontWeight:700, fontSize:13 }}>
-              {excelLoad ? "Generating..." : "📊 Download Excel"}
-            </button>
+            <>
+              <button onClick={downloadExcel} disabled={excelLoad}
+                style={{ background: excelLoad ? "#94a3b8" : "#059669", color:"#fff", border:"none", padding:"10px 22px", borderRadius:9, cursor: excelLoad ? "not-allowed" : "pointer", fontWeight:700, fontSize:13 }}>
+                {excelLoad ? "Generating..." : "📊 Download Excel"}
+              </button>
+              <button onClick={downloadPdf} disabled={pdfLoad}
+                style={{ background: pdfLoad ? "#94a3b8" : "#dc2626", color:"#fff", border:"none", padding:"10px 22px", borderRadius:9, cursor: pdfLoad ? "not-allowed" : "pointer", fontWeight:700, fontSize:13 }}>
+                {pdfLoad ? "Generating..." : "📄 Download PDF"}
+              </button>
+            </>
           )}
           {(selDepts.length>0||minCgpa||minLeet) && (
             <button onClick={() => { setSelDepts([]); setSelSections({}); setMinCgpa(""); setMinLeet(""); setRows(null); }}

@@ -312,7 +312,7 @@ export default function FacultyDashboard() {
               <div key={a._id} style={{ background: '#fffbeb', borderRadius: 10, padding: '12px 16px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontWeight: 700, fontSize: 13 }}>{a.title}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{a.regNumber} · {a.activityType?.replace(/_/g,' ')} · {a.academicYear}</div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{a.studentName && a.studentName !== a.regNumber ? `${a.studentName} (${a.regNumber})` : a.regNumber} · {a.activityType?.replace(/_/g,' ')} · {a.academicYear}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   {(a.certificateUrl||a.certificatePath) && <ViewButton url={viewUrl(a.certificateUrl||a.certificatePath)} label="📎" style={{ padding: '5px 10px', fontSize: 11 }} />}
@@ -336,7 +336,7 @@ export default function FacultyDashboard() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor='#e2e8f0'; e.currentTarget.style.background='#f8fafc'; }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
                 <span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 700 }}>{a.activityType?.replace(/_/g,' ')}</span>
-                <div style={{ fontSize: 11, color: '#374151', marginTop: 8, fontWeight: 600 }}>{a.studentName||a.regNumber}</div>
+                <div style={{ fontSize: 11, color: '#374151', marginTop: 8, fontWeight: 600 }}>{a.studentName && a.studentName !== a.regNumber ? `${a.studentName} (${a.regNumber})` : a.regNumber}</div>
                 <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{a.branch} · {a.academicYear}</div>
               </div>
             ))}

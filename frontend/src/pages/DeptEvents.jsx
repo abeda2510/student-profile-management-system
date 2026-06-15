@@ -11,7 +11,7 @@ const DOC_FIELDS = [
   { key: 'sampleCertificate',label: '📜 Sample Certificate', accept: '.jpg,.jpeg,.png,.pdf' },
   { key: 'budgetReport',     label: '💰 Budget Report',      accept: '.jpg,.jpeg,.png,.pdf' },
 ];
-const empty = { employeeId: '', coordinatorName: '', eventName: '', eventType: '', year: '', date: '', venue: '', description: '', outcome: '', budget: '' };
+const empty = { employeeId: '', coordinatorName: '', eventName: '', eventType: '', year: '', date: '', fromDate: '', toDate: '', venue: '', description: '', outcome: '', budget: '' };
 
 export default function DeptEvents() {
   const [events, setEvents] = useState([]);
@@ -188,8 +188,14 @@ export default function DeptEvents() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Date of Event</label>
-                <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>From Date</label>
+                <input type="date" value={form.fromDate} onChange={e => set('fromDate', e.target.value)}
+                  style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>To Date</label>
+                <input type="date" value={form.toDate} onChange={e => set('toDate', e.target.value)}
                   style={{ padding: '11px 14px', border: '1.5px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
               </div>
 
@@ -270,7 +276,11 @@ export default function DeptEvents() {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                     {ev.eventType && <span style={{ background: '#d1fae5', color: '#065f46', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{ev.eventType}</span>}
                     <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>{ev.year}</span>
-                    {ev.date && <span style={{ color: '#64748b', fontSize: 12 }}>📅 {new Date(ev.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                    {(ev.fromDate || ev.date) && (
+                      <span style={{ color: '#64748b', fontSize: 12 }}>
+                        📅 {ev.fromDate ? (ev.toDate ? `${new Date(ev.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(ev.toDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : new Date(ev.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })) : new Date(ev.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
                     {ev.budget && <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>₹{ev.budget.toLocaleString()}</span>}
                   </div>
                 </div>

@@ -514,7 +514,7 @@ export default function StudentProfile() {
                   })}
                 </select>
               </div>
-              <Field label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} />
+              <SelectF label="Branch / Department" value={form.branch} onChange={v => set('branch', v)} options={['CSE','ECE','EEE','MECH','CIVIL','IT','AIML','CSBS']} />
               <Field label="Section" value={form.section} onChange={v => set('section', v)} />
               <Field label="Current Year" value={form.currentYear} onChange={v => set('currentYear', v)} type="number" />
               <Field label="Current Semester" value={form.currentSemester} onChange={v => set('currentSemester', v)} type="number" />
@@ -534,13 +534,13 @@ export default function StudentProfile() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div>
                             <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>CGPA</label>
-                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} onChange={e => set(`sem${sem}Cgpa`, e.target.value)} placeholder="0.00"
-                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Cgpa`] || ''} readOnly disabled
+                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#f1f5f9', outline: 'none', marginTop: 2, color: '#0f172a' }} />
                           </div>
                           <div>
                             <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>SGPA</label>
-                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} onChange={e => set(`sem${sem}Sgpa`, e.target.value)} placeholder="0.00"
-                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#fff', outline: 'none', marginTop: 2 }} />
+                            <input type="number" step="0.01" min="0" max="10" value={form[`sem${sem}Sgpa`] || ''} readOnly disabled
+                              style={{ width: '100%', padding: '6px 8px', border: '1.5px solid #d1d5db', borderRadius: 6, fontSize: 12, background: '#f1f5f9', outline: 'none', marginTop: 2, color: '#0f172a' }} />
                           </div>
                           <div style={{ marginTop: 4 }}>
                             <label style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Mark Memo</label>

@@ -531,6 +531,7 @@ export default function SectionReport() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [xlLoading, setXlLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [totalStudents, setTotalStudents] = useState(0);
   const [myStudents, setMyStudents] = useState([]);
   const [error, setError] = useState('');
@@ -644,6 +645,27 @@ export default function SectionReport() {
       URL.revokeObjectURL(url);
     } catch { setError('Download failed'); }
     setXlLoading(false);
+  };
+
+  const downloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = import.meta.env.VITE_API_URL || '/spm';
+      const params = new URLSearchParams();
+      Object.entries(selDepts).forEach(([dept, secs]) => secs.forEach(sec => { params.append('branch', dept); params.append('section', sec); }));
+      selItems.forEach(d => params.append('docType', d));
+      if (academicYear && academicYear !== 'all') params.append('admissionYear', academicYear);
+      if (yearOfStudy && yearOfStudy !== 'all') params.append('currentYear', yearOfStudy);
+      params.append('onlyWithUploads', onlyWithUploads ? 'true' : 'false');
+      appendAdvancedFilters(params);
+      const res = await fetch(`${baseUrl}/faculty/section-report/pdf?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'section_report.pdf'; a.click();
+      URL.revokeObjectURL(url);
+    } catch { setError('Download failed'); }
+    setPdfLoading(false);
   };
 
   const uniqueStudents = results ? [...new Map(results.map(r => [r.regNumber, r])).values()] : [];
@@ -925,6 +947,10 @@ export default function SectionReport() {
                       style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                       {xlLoading ? 'Downloading...' : 'Download Excel'}
                     </button>
+                    <button onClick={downloadPdf} disabled={pdfLoading}
+                      style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      {pdfLoading ? 'Downloading...' : 'Download PDF'}
+                    </button>
                   </div>
                 )}
                 <button onClick={toggleAllItems} style={{ fontSize:12, color:'#059669', background:'none', border:'none', cursor:'pointer', fontWeight:700 }}>Select All</button>
@@ -943,7 +969,11 @@ export default function SectionReport() {
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); downloadExcel(); }} disabled={xlLoading}
                           style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                          {xlLoading ? 'Downloading...' : 'Download'}
+                          {xlLoading ? 'Downloading...' : 'Excel'}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); downloadPdf(); }} disabled={pdfLoading}
+                          style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                          {pdfLoading ? 'Downloading...' : 'PDF'}
                         </button>
                       </div>
                     )}
@@ -985,7 +1015,11 @@ export default function SectionReport() {
                           </button>
                           <button onClick={(e) => { e.stopPropagation(); downloadExcel(); }} disabled={xlLoading}
                             style={{ background: '#1e40af', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                            {xlLoading ? 'Downloading...' : 'Download'}
+                            {xlLoading ? 'Downloading...' : 'Excel'}
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); downloadPdf(); }} disabled={pdfLoading}
+                            style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                            {pdfLoading ? 'Downloading...' : 'PDF'}
                           </button>
                         </div>
                       )}
