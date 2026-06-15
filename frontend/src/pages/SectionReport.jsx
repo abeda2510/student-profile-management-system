@@ -64,6 +64,10 @@ const DOC_GROUPS = [
       { value: 'BOOK_CHAPTER', label: 'Book Chapters' },
       { value: 'TECHNICAL_COMPETITION', label: 'Technical Competitions' },
       { value: 'WORKSHOP', label: 'Workshops' },
+    ]
+  },
+  { key: 'certifications', label: 'Certifications', color: '#059669', bg: '#f0fdf4',
+    items: [
       { value: 'NPTEL', label: 'NPTEL Certifications' },
       { value: 'CERTIFICATION', label: 'Other Certifications' },
     ]
@@ -429,7 +433,7 @@ function IndividualReport({ onBack }) {
                           {d.label || d.docType}
                         </div>
                         <div style={{ fontSize: 11, color: '#64748b' }}>{d.filename || 'Uploaded'}</div>
-                        {url && url.startsWith('http') ? (
+                        {url && (url.startsWith('http') || url.startsWith('/') || url.includes('/uploads/')) ? (
                           <ViewButton url={url} label="View Document" />
                         ) : (
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>No preview available</span>
@@ -905,7 +909,7 @@ export default function SectionReport() {
                 </div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                   {group.items.map(item => {
-                    const count = group.key === 'achievements' ? (achCounts[item.value.toUpperCase()] || 0) : null;
+                    const count = (group.key === 'achievements' || group.key === 'certifications') ? (achCounts[item.value.toUpperCase()] || 0) : null;
                     return (
                       <span key={item.value} onClick={() => toggleItem(item.value)} style={chip(selItems.includes(item.value), group.color)}>
                         {item.label} {count !== null && <span style={{ opacity: 0.6, fontSize: 10 }}>({count})</span>}
@@ -991,7 +995,11 @@ export default function SectionReport() {
                               }
                               const strVal = val && val.data !== '—' && val.data !== '-' ? val.data : null;
                               const ok = !!strVal;
-                              const isUrl = ok && typeof strVal === 'string' && strVal.startsWith('http');
+                              const isUrl = ok && typeof strVal === 'string' && (
+                                strVal.startsWith('http') ||
+                                strVal.startsWith('/') ||
+                                strVal.includes('/uploads/')
+                              );
                               return (
                                 <td key={dt} style={{ padding: '9px 14px' }}>
                                   {isUrl ? <ViewButton url={strVal} label="View PDF" /> : ok ? <span style={{ fontWeight: 600, color: '#0f172a' }}>{strVal}</span> : <span style={{ color: '#94a3b8' }}>—</span>}

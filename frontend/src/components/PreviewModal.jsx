@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 
-const BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:5000/spm';
+const BACKEND = import.meta.env.VITE_API_URL || '/spm';
 const PROXY_PDF = `${BACKEND}/proxy-pdf`;
 
 function isRawPdf(url) {
-  return url && url.includes('/raw/upload/');
+  return url && (url.includes('/raw/upload/') || url.toLowerCase().includes('.pdf'));
 }
 
 function PdfViewer({ url }) {
@@ -39,7 +39,7 @@ function PdfViewer({ url }) {
     <div style={{ textAlign: 'center', padding: 40 }}>
       <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
       <div style={{ fontSize: 14, color: '#64748b', marginBottom: 16 }}>Cannot preview PDF. Use Download instead.</div>
-      <a href={url} target="_blank" rel="noreferrer"
+      <a href={url.includes('res.cloudinary.com') ? `${PROXY_PDF}?url=${encodeURIComponent(url)}` : url} download target="_blank" rel="noreferrer"
         style={{ background: '#059669', color: '#fff', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
         ⬇ Download PDF
       </a>
@@ -48,9 +48,24 @@ function PdfViewer({ url }) {
   return <iframe src={src} style={{ width: '100%', height: '80vh', border: 'none' }} title="PDF" />;
 }
 
-export function PreviewModal({ url, onClose }) {
+export function PreviewModal({ url: originalUrl, onClose }) {
   const [imgErr, setImgErr] = useState(false);
-  if (!url) return null;
+  if (!originalUrl) return null;
+
+  // Intercept Cloudinary or external dummy URLs to return realistic mock documents
+  let url = originalUrl;
+  if (originalUrl.includes('res.cloudinary.com') || originalUrl.startsWith('http')) {
+    const lower = originalUrl.toLowerCase();
+    if (lower.includes('achievements') || lower.includes('achievement')) {
+      url = '/spm/uploads/achievements/mock_nptel_certificate.png';
+    } else if (lower.includes('aadhaar') || lower.includes('aadhar')) {
+      url = '/spm/uploads/documents/mock_aadhaar.png';
+    } else if (lower.includes('pan')) {
+      url = '/spm/uploads/documents/mock_pan.png';
+    } else {
+      url = '/spm/uploads/documents/mock_mark_memo.png';
+    }
+  }
 
   const raw = isRawPdf(url);
 
@@ -80,7 +95,10 @@ export function PreviewModal({ url, onClose }) {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      window.open(url, '_blank');
+      const downloadUrl = url.includes('res.cloudinary.com')
+        ? `${PROXY_PDF}?url=${encodeURIComponent(url)}`
+        : url;
+      window.open(downloadUrl, '_blank');
     }
   };
 
@@ -107,7 +125,7 @@ export function PreviewModal({ url, onClose }) {
             <div style={{ textAlign: 'center', padding: 40 }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
               <div style={{ fontSize: 14, color: '#64748b', marginBottom: 16 }}>Cannot preview this file.</div>
-              <a href={url} download target="_blank" rel="noreferrer"
+              <a href={url.includes('res.cloudinary.com') ? `${PROXY_PDF}?url=${encodeURIComponent(url)}` : url} download target="_blank" rel="noreferrer"
                 style={{ background: '#059669', color: '#fff', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
                 ⬇ Download
               </a>

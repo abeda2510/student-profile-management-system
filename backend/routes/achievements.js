@@ -370,8 +370,24 @@ router.get('/faculty-report/excel', protect, async (req, res) => {
     [6,16,24,10,30,14,10,40].forEach((w,i) => { ws.getColumn(i+1).width = w; });
     achievements.forEach((a, i) => {
       const st = studentMap[a.regNumber];
-      const row = ws.addRow([i+1, a.regNumber, st?.name||'', st?.branch||'', a.title, a.academicYear||'', a.points, a.certificateUrl||a.certificatePath||'']);
-      row.eachCell(cell => { cell.border = { top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'} }; });
+      const certUrl = a.certificateUrl || a.certificatePath || '';
+      const isRelative = certUrl.startsWith('/') || certUrl.includes('/uploads/');
+      const isAbsolute = certUrl.startsWith('http');
+      
+      let finalVal = certUrl;
+      if (isRelative || isAbsolute) {
+        const hostUrl = `${req.protocol}://${req.get('host')}`;
+        const linkUrl = isAbsolute ? certUrl : `${hostUrl}${certUrl.startsWith('/') ? '' : '/'}${certUrl}`;
+        finalVal = { text: 'View Certificate', hyperlink: linkUrl };
+      }
+      
+      const row = ws.addRow([i+1, a.regNumber, st?.name||'', st?.branch||'', a.title, a.academicYear||'', a.points, finalVal]);
+      row.eachCell((cell, colIndex) => { 
+        cell.border = { top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'} }; 
+        if (colIndex === 8 && (isRelative || isAbsolute)) {
+          cell.font = { color: { argb: 'FF1E40AF' }, underline: true };
+        }
+      });
       if (i%2===1) row.eachCell(cell => { cell.fill = { type:'pattern',pattern:'solid',fgColor:{argb:'FFF0FDF4'} }; });
     });
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

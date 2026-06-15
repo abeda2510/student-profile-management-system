@@ -241,9 +241,13 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
           const certUrl = a.certificateUrl || a.certificatePath || '';
           const label = `• ${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`;
           doc.fontSize(8).font('Helvetica').fillColor('#0f172a').text(label, 58, y, { width: W - 80 });
-          if (certUrl && certUrl.startsWith('http')) {
+          const isRelative = certUrl.startsWith('/') || certUrl.includes('/uploads/');
+          const isAbsolute = certUrl.startsWith('http');
+          if (certUrl && (isAbsolute || isRelative)) {
+            const hostUrl = `${req.protocol}://${req.get('host')}`;
+            const linkUrl = isAbsolute ? certUrl : `${hostUrl}${certUrl.startsWith('/') ? '' : '/'}${certUrl}`;
             doc.fontSize(7.5).font('Helvetica').fillColor('#1e40af')
-              .text('View Certificate', 400, y, { width: 90, link: certUrl, underline: true });
+              .text('View Certificate', 400, y, { width: 90, link: linkUrl, underline: true });
           }
           y += 14;
         });
@@ -260,9 +264,13 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
         const fileUrl = d.fileUrl || d.filepath || '';
         doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(d.docType || '', 50, y, { width: 130 });
         doc.font('Helvetica').fillColor('#0f172a').text(d.label || d.filename || '—', 185, y, { width: W - 235 });
-        if (fileUrl && fileUrl.startsWith('http')) {
+        const isRelative = fileUrl.startsWith('/') || fileUrl.includes('/uploads/');
+        const isAbsolute = fileUrl.startsWith('http');
+        if (fileUrl && (isAbsolute || isRelative)) {
+          const hostUrl = `${req.protocol}://${req.get('host')}`;
+          const linkUrl = isAbsolute ? fileUrl : `${hostUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
           doc.fontSize(7.5).font('Helvetica').fillColor('#1e40af')
-            .text('Open', 420, y, { width: 60, link: fileUrl, underline: true });
+            .text('Open', 420, y, { width: 60, link: linkUrl, underline: true });
         }
         y += 14;
       });
@@ -323,7 +331,7 @@ router.get('/count', protect, async (req, res) => {
 // Admin: dashboard stats aggregate
 router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
   try {
-    const [rawStats, certStats, pubStats] = await Promise.all([
+    const [rawStats, certStats, pubStats, dbAggResults] = await Promise.all([
       Student.aggregate([
         { $match: { role: 'student' } },
         {
@@ -376,6 +384,118 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
               branch: { $ifNull: [ '$studentInfo.branch', 'Unknown' ] }
             },
             count: { $sum: 1 }
+          }
+        }
+      ]),
+      Student.aggregate([
+        { $match: { role: 'student' } },
+        {
+          $project: {
+            branch: { $toUpper: { $trim: { input: { $ifNull: ["$branch", "UNKNOWN"] } } } },
+            crtAvg: {
+              $cond: {
+                if: { $and: [ { $isArray: "$crtPerformance" }, { $gt: [ { $size: "$crtPerformance" }, 0 ] } ] },
+                then: {
+                  $multiply: [
+                    {
+                      $divide: [
+                        { $sum: "$crtPerformance.score" },
+                        {
+                          $sum: {
+                            $map: {
+                              input: "$crtPerformance",
+                              as: "p",
+                              in: { $ifNull: [ "$$p.maxScore", 100 ] }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    100
+                  ]
+                },
+                else: null
+              }
+            },
+            attAvg: {
+              $cond: {
+                if: { $and: [ { $isArray: "$attendance" }, { $gt: [ { $size: "$attendance" }, 0 ] } ] },
+                then: {
+                  $multiply: [
+                    {
+                      $divide: [
+                        { $sum: "$attendance.present" },
+                        {
+                          $sum: {
+                            $map: {
+                              input: "$attendance",
+                              as: "a",
+                              in: { $ifNull: [ "$$a.total", 1 ] }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    100
+                  ]
+                },
+                else: null
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            branch: 1,
+            crtBracket: {
+              $cond: {
+                if: { $eq: [ "$crtAvg", null ] },
+                then: null,
+                else: {
+                  $cond: {
+                    if: { $gte: [ "$crtAvg", 75 ] },
+                    then: "excellent",
+                    else: {
+                      $cond: {
+                        if: { $gte: [ "$crtAvg", 50 ] },
+                        then: "good",
+                        else: "poor"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            attBracket: {
+              $cond: {
+                if: { $eq: [ "$attAvg", null ] },
+                then: null,
+                else: {
+                  $cond: {
+                    if: { $gte: [ "$attAvg", 75 ] },
+                    then: "eligible",
+                    else: {
+                      $cond: {
+                        if: { $gte: [ "$attAvg", 60 ] },
+                        then: "condonation",
+                        else: "detained"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          $group: {
+            _id: "$branch",
+            excellentCrt: { $sum: { $cond: [ { $eq: [ "$crtBracket", "excellent" ] }, 1, 0 ] } },
+            goodCrt: { $sum: { $cond: [ { $eq: [ "$crtBracket", "good" ] }, 1, 0 ] } },
+            poorCrt: { $sum: { $cond: [ { $eq: [ "$crtBracket", "poor" ] }, 1, 0 ] } },
+            eligibleAtt: { $sum: { $cond: [ { $eq: [ "$attBracket", "eligible" ] }, 1, 0 ] } },
+            condonationAtt: { $sum: { $cond: [ { $eq: [ "$attBracket", "condonation" ] }, 1, 0 ] } },
+            detainedAtt: { $sum: { $cond: [ { $eq: [ "$attBracket", "detained" ] }, 1, 0 ] } }
           }
         }
       ])
@@ -465,6 +585,35 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
       };
     }).sort((a, b) => a.branch.localeCompare(b.branch));
 
+    // Aggregate CRT & Attendance statistics
+    const overallCrt = { excellent: 0, good: 0, poor: 0 };
+    const crtByBranch = {};
+    const overallAtt = { eligible: 0, condonation: 0, detained: 0 };
+    const attByBranch = {};
+
+    dbAggResults.forEach(item => {
+      const branch = String(item._id || 'Unknown').trim().toUpperCase() || 'UNKNOWN';
+      if (branch === 'UNKNOWN') return;
+
+      crtByBranch[branch] = {
+        excellent: item.excellentCrt || 0,
+        good: item.goodCrt || 0,
+        poor: item.poorCrt || 0
+      };
+      overallCrt.excellent += item.excellentCrt || 0;
+      overallCrt.good += item.goodCrt || 0;
+      overallCrt.poor += item.poorCrt || 0;
+
+      attByBranch[branch] = {
+        eligible: item.eligibleAtt || 0,
+        condonation: item.condonationAtt || 0,
+        detained: item.detainedAtt || 0
+      };
+      overallAtt.eligible += item.eligibleAtt || 0;
+      overallAtt.condonation += item.condonationAtt || 0;
+      overallAtt.detained += item.detainedAtt || 0;
+    });
+
     res.json({
       totalStudents,
       male: maleCount,
@@ -473,7 +622,15 @@ router.get('/dashboard-stats', protect, adminOnly, async (req, res) => {
       certificationsByBranch,
       totalPublications,
       publicationsByBranch,
-      departments: formattedDepartments
+      departments: formattedDepartments,
+      crtStats: {
+        overall: overallCrt,
+        byBranch: crtByBranch
+      },
+      attendanceStats: {
+        overall: overallAtt,
+        byBranch: attByBranch
+      }
     });
   } catch (err) {
     console.error('dashboard-stats aggregate error:', err);

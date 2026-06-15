@@ -531,8 +531,18 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
       } else {
         doc.rect(x, y, w, ROW_H).fillAndStroke(shade ? '#f1f5f9' : '#ffffff', '#cbd5e1');
         const ok = String(cell) !== 'Missing' && String(cell) !== 'Not filled';
-        doc.fillColor(i >= 5 && !ok ? '#94a3b8' : '#0f172a').fontSize(7).font('Helvetica')
-          .text(String(cell ?? ''), x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false });
+        const cellStr = String(cell ?? '');
+        const isRelative = cellStr.startsWith('/') || cellStr.includes('/uploads/');
+        const isAbsolute = cellStr.startsWith('http');
+        if (i >= 5 && (isAbsolute || isRelative)) {
+          const hostUrl = `${req.protocol}://${req.get('host')}`;
+          const linkUrl = isAbsolute ? cellStr : `${hostUrl}${cellStr.startsWith('/') ? '' : '/'}${cellStr}`;
+          doc.fillColor('#1e40af').fontSize(7).font('Helvetica')
+            .text('View Document', x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false, link: linkUrl, underline: true });
+        } else {
+          doc.fillColor(i >= 5 && !ok ? '#94a3b8' : '#0f172a').fontSize(7).font('Helvetica')
+            .text(cellStr, x + 2, y + 6, { width: w - 4, ellipsis: true, lineBreak: false });
+        }
       }
       x += w;
     });
@@ -743,8 +753,12 @@ router.get('/section-report/excel', protect, async (req, res) => {
         };
         // Make URL cells hyperlinks
         const cellVal = String(cell.value || '');
-        if (colNumber >= 6 && colNumber <= 5 + finalDocTypes.length && cellVal.startsWith('http')) {
-          cell.value = { text: 'View Document', hyperlink: cellVal };
+        const isRelative = cellVal.startsWith('/') || cellVal.includes('/uploads/');
+        const isAbsolute = cellVal.startsWith('http');
+        if (colNumber >= 6 && colNumber <= 5 + finalDocTypes.length && (isAbsolute || isRelative)) {
+          const hostUrl = `${req.protocol}://${req.get('host')}`;
+          const linkUrl = isAbsolute ? cellVal : `${hostUrl}${cellVal.startsWith('/') ? '' : '/'}${cellVal}`;
+          cell.value = { text: 'View Document', hyperlink: linkUrl };
           cell.font = { color: { argb: 'FF1e40af' }, size: 10, underline: true };
         }
       });

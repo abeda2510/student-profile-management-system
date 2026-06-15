@@ -27,12 +27,6 @@ const CATEGORIES = [
     btnColor: '#059669',
     types: ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING']
   },
-  {
-    key: 'PUBLICATIONS', label: 'Publications', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
-    img: '📄', desc: 'Research papers, Patents, Books, Journals, Conferences',
-    btnColor: '#0369a1',
-    types: ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER']
-  },
 ];
 
 const SUB_TYPES = {
@@ -294,7 +288,6 @@ export default function Achievements() {
           { key: 'NON_TECHNICAL', label: 'Non-Technical', color: '#d97706' },
           { key: 'NPTEL', label: 'NPTEL', color: '#7c3aed' },
           { key: 'CERTIFICATIONS', label: 'Certifications', color: '#059669' },
-          { key: 'PUBLICATIONS', label: 'Publications', color: '#0369a1' },
           { key: 'OTHER', label: 'Other', color: '#64748b' },
         ];
         const grouped = {};

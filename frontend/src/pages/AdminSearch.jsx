@@ -36,6 +36,24 @@ const CalendarIcon = ({ size = 20, color = "currentColor" }) => (
   </svg>
 );
 
+const TrophyIcon = ({ size = 20, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+    <path d="M4 22h16" />
+    <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
+    <path d="M12 2a7.7 7.7 0 0 1 7.54 8H4.46A7.7 7.7 0 0 1 12 2z" />
+  </svg>
+);
+
+const TargetIcon = ({ size = 20, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
+
 const BarChartIcon = ({ size = 16, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="20" x2="18" y2="10" />
@@ -403,6 +421,9 @@ export default function AdminSearch() {
       if (type === 'events') {
         const { data } = await api.get('/dept-events');
         setModalData(data);
+      } else if (type === 'attendance' || type === 'crt') {
+        const { data } = await api.get('/students');
+        setModalData(data);
       } else {
         const { data } = await api.get('/achievements/faculty-report?status=APPROVED');
         setModalData(data);
@@ -466,8 +487,13 @@ export default function AdminSearch() {
     return String(item.department || '').toUpperCase() === selectedDept.toUpperCase();
   });
 
-  // --- CERTIFICATIONS DONE BREAKDOWN ---
-  const certs = filteredAchievements.filter(item => !['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType));
+  // --- CERTIFICATIONS vs ACHIEVEMENTS vs PUBLICATIONS DONE BREAKDOWN ---
+  const isPublication = (item) => ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType);
+  const isCert = (item) => ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING', 'NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE'].includes(item.activityType) || item.mainCategory === 'CERTIFICATIONS' || item.mainCategory === 'NPTEL';
+
+  const certs = filteredAchievements.filter(isCert);
+  const pubs = filteredAchievements.filter(isPublication);
+  const achs = filteredAchievements.filter(item => !isPublication(item) && !isCert(item));
   
   let nptel = 0, coursera = 0, aws = 0, cisco = 0;
   certs.forEach(c => {
@@ -493,9 +519,26 @@ export default function AdminSearch() {
     { label: 'Cisco', value: cisco, color: '#06b6d4' }
   ];
 
+  let techCount = 0, nonTechCount = 0, otherCount = 0;
+  achs.forEach(a => {
+    const type = (a.activityType || '').toUpperCase();
+    const cat = (a.mainCategory || '').toUpperCase();
+    if (cat === 'TECHNICAL' || ['HACKATHON', 'IDEATHON', 'TECHNICAL_COMPETITION', 'INTERNSHIP', 'WORKSHOP', 'SEMINAR', 'PROJECT'].includes(type)) {
+      techCount++;
+    } else if (cat === 'NON_TECHNICAL' || ['SPORTS', 'CULTURAL', 'DANCE', 'MUSIC', 'ART', 'VOLUNTEERING', 'NSS', 'NCC'].includes(type)) {
+      nonTechCount++;
+    } else {
+      otherCount++;
+    }
+  });
+  const totalAchs = techCount + nonTechCount + otherCount;
+  const achsData = [
+    { label: 'Technical', value: techCount, color: '#3b82f6' },
+    { label: 'Non-Technical', value: nonTechCount, color: '#f59e0b' },
+    { label: 'Other', value: otherCount, color: '#64748b' }
+  ];
+
   // --- PUBLICATIONS DONE BREAKDOWN ---
-  const pubs = filteredAchievements.filter(item => ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType));
-  
   let journals = 0, conferences = 0, bookChapters = 0, patents = 0;
   pubs.forEach(p => {
     const type = p.activityType;
@@ -512,6 +555,27 @@ export default function AdminSearch() {
     { label: 'Conferences', value: conferences, color: '#22c55e' },
     { label: 'Book Chapters', value: bookChapters, color: '#f59e0b' },
     { label: 'Patents', value: patents, color: '#a855f7' }
+  ];
+
+  // --- CRT & ATTENDANCE DONE BREAKDOWN ---
+  const crtStatsSource = selectedDept
+    ? (stats.crtStats?.byBranch?.[selectedDept.toUpperCase()] || { excellent: 0, good: 0, poor: 0 })
+    : (stats.crtStats?.overall || { excellent: 0, good: 0, poor: 0 });
+  const totalCrtStudents = crtStatsSource.excellent + crtStatsSource.good + crtStatsSource.poor;
+  const crtChartData = [
+    { label: 'Excellent (>=75%)', value: crtStatsSource.excellent, color: '#10b981' },
+    { label: 'Good (50-75%)', value: crtStatsSource.good, color: '#3b82f6' },
+    { label: 'Poor (<50%)', value: crtStatsSource.poor, color: '#ef4444' }
+  ];
+
+  const attStatsSource = selectedDept
+    ? (stats.attendanceStats?.byBranch?.[selectedDept.toUpperCase()] || { eligible: 0, condonation: 0, detained: 0 })
+    : (stats.attendanceStats?.overall || { eligible: 0, condonation: 0, detained: 0 });
+  const totalAttStudents = attStatsSource.eligible + attStatsSource.condonation + attStatsSource.detained;
+  const attChartData = [
+    { label: 'Eligible (>=75%)', value: attStatsSource.eligible, color: '#10b981' },
+    { label: 'Condonation (60-75%)', value: attStatsSource.condonation, color: '#f59e0b' },
+    { label: 'Detained (<60%)', value: attStatsSource.detained, color: '#ef4444' }
   ];
 
   // --- DEPT EVENTS BREAKDOWN ---
@@ -621,121 +685,120 @@ export default function AdminSearch() {
         </div>
       </div>
 
-      {/* --- FOUR COLUMNS LAYOUT --- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(245px, 1fr))', gap: 20, alignItems: 'stretch' }}>
-        
-        {/* --- COLUMN 1 (STRENGTH, SECTIONS, DEMOGRAPHIC) --- */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 28 }}>
-          
-          {/* Card 1.1: Total Strength */}
-          <div className="dash-card" style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-            color: '#fff',
-            padding: '20px 24px',
-            border: 'none'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', opacity: 0.9 }}>Total Strength</span>
-                <div style={{ fontSize: 32, fontWeight: 800, marginTop: 4, letterSpacing: '-0.5px' }}>{totalCount.toLocaleString()}</div>
-              </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.18)', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <GroupIcon size={20} color="#fff" />
-              </div>
-            </div>
+      {/* --- DEMOGRAPHICS TOP ROW --- */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 28 }}>
+        {/* Card 1.1: Total Strength */}
+        <div className="dash-card" style={{
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+          color: '#fff',
+          padding: '24px 28px',
+          border: 'none',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', opacity: 0.9 }}>Total Strength</span>
+            <div style={{ fontSize: 36, fontWeight: 800, marginTop: 8, letterSpacing: '-0.5px' }}>{totalCount.toLocaleString()}</div>
             <div style={{ fontSize: 12, marginTop: 12, opacity: 0.85, fontWeight: 500 }}>
               {selectedDept ? `Active in ${selectedDept}` : 'University overall enrollment'}
             </div>
           </div>
+          <div style={{ background: 'rgba(255, 255, 255, 0.18)', borderRadius: '50%', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GroupIcon size={28} color="#fff" />
+          </div>
+        </div>
 
-          {/* Card 1.2: Total Sections */}
-          <div className="dash-card" style={{
-            background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-            color: '#fff',
-            padding: '20px 24px',
-            border: 'none'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', opacity: 0.9 }}>Total Sections</span>
-                <div style={{ fontSize: 32, fontWeight: 800, marginTop: 4, letterSpacing: '-0.5px' }}>{sectionsCount}</div>
-              </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.18)', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <BookIcon size={20} color="#fff" />
-              </div>
-            </div>
+        {/* Card 1.2: Total Sections */}
+        <div className="dash-card" style={{
+          background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+          color: '#fff',
+          padding: '24px 28px',
+          border: 'none',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', opacity: 0.9 }}>Total Sections</span>
+            <div style={{ fontSize: 36, fontWeight: 800, marginTop: 8, letterSpacing: '-0.5px' }}>{sectionsCount}</div>
             <div style={{ fontSize: 12, marginTop: 12, opacity: 0.85, fontWeight: 500 }}>
               {selectedDept ? `Active sections in ${selectedDept}` : 'Active sections across all depts'}
             </div>
           </div>
-
-          {/* Card 1.3: Male vs Female split */}
-          <div className="dash-card" style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Male vs Female</span>
-              <div style={{ background: '#f1f5f9', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                <GroupIcon size={18} />
-              </div>
-            </div>
-            
-            <PieChart maleCount={maleCount} femaleCount={femaleCount} />
-
-            <div style={{ marginTop: 16 }}>
-              <div className="legend-row">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
-                  <span style={{ color: '#475569', fontWeight: 500 }}>Male</span>
-                </div>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>{maleCount.toLocaleString()} ({formatPercent(maleCount, maleCount + femaleCount)})</span>
-              </div>
-              <div className="legend-row" style={{ borderBottom: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f43f5e' }} />
-                  <span style={{ color: '#475569', fontWeight: 500 }}>Female</span>
-                </div>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>{femaleCount.toLocaleString()} ({formatPercent(femaleCount, maleCount + femaleCount)})</span>
-              </div>
-            </div>
+          <div style={{ background: 'rgba(255, 255, 255, 0.18)', borderRadius: '50%', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <BookIcon size={28} color="#fff" />
           </div>
         </div>
 
-        {/* --- COLUMN 2 (CERTIFICATIONS DONE) --- */}
-        <div className="dash-card" style={{ padding: 0, marginTop: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Accent Header Bar */}
-          <div style={{ height: 10, background: '#a855f7', borderRadius: '16px 16px 0 0' }} />
-          {/* Overlapping circle icon: White background, purple outline, purple icon */}
-          <div style={{
-            position: 'absolute',
-            top: -21,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 42,
-            height: 42,
-            borderRadius: '50%',
-            background: '#ffffff',
-            border: '2px solid #a855f7',
-            boxShadow: '0 4px 10px rgba(168, 85, 247, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#a855f7',
-            zIndex: 2
-          }}>
-            <CertificateIcon size={18} />
+        {/* Card 1.3: Male vs Female split */}
+        <div className="dash-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Demographics</span>
+            <h4 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '4px 0 10px 0' }}>Male vs Female</h4>
+            <div style={{ fontSize: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
+                <span style={{ color: '#475569', fontWeight: 600 }}>M: {maleCount.toLocaleString()} ({formatPercent(maleCount, maleCount + femaleCount)})</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f43f5e' }} />
+                <span style={{ color: '#475569', fontWeight: 600 }}>F: {femaleCount.toLocaleString()} ({formatPercent(femaleCount, maleCount + femaleCount)})</span>
+              </div>
+            </div>
           </div>
+          <div style={{ flexShrink: 0, width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PieChart maleCount={maleCount} femaleCount={femaleCount} />
+          </div>
+        </div>
+      </div>
 
-          <div style={{ padding: '24px 20px 20px 20px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('certifications')}>
-            <div style={{ textAlign: 'center', marginTop: 4 }}>
+      {/* --- 6 ANALYTICS CHARTS GRID --- */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'stretch' }}>
+        
+        {/* --- Card 1: Achievements Done --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#10b981', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('achievements')}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Achievements Registered</span>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalAchs}</div>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                {selectedDept ? `Approved in ${selectedDept}` : 'University overall achievements'}
+              </span>
+            </div>
+            <DonutChart data={achsData} centerIcon={<TrophyIcon size={20} color="#10b981" />} />
+            <div style={{ marginTop: 12 }}>
+              {achsData.map((slice, idx) => (
+                <div key={idx} className="legend-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: slice.color }} />
+                    <span style={{ color: '#475569', fontWeight: 500 }}>{slice.label}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{slice.value} ({formatPercent(slice.value, totalAchs)})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: '#f0fdf4', padding: '10px 16px', borderTop: '1px solid #bbf7d0', color: '#10b981', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <TrophyIcon size={12} color="#10b981" />
+            <span>Achievements list overview</span>
+          </div>
+        </div>
+
+        {/* --- Card 2: Certifications Done --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#a855f7', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('certifications')}>
+            <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Certifications Done</span>
-              <div style={{ fontSize: 34, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalCerts}</div>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalCerts}</div>
               <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
                 {selectedDept ? `Approved in ${selectedDept}` : 'University overall certifications'}
               </span>
             </div>
-
-            <DonutChart data={certsData} centerIcon={<CertificateIcon size={22} color="#a855f7" />} />
-
-            <div style={{ marginTop: 20 }}>
+            <DonutChart data={certsData} centerIcon={<CertificateIcon size={20} color="#a855f7" />} />
+            <div style={{ marginTop: 12 }}>
               {certsData.map((slice, idx) => (
                 <div key={idx} className="legend-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -747,62 +810,85 @@ export default function AdminSearch() {
               ))}
             </div>
           </div>
-
-          {/* Card Footer strip */}
-          <div style={{
-            background: '#fcfaff',
-            padding: '12px 16px',
-            borderTop: '1px solid #f3e8ff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: '#a855f7',
-            fontSize: '11px',
-            fontWeight: 700,
-            borderRadius: '0 0 16px 16px'
-          }}>
-            <BarChartIcon size={14} />
-            <span>Certifications {selectedDept ? `in ${selectedDept}` : 'across all departments'}</span>
+          <div style={{ background: '#fcfaff', padding: '10px 16px', borderTop: '1px solid #f3e8ff', color: '#a855f7', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CertificateIcon size={12} color="#a855f7" />
+            <span>Certifications list overview</span>
           </div>
         </div>
 
-        {/* --- COLUMN 3 (PUBLICATIONS DONE) --- */}
-        <div className="dash-card" style={{ padding: 0, marginTop: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Accent Header Bar */}
-          <div style={{ height: 10, background: '#3b82f6', borderRadius: '16px 16px 0 0' }} />
-          {/* Overlapping circle icon: White background, blue outline, blue icon */}
-          <div style={{
-            position: 'absolute',
-            top: -21,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 42,
-            height: 42,
-            borderRadius: '50%',
-            background: '#ffffff',
-            border: '2px solid #3b82f6',
-            boxShadow: '0 4px 10px rgba(59, 130, 246, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#3b82f6',
-            zIndex: 2
-          }}>
-            <BookIcon size={18} color="#3b82f6" />
+        {/* --- Card 3: CRT Performance --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#ea580c', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('crt')}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.8px' }}>CRT Performance</span>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalCrtStudents}</div>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                {selectedDept ? `Students evaluated in ${selectedDept}` : 'University overall evaluations'}
+              </span>
+            </div>
+            <DonutChart data={crtChartData} centerIcon={<TargetIcon size={20} color="#ea580c" />} />
+            <div style={{ marginTop: 12 }}>
+              {crtChartData.map((slice, idx) => (
+                <div key={idx} className="legend-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: slice.color }} />
+                    <span style={{ color: '#475569', fontWeight: 500 }}>{slice.label}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{slice.value} ({formatPercent(slice.value, totalCrtStudents)})</span>
+                </div>
+              ))}
+            </div>
           </div>
+          <div style={{ background: '#fff7ed', padding: '10px 16px', borderTop: '1px solid #ffedd5', color: '#ea580c', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <TargetIcon size={12} color="#ea580c" />
+            <span>CRT performance analysis</span>
+          </div>
+        </div>
 
-          <div style={{ padding: '24px 20px 20px 20px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('publications')}>
-            <div style={{ textAlign: 'center', marginTop: 4 }}>
+        {/* --- Card 4: Attendance Overview --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#0d9488', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('attendance')}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Attendance Status</span>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalAttStudents}</div>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                {selectedDept ? `Students evaluated in ${selectedDept}` : 'University overall attendance'}
+              </span>
+            </div>
+            <DonutChart data={attChartData} centerIcon={<CalendarIcon size={20} color="#0d9488" />} />
+            <div style={{ marginTop: 12 }}>
+              {attChartData.map((slice, idx) => (
+                <div key={idx} className="legend-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: slice.color }} />
+                    <span style={{ color: '#475569', fontWeight: 500 }}>{slice.label}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>{slice.value} ({formatPercent(slice.value, totalAttStudents)})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: '#f0fdfa', padding: '10px 16px', borderTop: '1px solid #ccfbf1', color: '#0d9488', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CalendarIcon size={12} color="#0d9488" />
+            <span>Attendance eligibility ratios</span>
+          </div>
+        </div>
+
+        {/* --- Card 5: Publications Done --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#3b82f6', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('publications')}>
+            <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Publications Done</span>
-              <div style={{ fontSize: 34, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalPubs}</div>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalPubs}</div>
               <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
                 {selectedDept ? `Approved in ${selectedDept}` : 'University overall publications'}
               </span>
             </div>
-
             <DonutChart data={pubsData} centerIcon={<FileTextIcon size={20} color="#3b82f6" />} />
-
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 12 }}>
               {pubsData.map((slice, idx) => (
                 <div key={idx} className="legend-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -814,62 +900,25 @@ export default function AdminSearch() {
               ))}
             </div>
           </div>
-
-          {/* Card Footer strip */}
-          <div style={{
-            background: '#f8fafc',
-            padding: '12px 16px',
-            borderTop: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: '#3b82f6',
-            fontSize: '11px',
-            fontWeight: 700,
-            borderRadius: '0 0 16px 16px'
-          }}>
-            <FileTextIcon size={14} />
-            <span>Publications {selectedDept ? `in ${selectedDept}` : 'across all departments'}</span>
+          <div style={{ background: '#eff6ff', padding: '10px 16px', borderTop: '1px solid #bfdbfe', color: '#3b82f6', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FileTextIcon size={12} color="#3b82f6" />
+            <span>Publications list overview</span>
           </div>
         </div>
 
-        {/* --- COLUMN 4 (DEPT EVENTS) --- */}
-        <div className="dash-card" style={{ padding: 0, marginTop: 28, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Accent Header Bar */}
-          <div style={{ height: 10, background: '#f43f5e', borderRadius: '16px 16px 0 0' }} />
-          {/* Overlapping circle icon: White background, pink outline, pink icon */}
-          <div style={{
-            position: 'absolute',
-            top: -21,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 42,
-            height: 42,
-            borderRadius: '50%',
-            background: '#ffffff',
-            border: '2px solid #f43f5e',
-            boxShadow: '0 4px 10px rgba(244, 63, 94, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#f43f5e',
-            zIndex: 2
-          }}>
-            <CalendarIcon size={18} color="#f43f5e" />
-          </div>
-
-          <div style={{ padding: '24px 20px 20px 20px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('events')}>
-            <div style={{ textAlign: 'center', marginTop: 4 }}>
+        {/* --- Card 6: Dept Events --- */}
+        <div className="dash-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ height: 6, background: '#f43f5e', borderRadius: '16px 16px 0 0' }} />
+          <div style={{ padding: '20px 24px', cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} onClick={() => handleCardClick('events')}>
+            <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Dept Events</span>
-              <div style={{ fontSize: 34, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalEvents}</div>
+              <div style={{ fontSize: 30, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{totalEvents}</div>
               <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
                 {selectedDept ? `Registered in ${selectedDept}` : 'University overall events'}
               </span>
             </div>
-
             <DonutChart data={eventsData} centerIcon={<CalendarIcon size={20} color="#f43f5e" />} />
-
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 12 }}>
               {eventsData.map((slice, idx) => (
                 <div key={idx} className="legend-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -881,25 +930,11 @@ export default function AdminSearch() {
               ))}
             </div>
           </div>
-
-          {/* Card Footer strip */}
-          <div style={{
-            background: '#fff5f5',
-            padding: '12px 16px',
-            borderTop: '1px solid #ffe4e6',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: '#f43f5e',
-            fontSize: '11px',
-            fontWeight: 700,
-            borderRadius: '0 0 16px 16px'
-          }}>
-            <GroupIcon size={14} color="#f43f5e" />
-            <span>Events {selectedDept ? `in ${selectedDept}` : 'across all departments'}</span>
+          <div style={{ background: '#fff5f5', padding: '10px 16px', borderTop: '1px solid #ffe4e6', color: '#f43f5e', fontSize: '11px', fontWeight: 700, borderRadius: '0 0 16px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <GroupIcon size={12} color="#f43f5e" />
+            <span>Events registered by departments</span>
           </div>
         </div>
-
       </div>
 
       {/* --- PREMIUM INTERACTIVE MODALS FOR DETAILED VIEW WITH EXTRA FILTERS --- */}
@@ -907,9 +942,11 @@ export default function AdminSearch() {
         let title = '';
         let filteredRecords = [];
 
+        const isPublication = (item) => ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType);
+        const isCert = (item) => ['AWS', 'GOOGLE', 'MICROSOFT', 'CISCO', 'COURSERA', 'UDEMY', 'LINKEDIN_LEARNING', 'NPTEL_ELITE', 'NPTEL_SILVER', 'NPTEL_GOLD', 'NPTEL_COURSE'].includes(item.activityType) || item.mainCategory === 'CERTIFICATIONS' || item.mainCategory === 'NPTEL';
+
         if (modalType === 'events') {
           title = `Registered Department Events`;
-          // Filter event list by search string, department, and academic year
           filteredRecords = modalData.filter(item => {
             if (modalDept && String(item.department || '').toUpperCase() !== modalDept.toUpperCase()) return false;
             if (modalAcademicYear && String(item.year) !== String(modalAcademicYear)) return false;
@@ -922,14 +959,28 @@ export default function AdminSearch() {
               (item.venue && item.venue.toLowerCase().includes(query))
             );
           });
+        } else if (modalType === 'attendance' || modalType === 'crt') {
+          title = modalType === 'attendance' ? 'Attendance Overview' : 'CRT Performance Overview';
+          filteredRecords = modalData.filter(item => {
+            if (modalDept && String(item.branch || '').toUpperCase() !== modalDept.toUpperCase()) return false;
+            if (modalYear && String(item.currentYear) !== String(modalYear)) return false;
+            if (modalAcademicYear && String(item.academicYear) !== String(modalAcademicYear)) return false;
+            if (!modalSearch) return true;
+            const query = modalSearch.toLowerCase();
+            return (
+              (item.regNumber && item.regNumber.toLowerCase().includes(query)) ||
+              (item.name && item.name.toLowerCase().includes(query))
+            );
+          });
         } else {
-          const isPublication = (item) => ['RESEARCH_PUBLICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(item.activityType);
-          title = modalType === 'publications' ? 'Approved Publications' : 'Approved Certifications';
+          title = modalType === 'publications' ? 'Approved Publications' : modalType === 'certifications' ? 'Approved Certifications' : 'Approved Achievements';
           
           filteredRecords = modalData.filter(item => {
-            const isPub = isPublication(item);
-            // Separate certs vs publications
-            if (modalType === 'publications' ? !isPub : isPub) return false;
+            // Filter by type
+            if (modalType === 'publications' && !isPublication(item)) return false;
+            if (modalType === 'certifications' && !isCert(item)) return false;
+            if (modalType === 'achievements' && (isPublication(item) || isCert(item))) return false;
+
             // Filter by department
             if (modalDept && String(item.branch || '').toUpperCase() !== modalDept.toUpperCase()) return false;
             // Filter by student year (1st, 2nd, 3rd, 4th Year)
@@ -1038,7 +1089,7 @@ export default function AdminSearch() {
                   </select>
                 </div>
 
-                {/* Year filter (Only for student achievements) */}
+                {/* Year filter (Only for student achievements / profiles) */}
                 {modalType !== 'events' && (
                   <div style={{ flex: '1', minWidth: 120 }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4, textTransform: 'uppercase' }}>Student Year</label>
@@ -1142,8 +1193,90 @@ export default function AdminSearch() {
                       ))}
                     </tbody>
                   </table>
+                ) : modalType === 'attendance' ? (
+                  // Attendance list table
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>#</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Reg No</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Name</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Dept/Sec</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Overall Attendance</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Subject Breakdown</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRecords.map((item, idx) => {
+                        const avgPct = item.attendance && item.attendance.length > 0 
+                          ? (item.attendance.reduce((s, a) => s + (a.present / (a.total || 1)) * 100, 0) / item.attendance.length).toFixed(1) + '%'
+                          : '—';
+                        return (
+                          <tr key={item._id} className="table-row">
+                            <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
+                            <td style={{ padding: '12px 8px', fontWeight: 600, color: '#0f172a' }}>{item.regNumber}</td>
+                            <td style={{ padding: '12px 8px', color: '#334155', fontWeight: 500 }}>{item.name}</td>
+                            <td style={{ padding: '12px 8px', color: '#475569' }}>
+                              <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                                {item.branch} - {item.section}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 8px', fontWeight: 700, color: '#0d9488' }}>{avgPct}</td>
+                            <td style={{ padding: '12px 8px', color: '#64748b' }}>
+                              {item.attendance && item.attendance.map((a, i) => (
+                                <span key={i} style={{ fontSize: 11, background: '#eff6ff', color: '#1e40af', padding: '2px 6px', borderRadius: 4, marginRight: 4, display: 'inline-block', marginBottom: 2 }}>
+                                  {a.subject}: {Math.round((a.present / (a.total || 1)) * 100)}%
+                                </span>
+                              ))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                ) : modalType === 'crt' ? (
+                  // CRT list table
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>#</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Reg No</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Name</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Dept/Sec</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Overall Score</th>
+                        <th style={{ padding: '12px 8px', color: '#475569', fontWeight: 700 }}>Module Breakdown</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRecords.map((item, idx) => {
+                        const avgPct = item.crtPerformance && item.crtPerformance.length > 0 
+                          ? (item.crtPerformance.reduce((s, p) => s + (p.score / (p.maxScore || 100)) * 100, 0) / item.crtPerformance.length).toFixed(1) + '%'
+                          : '—';
+                        return (
+                          <tr key={item._id} className="table-row">
+                            <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
+                            <td style={{ padding: '12px 8px', fontWeight: 600, color: '#0f172a' }}>{item.regNumber}</td>
+                            <td style={{ padding: '12px 8px', color: '#334155', fontWeight: 500 }}>{item.name}</td>
+                            <td style={{ padding: '12px 8px', color: '#475569' }}>
+                              <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                                {item.branch} - {item.section}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 8px', fontWeight: 700, color: '#ea580c' }}>{avgPct}</td>
+                            <td style={{ padding: '12px 8px', color: '#64748b' }}>
+                              {item.crtPerformance && item.crtPerformance.map((p, i) => (
+                                <span key={i} style={{ fontSize: 11, background: '#fff7ed', color: '#ea580c', padding: '2px 6px', borderRadius: 4, marginRight: 4, display: 'inline-block', marginBottom: 2 }}>
+                                  {p.module}: {p.score}/{p.maxScore}
+                                </span>
+                              ))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 ) : (
-                  // Achievements table
+                  // Achievements, Certifications, Publications table
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
@@ -1215,6 +1348,6 @@ export default function AdminSearch() {
           </div>
         );
       })()}
-    </div>
-  );
+  </div>
+);
 }
