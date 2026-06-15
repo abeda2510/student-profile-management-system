@@ -302,28 +302,32 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
   if (docType === 'SEM6_SGPA') return { ...base, data: st.sem6Sgpa != null ? String(st.sem6Sgpa) : '—' };
   if (docType === 'SEM7_SGPA') return { ...base, data: st.sem7Sgpa != null ? String(st.sem7Sgpa) : '—' };
   if (docType === 'SEM8_SGPA') return { ...base, data: st.sem8Sgpa != null ? String(st.sem8Sgpa) : '—' };
+
+  const regKey = String(st.regNumber || '').toUpperCase();
+  const regQuery = { $regex: new RegExp('^' + st.regNumber + '$', 'i') };
+
   if (docType === 'AADHAAR_DOC') {
     const docs = preloadedDocs 
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'AADHAAR')
-      : await Document.find({ regNumber: st.regNumber, docType: 'AADHAAR' });
+      ? (preloadedDocs[regKey] || []).filter(d => d.docType === 'AADHAAR')
+      : await Document.find({ regNumber: regQuery, docType: 'AADHAAR' });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'PAN_DOC') {
     const docs = preloadedDocs
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'PAN')
-      : await Document.find({ regNumber: st.regNumber, docType: 'PAN' });
+      ? (preloadedDocs[regKey] || []).filter(d => d.docType === 'PAN')
+      : await Document.find({ regNumber: regQuery, docType: 'PAN' });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'TENTH_MEMO') {
     const docs = preloadedDocs
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO' && /10th|SSC/i.test(d.label || ''))
-      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /10th|SSC/i });
+      ? (preloadedDocs[regKey] || []).filter(d => d.docType === 'MARK_MEMO' && /10th|SSC/i.test(d.label || ''))
+      : await Document.find({ regNumber: regQuery, docType: 'MARK_MEMO', label: /10th|SSC/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (docType === 'INTER_MEMO') {
     const docs = preloadedDocs
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO' && /inter|12th/i.test(d.label || ''))
-      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO', label: /inter|12th/i });
+      ? (preloadedDocs[regKey] || []).filter(d => d.docType === 'MARK_MEMO' && /inter|12th/i.test(d.label || ''))
+      : await Document.find({ regNumber: regQuery, docType: 'MARK_MEMO', label: /inter|12th/i });
     return { ...base, data: docs.length ? (docs[0].fileUrl || docs[0].filepath || 'Uploaded') : '—' };
   }
   if (['INTERNSHIP', 'HACKATHON', 'RESEARCH_PUBLICATION', 'TECHNICAL_COMPETITION', 'WORKSHOP', 'NPTEL', 'CERTIFICATION', 'PATENT', 'JOURNAL_PAPER', 'CONFERENCE_PAPER', 'BOOK', 'BOOK_CHAPTER'].includes(docType)) {
@@ -339,22 +343,22 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
     }
 
     const achs = preloadedAchs
-      ? (preloadedAchs[st.regNumber] || []).filter(a => matchTypes.includes(a.activityType) && a.status === 'APPROVED')
-      : await Achievement.find({ regNumber: st.regNumber, activityType: { $in: matchTypes }, status: 'APPROVED' });
+      ? (preloadedAchs[regKey] || []).filter(a => matchTypes.includes(a.activityType) && a.status === 'APPROVED')
+      : await Achievement.find({ regNumber: regQuery, activityType: { $in: matchTypes }, status: 'APPROVED' });
     return { ...base, data: achs.length ? achs.map(a => a.title).join('; ') : '—', count: achs.length };
   }
   if (docType === 'MARK_MEMO') {
     const docs = preloadedDocs
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.docType === 'MARK_MEMO')
-      : await Document.find({ regNumber: st.regNumber, docType: 'MARK_MEMO' });
+      ? (preloadedDocs[regKey] || []).filter(d => d.docType === 'MARK_MEMO')
+      : await Document.find({ regNumber: regQuery, docType: 'MARK_MEMO' });
     return { ...base, data: docs.length ? docs.map(d => d.label || d.filename).join('; ') : '—', count: docs.length };
   }
   // Admin-uploaded custom documents — docType is a custom label key like 'ADMIN:CRT Attendance'
   if (docType.startsWith('ADMIN:')) {
     const label = docType.replace('ADMIN:', '');
     const docs = preloadedDocs
-      ? (preloadedDocs[st.regNumber] || []).filter(d => d.uploadedBy === 'admin' && d.label === label)
-      : await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label });
+      ? (preloadedDocs[regKey] || []).filter(d => d.uploadedBy === 'admin' && d.label === label)
+      : await Document.find({ regNumber: regQuery, uploadedBy: 'admin', label });
     if (!docs.length) return { ...base, data: '—' };
     const doc = docs[0];
     const val = doc.fileUrl || doc.filename || doc.filepath;
@@ -362,8 +366,8 @@ async function getStudentDocData(st, docType, preloadedDocs = null, preloadedAch
   }
   // Fallback: try to find any admin doc with matching docType as label
   const adminDocs = preloadedDocs
-    ? (preloadedDocs[st.regNumber] || []).filter(d => d.uploadedBy === 'admin' && d.label === docType)
-    : await Document.find({ regNumber: st.regNumber, uploadedBy: 'admin', label: docType });
+    ? (preloadedDocs[regKey] || []).filter(d => d.uploadedBy === 'admin' && d.label === docType)
+    : await Document.find({ regNumber: regQuery, uploadedBy: 'admin', label: docType });
   if (adminDocs.length) {
     const doc = adminDocs[0];
     const val = doc.fileUrl || doc.filename || doc.filepath;
@@ -453,19 +457,22 @@ router.get('/section-report', protect, async (req, res) => {
   
   const Achievement = require('../models/Achievement');
   const regNumbers = students.map(s => s.regNumber);
-  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
-  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+  const allRegs = [...new Set([...regNumbers, ...regNumbers.map(r => r.toLowerCase())])];
+  const allDocs = await Document.find({ regNumber: { $in: allRegs } });
+  const allAchs = await Achievement.find({ regNumber: { $in: allRegs } });
 
   const preloadedDocs = {};
   allDocs.forEach(d => {
-    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
-    preloadedDocs[d.regNumber].push(d);
+    const key = String(d.regNumber || '').toUpperCase();
+    if (!preloadedDocs[key]) preloadedDocs[key] = [];
+    preloadedDocs[key].push(d);
   });
 
   const preloadedAchs = {};
   allAchs.forEach(a => {
-    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
-    preloadedAchs[a.regNumber].push(a);
+    const key = String(a.regNumber || '').toUpperCase();
+    if (!preloadedAchs[key]) preloadedAchs[key] = [];
+    preloadedAchs[key].push(a);
   });
 
   const results = [];
@@ -554,19 +561,22 @@ router.get('/section-report/pdf', protect, facultyOnly, async (req, res) => {
 
   const Achievement = require('../models/Achievement');
   const regNumbers = students.map(s => s.regNumber);
-  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
-  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+  const allRegs = [...new Set([...regNumbers, ...regNumbers.map(r => r.toLowerCase())])];
+  const allDocs = await Document.find({ regNumber: { $in: allRegs } });
+  const allAchs = await Achievement.find({ regNumber: { $in: allRegs } });
 
   const preloadedDocs = {};
   allDocs.forEach(d => {
-    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
-    preloadedDocs[d.regNumber].push(d);
+    const key = String(d.regNumber || '').toUpperCase();
+    if (!preloadedDocs[key]) preloadedDocs[key] = [];
+    preloadedDocs[key].push(d);
   });
 
   const preloadedAchs = {};
   allAchs.forEach(a => {
-    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
-    preloadedAchs[a.regNumber].push(a);
+    const key = String(a.regNumber || '').toUpperCase();
+    if (!preloadedAchs[key]) preloadedAchs[key] = [];
+    preloadedAchs[key].push(a);
   });
 
   for (let i = 0; i < students.length; i++) {
@@ -637,19 +647,22 @@ router.get('/section-report/excel', protect, async (req, res) => {
 
   const Achievement = require('../models/Achievement');
   const regNumbers = students.map(s => s.regNumber);
-  const allDocs = await Document.find({ regNumber: { $in: regNumbers } });
-  const allAchs = await Achievement.find({ regNumber: { $in: regNumbers } });
+  const allRegs = [...new Set([...regNumbers, ...regNumbers.map(r => r.toLowerCase())])];
+  const allDocs = await Document.find({ regNumber: { $in: allRegs } });
+  const allAchs = await Achievement.find({ regNumber: { $in: allRegs } });
 
   const preloadedDocs = {};
   allDocs.forEach(d => {
-    if (!preloadedDocs[d.regNumber]) preloadedDocs[d.regNumber] = [];
-    preloadedDocs[d.regNumber].push(d);
+    const key = String(d.regNumber || '').toUpperCase();
+    if (!preloadedDocs[key]) preloadedDocs[key] = [];
+    preloadedDocs[key].push(d);
   });
 
   const preloadedAchs = {};
   allAchs.forEach(a => {
-    if (!preloadedAchs[a.regNumber]) preloadedAchs[a.regNumber] = [];
-    preloadedAchs[a.regNumber].push(a);
+    const key = String(a.regNumber || '').toUpperCase();
+    if (!preloadedAchs[key]) preloadedAchs[key] = [];
+    preloadedAchs[key].push(a);
   });
 
   // One flat row per student
