@@ -386,7 +386,20 @@ router.get('/faculty-report/excel', protect, async (req, res) => {
     [6,16,24,10,30,14,10,40].forEach((w,i) => { ws.getColumn(i+1).width = w; });
     achievements.forEach((a, i) => {
       const st = studentMap[a.regNumber];
-      const certUrl = a.certificateUrl || a.certificatePath || '';
+      
+      const getRelativeWebUrl = (urlOrPath) => {
+        if (!urlOrPath) return '';
+        if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) return urlOrPath;
+        const normalized = urlOrPath.replace(/\\/g, '/');
+        if (normalized.includes('/uploads/')) {
+          const relative = normalized.split('/uploads/')[1];
+          return `/spm/uploads/${relative}`;
+        }
+        return urlOrPath;
+      };
+
+      const rawUrl = a.certificateUrl || a.certificatePath || '';
+      const certUrl = getRelativeWebUrl(rawUrl);
       const isRelative = certUrl.startsWith('/') || certUrl.includes('/uploads/');
       const isAbsolute = certUrl.startsWith('http');
       
@@ -455,9 +468,25 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
     }
     const studentMap = {};
     students.forEach(s => { studentMap[s.regNumber] = s; });
+    const getLocalPath = (urlOrPath) => {
+      if (!urlOrPath) return null;
+      if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) return null;
+      const normalized = urlOrPath.replace(/\\/g, '/');
+      if (normalized.includes('/uploads/')) {
+        const relative = normalized.split('/uploads/')[1];
+        return path.join(__dirname, '..', 'uploads', relative);
+      }
+      if (fs.existsSync(urlOrPath)) {
+        return urlOrPath;
+      }
+      return null;
+    };
+
     const withCert = achievements.filter(a => {
       const url = a.certificateUrl || a.certificatePath || '';
-      return url.startsWith('http') || (url && !url.startsWith('http') && fs.existsSync(url));
+      if (url.startsWith('http')) return true;
+      const localPath = getLocalPath(url);
+      return localPath && fs.existsSync(localPath);
     });
     if (withCert.length === 0) return res.status(404).json({ message: 'No certificates found. Students may not have uploaded certificates yet.' });
     res.setHeader('Content-Type', 'application/zip');
@@ -481,9 +510,12 @@ router.get('/faculty-report/zip', protect, async (req, res) => {
           else if (contentType.includes('jpg') || contentType.includes('jpeg')) ext = '.jpg';
           archive.append(Buffer.from(response.data), { name: a.regNumber + '_' + safeName + '_' + safeType + '_' + safeTitle + ext });
         } catch (err) { console.error('cert fetch failed:', err.message); }
-      } else if (a.certificatePath && fs.existsSync(a.certificatePath)) {
-        const ext = path.extname(a.certificatePath) || '.bin';
-        archive.file(a.certificatePath, { name: a.regNumber + '_' + safeName + '_' + safeType + '_' + safeTitle + ext });
+      } else {
+        const localPath = getLocalPath(url);
+        if (localPath && fs.existsSync(localPath)) {
+          const ext = path.extname(localPath) || '.bin';
+          archive.file(localPath, { name: a.regNumber + '_' + safeName + '_' + safeType + '_' + safeTitle + ext });
+        }
       }
     }
     await archive.finalize();

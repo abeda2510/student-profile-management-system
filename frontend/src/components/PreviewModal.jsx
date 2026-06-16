@@ -3,6 +3,21 @@ import { useState, useEffect } from 'react';
 const BACKEND = import.meta.env.VITE_API_URL || '/spm';
 const PROXY_PDF = `${BACKEND}/proxy-pdf`;
 
+function cleanUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const normalized = url.replace(/\\/g, '/');
+  if (normalized.includes('/uploads/')) {
+    const relative = normalized.split('/uploads/')[1];
+    const base = import.meta.env.VITE_API_URL || '/spm';
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return `${cleanBase}/uploads/${relative}`;
+  }
+  return url;
+}
+
 function isRawPdf(url) {
   return url && (url.includes('/raw/upload/') || url.toLowerCase().includes('.pdf'));
 }
@@ -58,29 +73,32 @@ export function PreviewModal({ url: originalUrl, onClose }) {
   const [imgErr, setImgErr] = useState(false);
   if (!originalUrl) return null;
 
+  // Normalize absolute filesystem paths or relative base paths
+  const url = cleanUrl(originalUrl);
+
   // Intercept Cloudinary or external dummy URLs to return realistic mock documents
-  let url = originalUrl;
-  if (originalUrl.includes('res.cloudinary.com') || originalUrl.startsWith('http')) {
-    const lower = originalUrl.toLowerCase();
+  let targetUrl = url;
+  if (url.includes('res.cloudinary.com') || url.startsWith('http')) {
+    const lower = url.toLowerCase();
     if (lower.includes('achievements') || lower.includes('achievement')) {
-      url = `${BACKEND}/uploads/achievements/mock_nptel_certificate.png`;
+      targetUrl = `${BACKEND}/uploads/achievements/mock_nptel_certificate.png`;
     } else if (lower.includes('aadhaar') || lower.includes('aadhar')) {
-      url = `${BACKEND}/uploads/documents/mock_aadhaar.png`;
+      targetUrl = `${BACKEND}/uploads/documents/mock_aadhaar.png`;
     } else if (lower.includes('pan')) {
-      url = `${BACKEND}/uploads/documents/mock_pan.png`;
+      targetUrl = `${BACKEND}/uploads/documents/mock_pan.png`;
     } else {
-      url = `${BACKEND}/uploads/documents/mock_mark_memo.png`;
+      targetUrl = `${BACKEND}/uploads/documents/mock_mark_memo.png`;
     }
   }
 
-  const raw = isRawPdf(url);
+  const raw = isRawPdf(targetUrl);
 
   const handleDownload = async () => {
     try {
-      const isCloudinary = url.includes('res.cloudinary.com');
+      const isCloudinary = targetUrl.includes('res.cloudinary.com');
       const fetchUrl = isCloudinary
-        ? `${PROXY_PDF}?url=${encodeURIComponent(url)}`
-        : url;
+        ? `${PROXY_PDF}?url=${encodeURIComponent(targetUrl)}`
+        : targetUrl;
       const res = await fetch(fetchUrl);
       if (!res.ok) throw new Error('fetch failed');
       const blob = await res.blob();
@@ -91,9 +109,9 @@ export function PreviewModal({ url: originalUrl, onClose }) {
       else if (ct.includes('png')) ext = 'png';
       else if (ct.includes('jpeg') || ct.includes('jpg')) ext = 'jpg';
       else {
-        const urlExt = url.split('?')[0].split('.').pop().toLowerCase();
+        const urlExt = targetUrl.split('?')[0].split('.').pop().toLowerCase();
         if (['pdf','jpg','jpeg','png'].includes(urlExt)) ext = urlExt;
-        else if (url.includes('/raw/upload/')) ext = 'pdf';
+        else if (targetUrl.includes('/raw/upload/')) ext = 'pdf';
       }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -101,9 +119,9 @@ export function PreviewModal({ url: originalUrl, onClose }) {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      const downloadUrl = url.includes('res.cloudinary.com')
-        ? `${PROXY_PDF}?url=${encodeURIComponent(url)}`
-        : url;
+      const downloadUrl = targetUrl.includes('res.cloudinary.com')
+        ? `${PROXY_PDF}?url=${encodeURIComponent(targetUrl)}`
+        : targetUrl;
       window.open(downloadUrl, '_blank');
     }
   };
@@ -126,20 +144,20 @@ export function PreviewModal({ url: originalUrl, onClose }) {
         </div>
         <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', minHeight: 400 }}>
           {raw ? (
-            <PdfViewer url={url} />
+            <PdfViewer url={targetUrl} />
           ) : imgErr ? (
             <div style={{ textAlign: 'center', padding: 40 }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
               <div style={{ fontSize: 14, color: '#64748b', marginBottom: 16 }}>Cannot preview this file.</div>
-              <a href={url.includes('res.cloudinary.com') ? `${PROXY_PDF}?url=${encodeURIComponent(url)}` : url} download target="_blank" rel="noreferrer"
+              <a href={targetUrl.includes('res.cloudinary.com') ? `${PROXY_PDF}?url=${encodeURIComponent(targetUrl)}` : targetUrl} download target="_blank" rel="noreferrer"
                 style={{ background: '#059669', color: '#fff', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
                 ⬇ Download
               </a>
             </div>
           ) : (
-            <img src={url} alt="Document"
+            <img src={targetUrl} alt="Document"
               style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }}
-              onError={() => { console.error('Image failed to load:', url); setImgErr(true); }} />
+              onError={() => { console.error('Image failed to load:', targetUrl); setImgErr(true); }} />
           )}
         </div>
       </div>
@@ -150,9 +168,10 @@ export function PreviewModal({ url: originalUrl, onClose }) {
 export function ViewButton({ url, label = 'View', style = {} }) {
   const [open, setOpen] = useState(false);
   if (!url) return null;
+  const cleaned = cleanUrl(url);
   return (
     <>
-      {open && <PreviewModal url={url} onClose={() => setOpen(false)} />}
+      {open && <PreviewModal url={cleaned} onClose={() => setOpen(false)} />}
       <button type="button" onClick={() => setOpen(true)}
         style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', ...style }}>
         {label}

@@ -26,6 +26,17 @@ api.interceptors.response.use(
 
 // viewUrl — kept for compatibility
 export function viewUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const normalized = url.replace(/\\/g, '/');
+  if (normalized.includes('/uploads/')) {
+    const relative = normalized.split('/uploads/')[1];
+    const base = import.meta.env.VITE_API_URL || '/spm';
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return `${cleanBase}/uploads/${relative}`;
+  }
   return url;
 }
 

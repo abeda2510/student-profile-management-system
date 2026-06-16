@@ -238,7 +238,19 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
         doc.fontSize(8).font('Helvetica-Bold').fillColor(blue).text(type.replace(/_/g, ' '), 50, y); y += 14;
         items.forEach(a => {
           checkPage(24);
-          const certUrl = a.certificateUrl || a.certificatePath || '';
+          const getRelativeWebUrl = (urlOrPath) => {
+            if (!urlOrPath) return '';
+            if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) return urlOrPath;
+            const normalized = urlOrPath.replace(/\\/g, '/');
+            if (normalized.includes('/uploads/')) {
+              const relative = normalized.split('/uploads/')[1];
+              return `/spm/uploads/${relative}`;
+            }
+            return urlOrPath;
+          };
+
+          const rawUrl = a.certificateUrl || a.certificatePath || '';
+          const certUrl = getRelativeWebUrl(rawUrl);
           const label = `• ${a.title}${a.academicYear ? '  (' + a.academicYear + ')' : ''}${a.position ? '  |  ' + a.position : ''}`;
           doc.fontSize(8).font('Helvetica').fillColor('#0f172a').text(label, 58, y, { width: W - 80 });
           const isRelative = certUrl.startsWith('/') || certUrl.includes('/uploads/');
@@ -261,7 +273,19 @@ router.get('/profile-pdf/:regNumber', protect, async (req, res) => {
       sectionTitle('Uploaded Documents');
       documents.forEach(d => {
         checkPage(16);
-        const fileUrl = d.fileUrl || d.filepath || '';
+        const getRelativeWebUrl = (urlOrPath) => {
+          if (!urlOrPath) return '';
+          if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) return urlOrPath;
+          const normalized = urlOrPath.replace(/\\/g, '/');
+          if (normalized.includes('/uploads/')) {
+            const relative = normalized.split('/uploads/')[1];
+            return `/spm/uploads/${relative}`;
+          }
+          return urlOrPath;
+        };
+
+        const rawUrl = d.fileUrl || d.filepath || '';
+        const fileUrl = getRelativeWebUrl(rawUrl);
         doc.fontSize(8).font('Helvetica-Bold').fillColor(gray).text(d.docType || '', 50, y, { width: 130 });
         doc.font('Helvetica').fillColor('#0f172a').text(d.label || d.filename || '—', 185, y, { width: W - 235 });
         const isRelative = fileUrl.startsWith('/') || fileUrl.includes('/uploads/');
