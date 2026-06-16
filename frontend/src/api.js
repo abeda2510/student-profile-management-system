@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+export function getApiUrl() {
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_URL || 'http://localhost:5000/spm';
+  }
+  const routerBase = import.meta.env.BASE_URL || '/';
+  const cleanBase = routerBase.endsWith('/') ? routerBase.slice(0, -1) : routerBase;
+  return `${cleanBase}/spm`;
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/spm',
+  baseURL: getApiUrl(),
   timeout: 60000,
 });
 
@@ -33,7 +42,7 @@ export function viewUrl(url) {
   const normalized = url.replace(/\\/g, '/');
   if (normalized.includes('/uploads/')) {
     const relative = normalized.split('/uploads/')[1];
-    const base = import.meta.env.VITE_API_URL || '/spm';
+    const base = getApiUrl();
     const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
     return `${cleanBase}/uploads/${relative}`;
   }

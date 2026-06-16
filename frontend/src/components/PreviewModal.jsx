@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../api';
 
-const BACKEND = import.meta.env.VITE_API_URL || '/spm';
+const BACKEND = getApiUrl();
 const PROXY_PDF = `${BACKEND}/proxy-pdf`;
 
 function cleanUrl(url) {
@@ -11,7 +12,7 @@ function cleanUrl(url) {
   const normalized = url.replace(/\\/g, '/');
   if (normalized.includes('/uploads/')) {
     const relative = normalized.split('/uploads/')[1];
-    const base = import.meta.env.VITE_API_URL || '/spm';
+    const base = getApiUrl();
     const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
     return `${cleanBase}/uploads/${relative}`;
   }
